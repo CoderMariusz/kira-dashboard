@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,8 +8,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useUIStore } from '@/lib/store';
-import { useTask, useCreateTask, useUpdateTask } from '@/lib/hooks/useTasks';
+import { useTask, useCreateTask, useUpdateTask, useDeleteTask } from '@/lib/hooks/useTasks';
 import { TaskForm } from './TaskForm';
+import { ConfirmDialog } from './ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import type { TaskFormValues } from '@/lib/validations/task';
 import type { BoardType, TaskColumn } from '@/lib/types/app';
@@ -41,6 +42,10 @@ export function TaskModal({ boardType, boardId, defaultColumn }: TaskModalProps)
   // ═══ MUTATIONS ═══
   const createTask = useCreateTask();
   const updateTask = useUpdateTask(boardId);
+  const deleteTask = useDeleteTask(boardId);
+
+  // ═══ DELETE CONFIRM STATE ═══
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // ═══ INITIAL VALUES (edit mode) ═══
   const editInitialValues = useMemo<Partial<TaskFormValues> | undefined>(() => {
@@ -132,6 +137,30 @@ export function TaskModal({ boardType, boardId, defaultColumn }: TaskModalProps)
     [editingTaskId, updateTask, closeTaskModal, toast]
   );
 
+  // ═══ HANDLE DELETE ═══
+  const handleDelete = useCallback(async () => {
+    if (!editingTaskId) return;
+
+    try {
+      await deleteTask.mutateAsync(editingTaskId);
+
+      toast({
+        title: '🗑️ Zadanie usunięte',
+        description: existingTask?.title ?? 'Zadanie zostało usunięte',
+      });
+
+      setShowDeleteConfirm(false);
+      closeTaskModal();
+    } catch (error) {
+      toast({
+        title: '❌ Błąd',
+        description:
+          error instanceof Error ? error.message : 'Nie udało się usunąć zadania',
+        variant: 'destructive',
+      });
+    }
+  }, [editingTaskId, existingTask, deleteTask, closeTaskModal, toast]);
+
   // ═══ RENDER ═══
   return (
     <Dialog open={taskModalOpen} onOpenChange={(open) => !open && closeTaskModal()}>
@@ -167,13 +196,26 @@ export function TaskModal({ boardType, boardId, defaultColumn }: TaskModalProps)
 
         {/* EDIT MODE — czekamy na dane taska */}
         {isEditMode && !taskLoading && editInitialValues && (
-          <TaskForm
-            boardType={boardType}
-            initialValues={editInitialValues}
-            isSubmitting={updateTask.isPending}
-            onSubmit={handleUpdate}
-            onCancel={closeTaskModal}
-          />
+          <>
+            <TaskForm
+              boardType={boardType}
+              initialValues={editInitialValues}
+              isSubmitting={updateTask.isPending}
+              onSubmit={handleUpdate}
+              onCancel={closeTaskModal}
+            />
+
+            {/* Separator + przycisk usuwania */}
+            <div className="border-t pt-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-sm text-red-500 hover:text-red-700 hover:underline"
+              >
+                Usuń zadanie
+              </button>
+            </div>
+          </>
         )}
 
         {/* EDIT MODE — task nie znaleziony */}
@@ -182,6 +224,17 @@ export function TaskModal({ boardType, boardId, defaultColumn }: TaskModalProps)
             <p className="text-sm text-gray-500">Zadanie nie zostało znalezione.</p>
           </div>
         )}
+
+        {/* Dialog potwierdzenia usunięcia */}
+        <ConfirmDialog
+          open={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDelete}
+          title="Usunąć zadanie?"
+          description={`Zadanie "${existingTask?.title ?? ''}" zostanie trwale usunięte. Tej operacji nie można cofnąć.`}
+          confirmLabel="Usuń"
+          isLoading={deleteTask.isPending}
+        />
       </DialogContent>
     </Dialog>
   );
