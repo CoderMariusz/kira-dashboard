@@ -57,27 +57,27 @@ export function useHousehold(profileId?: string) {
         if (!user) throw new Error('Not authenticated');
 
         // Fetch profile for this user
-        const { data: profile, error: profileError } = await supabase
+        const { data: userProfile, error: userProfileError } = await supabase
           .from('profiles')
           .select('id, household_id')
           .eq('user_id', user.id)
-          .single();
+          .single() as { data: Pick<Profile, 'id' | 'household_id'> | null; error: Error | null };
 
-        if (profileError) throw profileError;
-        if (!profile?.household_id) return null; // No household assigned yet
+        if (userProfileError) throw userProfileError;
+        if (!userProfile?.household_id) return null; // No household assigned yet
 
-        currentProfileId = profile.id;
+        currentProfileId = userProfile.id;
       }
 
       // Fetch household data
-      const { data: profile, error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('household_id')
         .eq('id', currentProfileId)
-        .single();
+        .single() as { data: Pick<Profile, 'household_id'> | null; error: Error | null };
 
       if (profileError) throw profileError;
-      if (!profile?.household_id) return null;
+      if (!profileData?.household_id) return null;
 
       // Fetch household with members
       const { data: household, error: householdError } = await supabase
@@ -86,7 +86,7 @@ export function useHousehold(profileId?: string) {
           *,
           members:profiles(*)
         `)
-        .eq('id', profile.household_id)
+        .eq('id', profileData.household_id)
         .single();
 
       if (householdError) throw householdError;
@@ -117,7 +117,7 @@ export function useHouseholdId() {
         .from('profiles')
         .select('household_id')
         .eq('user_id', user.id)
-        .single();
+        .single() as { data: Pick<Profile, 'household_id'> | null; error: Error | null };
 
       return profile?.household_id ?? null;
     },
