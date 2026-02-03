@@ -15,7 +15,7 @@ async function fetchTasksByBoard(boardId: string): Promise<TaskWithAssignee[]> {
     .from('tasks')
     .select(`
       *,
-      assignee:profiles!tasks_assignee_id_fkey (
+      assignee:profiles!assigned_to (
         id,
         display_name,
         avatar_url
@@ -39,7 +39,7 @@ async function fetchTaskById(taskId: string): Promise<TaskWithAssignee | null> {
     .from('tasks')
     .select(`
       *,
-      assignee:profiles!tasks_assignee_id_fkey (
+      assignee:profiles!assigned_to (
         id,
         display_name,
         avatar_url
@@ -93,8 +93,15 @@ async function createTask(params: CreateTaskParams): Promise<Task> {
   const { data, error } = await (supabase as any)
     .from('tasks')
     .insert({
-      ...params,
+      board_id: params.board_id,
+      title: params.title,
+      description: params.description,
       column,
+      priority: params.priority,
+      due_date: params.due_date,
+      assigned_to: params.assignee_id,
+      labels: params.labels,
+      subtasks: params.subtasks,
       position: nextPosition,
     })
     .select()
@@ -116,10 +123,18 @@ interface UpdateTaskParams {
 async function updateTask({ id, updates }: UpdateTaskParams): Promise<Task> {
   const supabase = createClient();
   
+  // Map assignee_id → assigned_to for DB column name
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dbUpdates: Record<string, any> = { ...updates };
+  if ('assignee_id' in dbUpdates) {
+    dbUpdates.assigned_to = dbUpdates.assignee_id;
+    delete dbUpdates.assignee_id;
+  }
+  
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('tasks')
-    .update(updates)
+    .update(dbUpdates)
     .eq('id', id)
     .select()
     .single();
