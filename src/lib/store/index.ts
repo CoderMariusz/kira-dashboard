@@ -29,6 +29,19 @@ interface UIState {
   // Theme (handled by next-themes, but we can track preference)
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+
+  // Task Modal
+  taskModalOpen: boolean;
+  editingTaskId: string | null;
+  openTaskModal: (taskId?: string) => void;
+  closeTaskModal: () => void;
+
+  // Filters
+  filterPriority: string | null;
+  filterAssignee: string | null;
+  setFilterPriority: (priority: string | null) => void;
+  setFilterAssignee: (assignee: string | null) => void;
+  clearFilters: () => void;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -57,6 +70,19 @@ export const useUIStore = create<UIState>()(
       // Theme
       theme: 'system',
       setTheme: (theme) => set({ theme }),
+
+      // Task Modal
+      taskModalOpen: false,
+      editingTaskId: null,
+      openTaskModal: (taskId) => set({ taskModalOpen: true, editingTaskId: taskId ?? null }),
+      closeTaskModal: () => set({ taskModalOpen: false, editingTaskId: null }),
+
+      // Filters
+      filterPriority: null,
+      filterAssignee: null,
+      setFilterPriority: (priority) => set({ filterPriority: priority }),
+      setFilterAssignee: (assignee) => set({ filterAssignee: assignee }),
+      clearFilters: () => set({ filterPriority: null, filterAssignee: null }),
     }),
     {
       name: 'kira-dashboard-ui', // localStorage key
