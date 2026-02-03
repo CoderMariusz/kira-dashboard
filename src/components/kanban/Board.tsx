@@ -19,6 +19,7 @@ import { useUIStore } from '@/lib/store';
 import { BOARD_COLUMNS } from '@/lib/utils/constants';
 import { Column } from './Column';
 import { TaskDragOverlay } from './DragOverlay';
+import { TaskModal } from './TaskModal';
 import { BoardSkeleton } from './BoardSkeleton';
 import type { BoardType, ColumnConfig, TaskColumn, TaskWithAssignee } from '@/lib/types/app';
 
@@ -42,15 +43,12 @@ export function Board({ type }: BoardProps) {
   // ═══ SENSORS ═══
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
-      // Wymaga 8px ruchu zanim drag się aktywuje
-      // Zapobiega przypadkowemu drag przy kliknięciu
       distance: 8,
     },
   });
 
   const touchSensor = useSensor(TouchSensor, {
     activationConstraint: {
-      // Na touch: wymaga 250ms delay LUB 5px ruchu
       delay: 250,
       tolerance: 5,
     },
@@ -90,10 +88,6 @@ export function Board({ type }: BoardProps) {
   }, [tasks, columns]);
 
   // ═══ DRAG HANDLERS ═══
-
-  /**
-   * Drag start — zapisz aktywny task do overlay
-   */
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     const task = active.data.current?.task as TaskWithAssignee | undefined;
@@ -102,9 +96,6 @@ export function Board({ type }: BoardProps) {
     }
   }, []);
 
-  /**
-   * Drag end — oblicz nową kolumnę + pozycję i zapisz
-   */
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
@@ -116,16 +107,13 @@ export function Board({ type }: BoardProps) {
       const activeTaskData = active.data.current?.task as TaskWithAssignee | undefined;
       if (!activeTaskData) return;
 
-      // Określ docelową kolumnę
       let targetColumn: TaskColumn;
       let targetTasks: TaskWithAssignee[];
 
       if (over.data.current?.type === 'column') {
-        // Upuszczono na pustą kolumnę
         targetColumn = over.data.current.column as TaskColumn;
         targetTasks = tasksByColumn[targetColumn] ?? [];
       } else if (over.data.current?.type === 'task') {
-        // Upuszczono na inny task — użyj kolumny tego taska
         const overTask = over.data.current.task as TaskWithAssignee;
         targetColumn = overTask.column as TaskColumn;
         targetTasks = tasksByColumn[targetColumn] ?? [];
@@ -135,7 +123,6 @@ export function Board({ type }: BoardProps) {
 
       const sourceColumn = activeTaskData.column as TaskColumn;
 
-      // ═══ REORDER W TEJ SAMEJ KOLUMNIE ═══
       if (sourceColumn === targetColumn) {
         const oldIndex = targetTasks.findIndex((t) => t.id === active.id);
         const newIndex = targetTasks.findIndex((t) => t.id === over.id);
@@ -154,15 +141,12 @@ export function Board({ type }: BoardProps) {
         return;
       }
 
-      // ═══ PRZENIESIENIE DO INNEJ KOLUMNY ═══
       let newPosition: number;
 
       if (over.data.current?.type === 'task') {
-        // Upuszczono na konkretny task → wstaw przed nim
         const overIndex = targetTasks.findIndex((t) => t.id === over.id);
         newPosition = calculatePosition(targetTasks, overIndex);
       } else {
-        // Upuszczono na pustą kolumnę → dodaj na końcu
         const lastPos =
           targetTasks.length > 0
             ? (targetTasks[targetTasks.length - 1].position ?? 0)
@@ -223,6 +207,7 @@ export function Board({ type }: BoardProps) {
         {columns.map((col) => (
           <Column
             key={col.key}
+            boardId={board.id}
             config={col}
             tasks={tasksByColumn[col.key] ?? []}
             onTaskClick={(taskId) => openTaskModal(taskId)}
@@ -232,6 +217,9 @@ export function Board({ type }: BoardProps) {
 
       {/* Overlay — karta podążająca za kursorem */}
       <TaskDragOverlay activeTask={activeTask} />
+
+      {/* Modal tworzenia/edycji zadania */}
+      <TaskModal boardType={type} boardId={board.id} />
     </DndContext>
   );
 }
@@ -244,16 +232,13 @@ function calculatePosition(tasks: TaskWithAssignee[], targetIndex: number): numb
   if (tasks.length === 0) return 1000;
 
   if (targetIndex === 0) {
-    // Wstaw na początku — pozycja = połowa pierwszego
     return Math.floor((tasks[0].position ?? 0) / 2);
   }
 
   if (targetIndex >= tasks.length) {
-    // Wstaw na końcu — pozycja = ostatni + 1000
     return (tasks[tasks.length - 1].position ?? 0) + 1000;
   }
 
-  // Wstaw pomiędzy — średnia sąsiadów
   const before = tasks[targetIndex - 1].position ?? 0;
   const after = tasks[targetIndex].position ?? 0;
   return Math.floor((before + after) / 2);

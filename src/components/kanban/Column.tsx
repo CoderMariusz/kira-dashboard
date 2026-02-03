@@ -5,10 +5,13 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Badge } from '@/components/ui/badge';
 import { EmptyColumn } from './EmptyColumn';
 import { SortableTaskCard } from './SortableTaskCard';
+import { QuickAddTask } from './QuickAddTask';
 import { cn } from '@/lib/utils';
-import type { ColumnConfig, TaskWithAssignee } from '@/lib/types/app';
+import type { ColumnConfig, TaskWithAssignee, TaskColumn } from '@/lib/types/app';
 
 interface ColumnProps {
+  /** ID boardu — potrzebne do tworzenia tasków */
+  boardId: string;
   /** Konfiguracja kolumny z BOARD_COLUMNS */
   config: ColumnConfig;
   /** Taski przypisane do tej kolumny */
@@ -18,7 +21,7 @@ interface ColumnProps {
   className?: string;
 }
 
-export function Column({ config, tasks, onTaskClick, className }: ColumnProps) {
+export function Column({ boardId, config, tasks, onTaskClick, className }: ColumnProps) {
   // ═══ DROPPABLE — pozwala upuszczać taski w tej kolumnie ═══
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${config.key}`,
@@ -47,8 +50,7 @@ export function Column({ config, tasks, onTaskClick, className }: ColumnProps) {
           </Badge>
         </div>
 
-        {/* Placeholder dla przycisku "+" — zostanie dodany w US-2.3 */}
-        <div className="h-7 w-7" />
+        <QuickAddTask boardId={boardId} column={config.key as TaskColumn} />
       </div>
 
       {/* ═══ COLUMN BODY — droppable + sortable ═══ */}
