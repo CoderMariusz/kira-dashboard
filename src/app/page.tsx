@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LogoutButton } from '@/components/logout-button';
 
 export default async function Home() {
   const supabase = await createClient();
@@ -16,6 +17,9 @@ export default async function Home() {
     <main className="min-h-screen bg-gradient-to-br from-amber-50 to-blue-50 p-8">
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-12">
+          <div className="flex justify-end mb-4">
+            <LogoutButton />
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             🏠 Kira Dashboard
           </h1>
