@@ -40,9 +40,9 @@ export default function SetupPage() {
       }
 
       // Create household
-      const { data: household, error: householdError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: household, error: householdError } = await (supabase as any)
         .from('households')
-        // @ts-ignore - Type inference issue with Supabase client
         .insert([{
           name: householdName.trim(),
         }])
@@ -57,9 +57,9 @@ export default function SetupPage() {
       }
 
       // Update user profile with household_id
-      const { error: profileError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: profileError } = await (supabase as any)
         .from('profiles')
-        // @ts-ignore - Type inference issue with Supabase client
         .update({ household_id: household.id })
         .eq('id', user.id);
 
@@ -101,7 +101,8 @@ export default function SetupPage() {
       }
 
       // Find household by invite code
-      const { data: household, error: householdError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: household, error: householdError } = await (supabase as any)
         .from('households')
         .select('id')
         .eq('invite_code', inviteCode.trim())
@@ -114,9 +115,9 @@ export default function SetupPage() {
       }
 
       // Update user profile with household_id
-      const { error: profileError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: profileError } = await (supabase as any)
         .from('profiles')
-        // @ts-ignore - Type inference issue with Supabase client
         .update({ household_id: household.id })
         .eq('id', user.id);
 
