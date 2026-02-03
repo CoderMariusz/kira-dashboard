@@ -29,6 +29,34 @@ async function fetchTasksByBoard(boardId: string): Promise<TaskWithAssignee[]> {
 }
 
 // ═══════════════════════════════════════════════════════════
+// FETCH: Pojedynczy task po ID (z assignee join)
+// ═══════════════════════════════════════════════════════════
+
+async function fetchTaskById(taskId: string): Promise<TaskWithAssignee | null> {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('tasks')
+    .select(`
+      *,
+      assignee:profiles!tasks_assignee_id_fkey (
+        id,
+        display_name,
+        avatar_url
+      )
+    `)
+    .eq('id', taskId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+
+  return data as TaskWithAssignee;
+}
+
+// ═══════════════════════════════════════════════════════════
 // CREATE: Nowe zadanie
 // ═══════════════════════════════════════════════════════════
 
@@ -154,6 +182,19 @@ export function useTasks(boardId: string | undefined) {
     queryFn: () => fetchTasksByBoard(boardId!),
     enabled: !!boardId,
     staleTime: 60 * 1000, // 1 minuta
+  });
+}
+
+/**
+ * Pobiera pojedynczy task po ID
+ * Klucz cache: ['task', taskId]
+ */
+export function useTask(taskId: string | null) {
+  return useQuery({
+    queryKey: ['task', taskId],
+    queryFn: () => fetchTaskById(taskId!),
+    enabled: !!taskId,
+    staleTime: 30 * 1000, // 30 sekund
   });
 }
 
