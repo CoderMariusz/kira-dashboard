@@ -10,7 +10,6 @@ import { NextResponse } from 'next/server';
  */
 export interface UserProfile {
   id: string;
-  user_id: string;
   household_id: string;
   display_name: string;
 }
@@ -60,10 +59,11 @@ export async function authenticateAndGetProfile(): Promise<AuthResult> {
   }
 
   // 2. Fetch profile with household_id
+  // Note: profiles.id IS the auth user id (no separate user_id column)
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, user_id, household_id, display_name')
-    .eq('user_id', userData.user.id)
+    .select('id, household_id, display_name')
+    .eq('id', userData.user.id)
     .single();
 
   if (profileError || !profile) {
