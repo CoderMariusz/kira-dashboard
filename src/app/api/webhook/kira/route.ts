@@ -11,7 +11,7 @@
 import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/utils/sanitize';
-import { randomUUID } from 'crypto';
+
 
 // ══════════════════════════════════════════════════════════
 // SUPABASE SERVICE CLIENT (bypasses RLS)
@@ -72,34 +72,10 @@ function verifyApiKey(request: NextRequest, payload: KiraWebhookPayload): boolea
 }
 
 // ══════════════════════════════════════════════════════════
-// HELPER: Get or create Kira profile
+// NOTE: Kira is a system actor — no profile needed.
+// profiles.id is FK to auth.users, so we can't create a system profile.
+// We use created_by: null + actor_name: 'Kira' in activity logs.
 // ══════════════════════════════════════════════════════════
-
-async function getKiraProfile(supabase: ServiceClient, household_id: string): Promise<string> {
-  const { data: existing } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('household_id', household_id)
-    .eq('display_name', 'Kira')
-    .maybeSingle();
-
-  if (existing) return existing.id;
-
-  const kiraId = randomUUID();
-  const { data: created, error } = await supabase
-    .from('profiles')
-    .insert({
-      id: kiraId,
-      household_id,
-      display_name: 'Kira',
-      email: 'kira@system.local',
-    })
-    .select('id')
-    .single();
-
-  if (error) throw new Error(`Failed to create Kira profile: ${error.message}`);
-  return created.id;
-}
 
 // ══════════════════════════════════════════════════════════
 // ACTION HANDLERS
@@ -136,7 +112,7 @@ async function handleTaskCreate(
     return { success: false, error: 'Board not found', message: `Nie znaleziono tablicy "${board}"` };
   }
 
-  const kiraProfileId = await getKiraProfile(supabase, household_id);
+  
 
   // Resolve assignee
   let assigneeId: string | null = null;
@@ -166,7 +142,7 @@ async function handleTaskCreate(
       subtasks: Array.isArray(subtasks)
         ? subtasks.map((t: string) => ({ title: t, done: false }))
         : [],
-      created_by: kiraProfileId,
+      created_by: null,
       source: 'kira',
       original_message: JSON.stringify(params),
     })
@@ -181,7 +157,7 @@ async function handleTaskCreate(
     entity_type: 'task' as const,
     entity_id: task.id,
     action: 'created',
-    actor_id: kiraProfileId,
+    actor_id: null,
     actor_name: 'Kira',
     metadata: { title: safeTitle, board, column, priority },
   });
@@ -235,7 +211,7 @@ async function handleShoppingAdd(
     listData = newList;
   }
 
-  const kiraProfileId = await getKiraProfile(supabase, household_id);
+  
 
   // Load categories
   const { data: categories } = await supabase
@@ -264,7 +240,7 @@ async function handleShoppingAdd(
         category_name: matchedCategory?.name ?? item.category ?? 'Inne',
         store: item.store ?? null,
         is_bought: false,
-        added_by: kiraProfileId,
+        added_by: null,
         source: 'kira',
       })
       .select('id, name, category_name')
@@ -288,7 +264,7 @@ async function handleShoppingAdd(
     entity_type: 'shopping' as const,
     entity_id: listData.id,
     action: 'created',
-    actor_id: kiraProfileId,
+    actor_id: null,
     actor_name: 'Kira',
     metadata: {
       items_count: insertedItems.length,
