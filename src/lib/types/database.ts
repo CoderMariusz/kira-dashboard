@@ -234,6 +234,35 @@ export type Database = {
           updated_at?: string;
         };
       };
+      shopping_categories: {
+        Row: {
+          id: string;
+          name: string;
+          icon: string;
+          color: string;
+          position: number;
+          is_default: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          icon?: string;
+          color?: string;
+          position?: number;
+          is_default?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          icon?: string;
+          color?: string;
+          position?: number;
+          is_default?: boolean;
+          created_at?: string;
+        };
+      };
       activity_log: {
         Row: {
           id: string;
@@ -288,4 +317,5 @@ export type Task = Tables<'tasks'>;
 export type Board = Tables<'boards'>;
 export type Profile = Tables<'profiles'>;
 export type ShoppingItem = Tables<'shopping_items'>;
+export type ShoppingCategory = Tables<'shopping_categories'>;
 export type ActivityLog = Tables<'activity_log'>;

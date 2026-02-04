@@ -18,6 +18,8 @@ interface UseRealtimeOptions {
   queryKeys: string[][];
   /** Czy hook jest aktywny */
   enabled?: boolean;
+  /** Custom channel name (optional, auto-generated if not provided) */
+  channelName?: string;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -32,6 +34,7 @@ export function useRealtime({
   filter,
   queryKeys,
   enabled = true,
+  channelName: customChannelName,
 }: UseRealtimeOptions) {
   const queryClient = useQueryClient();
 
@@ -40,8 +43,8 @@ export function useRealtime({
 
     const supabase = createClient();
     
-    // Utwórz unikalną nazwę kanału
-    const channelName = `realtime-${table}-${filter ?? 'all'}-${Date.now()}`;
+    // Use custom channel name or auto-generate
+    const channelName = customChannelName ?? `realtime-${table}-${filter ?? 'all'}-${Date.now()}`;
 
     // Konfiguracja subskrypcji
     const channelConfig: {
