@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added (US-3.3 — Mark Items as Bought)
+- `ShoppingItem` component — shopping item with checkbox toggle and animations
+- `useToggleItem` hook — mutation hook for marking items as bought/not bought
+- `useDeleteItem` hook — mutation hook for deleting individual items
+- PATCH `/api/shopping/items/[id]` endpoint — toggles bought status and updates activity log
+- DELETE `/api/shopping/items/[id]` endpoint — deletes shopping items with ownership verification
+- Toast notifications for item toggle and deletion actions
+- `Toaster` component in dashboard layout for sonner notifications
+
+### Changed (US-3.3)
+- `CategoryGroup` component now uses `ShoppingItem` component with animations
+- `BoughtSection` component now uses `ShoppingItem` component with collapse animation
+- Both components now accept `listId` prop for query invalidation
+- `ShoppingList` component passes `listId` to child components
+
 ### Added (US-3.2 — Add Shopping Items)
 - `AddItemForm` component — form for adding items with category selection and auto-detection
 - `AddCategoryModal` component — modal for creating custom shopping categories

@@ -116,13 +116,14 @@ export function ShoppingList({ listId }: ShoppingListProps) {
           <CategoryGroup 
             key={category.id} 
             category={category} 
-            items={categoryItems} 
+            items={categoryItems}
+            listId={listId}
           />
         );
       })}
       
       {/* Bought section */}
-      <BoughtSection items={items} />
+      <BoughtSection items={items} listId={listId} />
     </div>
   );
 }

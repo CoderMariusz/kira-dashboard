@@ -8,6 +8,18 @@ import React from 'react';
  * Tests for CategoryGroup, BoughtSection, and ShoppingList components
  */
 
+// Mock ShoppingItem (added in US-3.3 — uses hooks that need QueryClient)
+vi.mock('@/components/shopping/ShoppingItem', () => ({
+  ShoppingItem: ({ name }: any) => (
+    <div data-testid="shopping-item">{name}</div>
+  ),
+}));
+
+// Mock framer-motion (added in US-3.3)
+vi.mock('framer-motion', () => ({
+  AnimatePresence: ({ children }: any) => children,
+}));
+
 // Mock Supabase client for ShoppingList tests (hooks use it internally)
 const mockSubscribe = vi.fn(() => ({}));
 const mockOn = vi.fn(() => ({ subscribe: mockSubscribe }));
@@ -177,6 +189,7 @@ describe('T4: Shopping Components', () => {
         <CategoryGroup
           category={mockCategory}
           items={mockItems}
+          listId="list-1"
         />
       );
 
@@ -195,6 +208,7 @@ describe('T4: Shopping Components', () => {
         <CategoryGroup
           category={mockCategory}
           items={allBoughtItems}
+          listId="list-1"
         />
       );
 
@@ -208,6 +222,7 @@ describe('T4: Shopping Components', () => {
         <CategoryGroup
           category={mockCategory}
           items={mockItems}
+          listId="list-1"
         />
       );
 
@@ -225,7 +240,8 @@ describe('T4: Shopping Components', () => {
     it('AC4: should display only bought items (is_bought=true)', async () => {
       const { BoughtSection } = await import('@/components/shopping/BoughtSection');
 
-      render(<BoughtSection items={mockItems} />);
+      const Wrapper = createWrapper();
+      render(<Wrapper><BoughtSection items={mockItems} listId="list-1" /></Wrapper>);
 
       // Should show only bought items
       expect(screen.getByText('Carrots')).toBeInTheDocument();
@@ -236,7 +252,8 @@ describe('T4: Shopping Components', () => {
     it('AC5: should be collapsed by default (details without open)', async () => {
       const { BoughtSection } = await import('@/components/shopping/BoughtSection');
 
-      const { container } = render(<BoughtSection items={mockItems} />);
+      const Wrapper = createWrapper();
+      const { container } = render(<Wrapper><BoughtSection items={mockItems} listId="list-1" /></Wrapper>);
 
       // Should use <details> element
       const details = container.querySelector('details');
@@ -249,9 +266,10 @@ describe('T4: Shopping Components', () => {
 
       const unboughtItems = mockItems.map(item => ({ ...item, is_bought: false }));
 
-      const { container } = render(<BoughtSection items={unboughtItems} />);
+      const Wrapper = createWrapper();
+      const { container } = render(<Wrapper><BoughtSection items={unboughtItems} listId="list-1" /></Wrapper>);
 
-      expect(container.firstChild).toBeNull();
+      expect(container.querySelector('details')).toBeNull();
     });
   });
 

@@ -1,11 +1,17 @@
+'use client';
+
 import { memo, useMemo } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import type { ShoppingCategory, ShoppingItem } from '@/lib/types/database';
+import { ShoppingItem as ShoppingItemComponent } from './ShoppingItem';
 
 interface CategoryGroupProps {
   /** Shopping category to display */
   category: ShoppingCategory;
   /** Shopping items to filter by category */
   items: ShoppingItem[];
+  /** The shopping list ID */
+  listId: string;
 }
 
 /**
@@ -16,10 +22,10 @@ interface CategoryGroupProps {
  * @component
  * @example
  * ```tsx
- * <CategoryGroup category={category} items={items} />
+ * <CategoryGroup category={category} items={items} listId={listId} />
  * ```
  */
-export const CategoryGroup = memo(function CategoryGroup({ category, items }: CategoryGroupProps) {
+export const CategoryGroup = memo(function CategoryGroup({ category, items, listId }: CategoryGroupProps) {
   // Memoize filtered items to prevent unnecessary recalculations
   const activeItems = useMemo(() => items.filter(item => !item.is_bought), [items]);
   
@@ -37,14 +43,22 @@ export const CategoryGroup = memo(function CategoryGroup({ category, items }: Ca
           ({activeItems.length})
         </span>
       </div>
-      <div className="space-y-2">
-        {activeItems.map(item => (
-          <div key={item.id} className="p-3 bg-gray-50 rounded">
-            <span>{item.name}</span>
-            {item.quantity > 1 && <span className="text-muted-foreground"> ({item.quantity})</span>}
-          </div>
-        ))}
-      </div>
+      <AnimatePresence>
+        <div className="space-y-2">
+          {activeItems.map(item => (
+            <ShoppingItemComponent
+              key={item.id}
+              id={item.id}
+              listId={listId}
+              name={item.name}
+              quantity={item.quantity}
+              unit={item.unit}
+              categoryName={category.name}
+              isBought={item.is_bought}
+            />
+          ))}
+        </div>
+      </AnimatePresence>
     </div>
   );
 });
