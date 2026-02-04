@@ -23,6 +23,7 @@
 
 ### W toku
 - [ ] **Epic 3: Shopping List**
+- [ ] **Epic 5: Mobile Navigation** (US-5.2 complete)
 
 ## Kluczowe pliki Epic 2
 
@@ -40,6 +41,16 @@
 | `lib/hooks/useBoard.ts` | React Query: useBoard, useBoards |
 | `lib/hooks/useRealtime.ts` | Supabase realtime → cache invalidation |
 | `lib/validations/task.ts` | Zod schema: taskFormSchema |
+
+## Kluczowe pliki Epic 5
+
+| Plik | Opis |
+|------|------|
+| `components/layout/MobileNav.tsx` | Fixed bottom navigation bar for mobile (<768px) |
+| `components/layout/Sidebar.tsx` | Responsive sidebar: collapsible on tablet, fixed on desktop |
+| `lib/config/navigation.ts` | Navigation items configuration (routes, icons, labels) |
+| `app/(dashboard)/layout.tsx` | Dashboard layout with responsive nav integration |
+| `app/(dashboard)/settings/page.tsx` | Settings page (placeholder) |
 
 ## Struktura projektu
 
