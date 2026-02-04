@@ -17,6 +17,7 @@ import { useTasks, useMoveTask } from '@/lib/hooks/useTasks';
 import { useTasksRealtime } from '@/lib/hooks/useRealtime';
 import { useUIStore } from '@/lib/store';
 import { BOARD_COLUMNS } from '@/lib/utils/constants';
+import { BOARD_LAYOUT } from '@/lib/constants/responsive';
 import { Column } from './Column';
 import { TaskDragOverlay } from './DragOverlay';
 import { TaskModal } from './TaskModal';
@@ -203,23 +204,25 @@ export function Board({ type }: BoardProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col gap-4 md:flex-row md:overflow-x-auto pb-4">
-        {columns.map((col) => (
-          <Column
-            key={col.key}
-            boardId={board.id}
-            config={col}
-            tasks={tasksByColumn[col.key] ?? []}
-            onTaskClick={(taskId) => openTaskModal(taskId)}
-          />
-        ))}
-      </div>
+      <>
+        <div data-testid="kanban-board" className={BOARD_LAYOUT.CONTAINER}>
+          {columns.map((col) => (
+            <Column
+              key={col.key}
+              boardId={board.id}
+              config={col}
+              tasks={tasksByColumn[col.key] ?? []}
+              onTaskClick={(taskId) => openTaskModal(taskId)}
+            />
+          ))}
+        </div>
 
-      {/* Overlay — karta podążająca za kursorem */}
-      <TaskDragOverlay activeTask={activeTask} />
+        {/* Overlay — karta podążająca za kursorem */}
+        <TaskDragOverlay activeTask={activeTask} />
 
-      {/* Modal tworzenia/edycji zadania */}
-      <TaskModal boardType={type} boardId={board.id} />
+        {/* Modal tworzenia/edycji zadania */}
+        <TaskModal boardType={type} boardId={board.id} />
+      </>
     </DndContext>
   );
 }

@@ -5,6 +5,7 @@ import { pl } from 'date-fns/locale';
 import { Calendar, User } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { RESPONSIVE_TEXT } from '@/lib/constants/responsive';
 import { PriorityBadge } from './PriorityBadge';
 import { LabelBadge } from './LabelBadge';
 import { cn } from '@/lib/utils';
@@ -67,16 +68,17 @@ export function TaskCard({
 
   return (
     <Card
+      role="article"
       onClick={onClick}
       className={cn(
-        'cursor-pointer border bg-white p-3 shadow-sm transition-shadow hover:shadow-md',
+        'cursor-pointer border bg-white p-3 shadow-sm transition-shadow hover:shadow-md overflow-hidden whitespace-normal',
         isDragging && 'rotate-2 opacity-90 shadow-lg',
         isGhost && 'opacity-30',
         className
       )}
     >
       {/* Row 1: Priority + Labels */}
-      <div className="mb-2 flex flex-wrap items-center gap-1">
+      <div className={cn("mb-2 flex flex-wrap items-center gap-1", RESPONSIVE_TEXT.SMALL)}>
         <PriorityBadge priority={task.priority as TaskPriority} />
         {((task.labels as string[]) ?? []).slice(0, 3).map((label) => (
           <LabelBadge key={label} label={label} />
@@ -84,23 +86,28 @@ export function TaskCard({
       </div>
 
       {/* Row 2: Title */}
-      <h3 className="mb-2 text-sm font-medium leading-snug text-gray-900">
+      <h3 className={cn("mb-2 font-medium leading-snug text-gray-900", RESPONSIVE_TEXT.BASE)}>
         {task.title}
       </h3>
 
+      {/* Row 2.5: Description */}
+      {task.description && (
+        <p className={cn("mb-2 text-gray-600", RESPONSIVE_TEXT.BASE)}>
+          {task.description}
+        </p>
+      )}
+
       {/* Row 3: Metadata (due date, subtasks, assignee) */}
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between text-gray-500">
+        <div className={cn("flex items-center gap-3", RESPONSIVE_TEXT.SMALL)}>
           {/* Due date */}
           {dueDate && (
             <span
-              className={cn(
-                'flex items-center gap-1',
-                dueDate.isOverdue && 'font-medium text-red-600'
-              )}
+              data-due-date={task.due_date}
+              className={cn("flex items-center gap-1", RESPONSIVE_TEXT.SMALL, dueDate.isOverdue && "font-medium text-red-600")}
             >
               <Calendar className="h-3 w-3" />
-              {dueDate.text}
+              <span>{dueDate.text} ({task.due_date})</span>
             </span>
           )}
 

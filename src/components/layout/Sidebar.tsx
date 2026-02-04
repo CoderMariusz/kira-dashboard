@@ -16,7 +16,7 @@ import { SIDEBAR_NAV_ITEMS, type NavItem } from '@/lib/config/navigation';
  */
 export function Sidebar() {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleToggle = useCallback(() => {
     setIsCollapsed((prev) => !prev);
@@ -51,7 +51,7 @@ export function Sidebar() {
 
   return (
     <nav
-      className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 hidden md:flex lg:flex lg:w-64 flex-col ${
+      className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 hidden md:flex lg:flex lg:w-64 max-w-full flex-col ${
         isCollapsed ? 'w-16' : 'w-64'
       }`}
       data-collapsed={isCollapsed}

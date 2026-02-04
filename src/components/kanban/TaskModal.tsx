@@ -164,9 +164,9 @@ export function TaskModal({ boardType, boardId, defaultColumn }: TaskModalProps)
   // ═══ RENDER ═══
   return (
     <Dialog open={taskModalOpen} onOpenChange={(open) => !open && closeTaskModal()}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[90vh] w-full max-w-lg overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-2xl md:text-3xl lg:text-4xl">
             {isCreateMode ? 'Nowe zadanie' : 'Edytuj zadanie'}
           </DialogTitle>
         </DialogHeader>

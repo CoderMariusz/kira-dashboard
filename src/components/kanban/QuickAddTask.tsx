@@ -4,8 +4,10 @@ import { useState, useRef } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TOUCH_TARGET } from '@/lib/constants/responsive';
 import { useCreateTask } from '@/lib/hooks/useTasks';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import type { TaskColumn } from '@/lib/types/app';
 
 interface QuickAddTaskProps {
@@ -63,9 +65,9 @@ export function QuickAddTask({ boardId, column }: QuickAddTaskProps) {
     return (
       <Button
         variant="ghost"
-        size="sm"
+        size="icon"
         onClick={startAdding}
-        className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600"
+        className={cn(TOUCH_TARGET.SQUARE, "text-gray-400 hover:text-gray-600")}
         aria-label="Dodaj zadanie"
       >
         <Plus className="h-4 w-4" />
@@ -101,9 +103,9 @@ export function QuickAddTask({ boardId, column }: QuickAddTaskProps) {
       />
       <Button
         variant="ghost"
-        size="sm"
+        size="icon"
         onClick={cancelAdding}
-        className="h-7 w-7 p-0 text-gray-400"
+        className="text-gray-400"
       >
         <X className="h-3 w-3" />
       </Button>

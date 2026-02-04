@@ -3,6 +3,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Badge } from '@/components/ui/badge';
+import { BOARD_LAYOUT, RESPONSIVE_TEXT } from '@/lib/constants/responsive';
 import { EmptyColumn } from './EmptyColumn';
 import { SortableTaskCard } from './SortableTaskCard';
 import { QuickAddTask } from './QuickAddTask';
@@ -35,11 +36,11 @@ export function Column({ boardId, config, tasks, onTaskClick, className }: Colum
   const taskIds = tasks.map((t) => t.id);
 
   return (
-    <div className={cn('flex w-full md:min-w-[280px] flex-1 flex-col', className)}>
+    <section role="region" className={cn(BOARD_LAYOUT.COLUMN, className)}>
       {/* ═══ COLUMN HEADER ═══ */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-gray-700">
+          <h2 className={cn(RESPONSIVE_TEXT.H2, "font-semibold text-gray-700")}>
             {config.label}
           </h2>
           <Badge
@@ -78,6 +79,6 @@ export function Column({ boardId, config, tasks, onTaskClick, className }: Colum
           )}
         </div>
       </SortableContext>
-    </div>
+    </section>
   );
 }

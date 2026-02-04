@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { cn } from '@/lib/utils';
 
 const inter = Inter({ subsets: ['latin', 'latin-ext'] });
 
@@ -46,7 +47,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
-      <body className={inter.className}>
+      <body className={cn(inter.className, "overflow-x-hidden")}>
         <Providers>{children}</Providers>
         <InstallPrompt />
       </body>

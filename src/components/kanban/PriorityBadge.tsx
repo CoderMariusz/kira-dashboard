@@ -15,15 +15,16 @@ export function PriorityBadge({ priority, className }: PriorityBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+        'inline-flex items-center rounded-full px-2 py-0.5 font-medium',
         className
       )}
       style={{
         color: config.color,
         backgroundColor: config.bgColor,
       }}
+      aria-label={`Priority: ${priority}`}
     >
-      {config.label}
+      <span className="text-sm md:text-xs">{config.label} ({priority})</span>
     </span>
   );
 }

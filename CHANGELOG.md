@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added (US-5.3 — Mobile-First Responsive Design)
+- Mobile-first responsive design across the application
+  - Touch targets ≥44px on all interactive elements
+  - Responsive typography scale (mobile-first)
+  - Swipeable Kanban columns with snap scrolling
+  - Bottom sheet modals on mobile (vaul)
+  - Pull-to-refresh component
+  - Column indicator dots for mobile navigation
+  - Shared responsive constants (DRY)
+  - No horizontal scroll prevention
+- `responsive.ts` — shared responsive design constants (touch targets, layout, typography)
+- `ColumnIndicator` component — dot indicators for mobile column navigation
+- `BottomSheet` component — responsive modal (drawer on mobile, dialog on desktop)
+- `Checkbox` component — touch-friendly checkbox with ≥44px target
+- `Radio` component — touch-friendly radio button with ≥44px target
+- `PullToRefresh` component — pull-to-refresh gesture wrapper
+- `useMediaQuery` hook — responsive media query matching
+
 ### Added (US-3.3 — Mark Items as Bought)
 - `ShoppingItem` component — shopping item with checkbox toggle and animations
 - `useToggleItem` hook — mutation hook for marking items as bought/not bought
