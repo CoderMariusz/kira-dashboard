@@ -10,56 +10,49 @@ import type { ShoppingCategory } from '@/lib/types/database';
  */
 export const CATEGORY_KEYWORDS: Record<string, string[]> = {
   'Nabiał': [
-    'mleko', 'ser', 'jogurt', 'twaróg', 'śmietana', 
-    'masło', 'kefir', 'maślanka', 'serek', 'fromage',
-    'parmezan', 'mozzarella', 'feta', 'camembert'
+    'mleko', 'ser', 'jogurt', 'twarog', 'twaróg', 'smietana', 'śmietana',
+    'maslo', 'masło', 'kefir', 'maslanka', 'maślanka', 'serek', 'fromage',
+    'parmezan', 'mozzarella', 'feta', 'camembert', 'ricotta', 'mascarpone'
   ],
   'Pieczywo': [
-    'chleb', 'bułka', 'bagietka', 'croissant', 'pączek',
-    'drożdżówka', 'kajzerka', 'tost', 'chałka', 'precel',
-    'ciabatta', 'focaccia', 'razowy', 'graham'
+    'chleb', 'bulka', 'bułka', 'bulki', 'bułki', 'bagietka', 'croissant',
+    'paczek', 'pączek', 'drozdzowka', 'drożdżówka', 'kajzerka', 'tost',
+    'chalka', 'chałka', 'precel', 'ciabatta', 'focaccia', 'razowy', 'graham',
+    'pieczywo', 'rogalik', 'rogaliki'
   ],
   'Owoce i Warzywa': [
-    'jabłko', 'jabłka', 'banan', 'pomarańcza', 'gruszka', 'truskawka',
-    'pomidor', 'ogórek', 'marchew', 'ziemniak', 'sałata',
-    'papryka', 'cebula', 'czosnek', 'brokuł', 'kalafior',
-    'winogrono', 'arbuz', 'melon', 'kapusta', 'owoc', 'warzywa'
+    'jablko', 'jabłko', 'jablka', 'jabłka', 'banan', 'pomarancza', 'pomarańcza',
+    'gruszka', 'truskawka', 'pomidor', 'ogorek', 'ogórek', 'marchew', 'marchewka',
+    'ziemniak', 'salata', 'sałata', 'papryka', 'cebula', 'czosnek',
+    'brokul', 'brokuł', 'kalafior', 'winogrono', 'arbuz', 'melon',
+    'kapusta', 'owoc', 'warzywa', 'owoce', 'ziemniaki', 'kartofle',
+    'szpinak', 'dynia', 'rzodkiewka', 'pietruszka', 'por', 'seler'
   ],
   'Mięso i Ryby': [
-    'kurczak', 'wołowina', 'wieprzowina', 'szynka', 'kielbasa',
-    'łosoś', 'tuńczyk', 'dorsz', 'śledź', 'pstrąg',
-    'filet', 'schab', 'polędwica', 'karkówka', 'udka'
+    'kurczak', 'wolowina', 'wołowina', 'wieprzowina', 'szynka', 'kielbasa',
+    'kiełbasa', 'losos', 'łosoś', 'tunczyk', 'tuńczyk', 'dorsz',
+    'sledz', 'śledź', 'pstrag', 'pstrąg', 'filet', 'schab',
+    'poledwica', 'polędwica', 'karkowka', 'karkówka', 'udka', 'mieso', 'mięso',
+    'ryba', 'boczek', 'salami', 'parowki', 'parówki', 'indyk'
   ],
-  'Chemia': [
-    'proszek', 'płyn', 'mydło', 'szampon', 'pasta',
-    'odświeżacz', 'papier', 'zmywak', 'gąbka', 'deterrent',
-    'wybielacz', 'zmiękczacz', 'środek', 'czyścik', 'balsam'
+  'Chemia i Higiena': [
+    'proszek', 'plyn', 'płyn', 'mydlo', 'mydło', 'szampon', 'pasta',
+    'odswiezacz', 'odświeżacz', 'papier', 'zmywak', 'gabka', 'gąbka',
+    'wybielacz', 'zmiekczacz', 'zmiękczacz', 'srodek', 'środek',
+    'czyscik', 'czyścik', 'balsam', 'chemia', 'higiena',
+    'detergent', 'plyn do naczyn', 'płyn do naczyń', 'toaletowy'
   ],
   'Napoje': [
     'woda', 'sok', 'kawa', 'herbata', 'cola',
-    'piwo', 'wino', 'napój', 'lemoniada', 'kompot',
-    'sprite', 'fanta', 'pepsi', 'energy', 'drink'
+    'piwo', 'wino', 'napoj', 'napój', 'lemoniada', 'kompot',
+    'sprite', 'fanta', 'pepsi', 'energy', 'drink',
+    'juice', 'smoothie', 'nektar'
   ],
   'Mrożonki': [
-    'lody', 'mrożone', 'pizza', 'frytki', 'warzywa',
-    'ryba', 'pierogi', 'nuggetsy', 'kotlet', 'śmietanka',
-    'sorbet', 'deser', 'churros', 'frozen', 'mroźny'
+    'lody', 'mrozone', 'mrożone', 'pizza', 'frytki', 'mrozonki', 'mrożonki',
+    'pierogi', 'nuggetsy', 'kotlet', 'smietanka', 'śmietanka',
+    'sorbet', 'deser', 'churros', 'frozen', 'mrozny', 'mroźny'
   ],
-  'Apteka': [
-    'lek', 'tabletka', 'syrop', 'witamina', 'plaster',
-    'bandaż', 'maść', 'krople', 'żel', 'antybiotyk',
-    'aspiryna', 'paracetamol', 'ibuprom', 'krem', 'suplement'
-  ],
-  'Majsterkowanie': [
-    'śruba', 'gwóźdź', 'młotek', 'wiertło', 'farba',
-    'pędzel', 'taśma', 'klej', 'silikon', 'wkrętak',
-    'piła', 'śrubokręt', 'gwoździe', 'nakrętka', 'podkładka'
-  ],
-  'Meble': [
-    'stół', 'krzesło', 'szafa', 'półka', 'lampka',
-    'lustro', 'regał', 'stolik', 'fotel', 'kanapa',
-    'łóżko', 'komoda', 'biurko', 'szafka', 'wieszak'
-  ]
 };
 
 // ═══════════════════════════════════════════
@@ -82,13 +75,34 @@ export const CATEGORY_KEYWORDS: Record<string, string[]> = {
  * detectCategory('unknown product', categories) // Returns null
  * ```
  */
+/**
+ * Find a category by name with fuzzy matching.
+ * Exact match first, then partial (e.g. "Chemia" matches "Chemia i Higiena").
+ */
+function findCategoryByName(
+  categoryName: string,
+  categories: ShoppingCategory[]
+): ShoppingCategory | undefined {
+  const lower = categoryName.toLowerCase();
+  // Exact match
+  const exact = categories.find(cat => cat.name.toLowerCase() === lower);
+  if (exact) return exact;
+  // Partial: category name starts with keyword or keyword starts with category name
+  return categories.find(cat => {
+    const catLower = cat.name.toLowerCase();
+    return catLower.startsWith(lower) || lower.startsWith(catLower);
+  });
+}
+
 export function detectCategory(
   productName: string,
   categories: ShoppingCategory[]
 ): string | null {
   // Handle empty/null input
   if (!productName || productName.trim() === '') {
-    return null;
+    // Return "Inne" fallback even for empty names
+    const inne = categories.find(cat => cat.name === 'Inne');
+    return inne?.id ?? null;
   }
 
   const normalizedProduct = productName.toLowerCase().trim();
@@ -97,12 +111,14 @@ export function detectCategory(
   for (const [categoryName, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     for (const keyword of keywords) {
       if (normalizedProduct.includes(keyword.toLowerCase())) {
-        // Find category by name
-        const category = categories.find(cat => cat.name === categoryName);
-        return category?.id || null;
+        // Find category by name (with fuzzy matching)
+        const category = findCategoryByName(categoryName, categories);
+        if (category) return category.id;
       }
     }
   }
 
-  return null;
+  // Fallback: assign to "Inne" category so items always display
+  const inne = categories.find(cat => cat.name === 'Inne');
+  return inne?.id ?? null;
 }

@@ -122,6 +122,20 @@ export function ShoppingList({ listId }: ShoppingListProps) {
         );
       })}
       
+      {/* Uncategorized items (category_id is null) */}
+      {(() => {
+        const uncategorized = items.filter(item => !item.category_id && !item.is_bought);
+        if (uncategorized.length === 0) return null;
+        return (
+          <CategoryGroup
+            key="uncategorized"
+            category={{ id: 'uncategorized', name: 'Inne', icon: '📦', list_id: listId } as any}
+            items={uncategorized}
+            listId={listId}
+          />
+        );
+      })()}
+      
       {/* Bought section */}
       <BoughtSection items={items} listId={listId} />
     </div>

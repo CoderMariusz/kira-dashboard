@@ -236,10 +236,16 @@ async function handleShoppingAdd(
 
   const insertedItems: Array<{ id: string; name: string; category_id: string | null }> = [];
 
+  // Get "Inne" category as fallback
+  const inneCategory = categoryMap.get('inne');
+
   for (const item of items) {
     const safeName = sanitizeText(String(item.name), 200);
     const categoryKey = item.category?.toLowerCase() || '';
     const matchedCategory = findCategory(categoryKey);
+
+    // Always assign a category — fallback to "Inne" if none matched
+    const finalCategoryId = matchedCategory?.id ?? inneCategory?.id ?? null;
 
     const { data: newItem, error } = await supabase
       .from('shopping_items')
@@ -247,7 +253,7 @@ async function handleShoppingAdd(
         list_id: listData.id,
         name: safeName,
         quantity: item.quantity ?? 1,
-        category_id: matchedCategory?.id ?? null,
+        category_id: finalCategoryId,
         store: item.store ?? null,
         is_bought: false,
         added_by: null,

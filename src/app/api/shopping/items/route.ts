@@ -80,11 +80,22 @@ export async function POST(request: NextRequest) {
     // 4. Sanitize and prepare item data
     const safeName = sanitizeText(body.name, 200);
 
+    // If no category_id provided, fallback to "Inne" category
+    let finalCategoryId = body.category_id ?? null;
+    if (!finalCategoryId) {
+      const { data: inneCategory } = (await supabase
+        .from('shopping_categories')
+        .select('id')
+        .eq('name', 'Inne')
+        .single()) as { data: { id: string } | null; error: any };
+      finalCategoryId = inneCategory?.id ?? null;
+    }
+
     const itemData = {
       list_id: body.list_id,
       name: safeName,
       quantity: body.quantity ?? 1,
-      category_id: body.category_id ?? null,
+      category_id: finalCategoryId,
       added_by: profile.id,
     };
 
