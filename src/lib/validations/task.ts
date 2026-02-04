@@ -21,7 +21,7 @@ export const taskFormSchema = z.object({
 
   due_date: z.string().optional(),
 
-  assignee_id: z.string().uuid().optional(),
+  assignee_id: z.string().uuid().optional().or(z.literal('')),
 
   labels: z.array(z.string()),
 

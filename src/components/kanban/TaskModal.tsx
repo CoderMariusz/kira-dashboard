@@ -59,7 +59,7 @@ export function TaskModal({ boardType, boardId, defaultColumn }: TaskModalProps)
       due_date: existingTask.due_date
         ? new Date(existingTask.due_date).toISOString().slice(0, 16)
         : '',
-      assignee_id: existingTask.assignee_id ?? '',
+      assignee_id: existingTask.assignee_id || undefined,
       labels: (existingTask.labels ?? []) as string[],
       subtasks: (existingTask.subtasks ?? []) as Array<{ title: string; done: boolean }>,
     };
