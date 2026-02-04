@@ -11,6 +11,7 @@
 import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/utils/sanitize';
+import { randomUUID } from 'crypto';
 
 // ══════════════════════════════════════════════════════════
 // SUPABASE SERVICE CLIENT (bypasses RLS)
@@ -84,9 +85,11 @@ async function getKiraProfile(supabase: ServiceClient, household_id: string): Pr
 
   if (existing) return existing.id;
 
+  const kiraId = randomUUID();
   const { data: created, error } = await supabase
     .from('profiles')
     .insert({
+      id: kiraId,
       household_id,
       display_name: 'Kira',
       email: 'kira@system.local',
