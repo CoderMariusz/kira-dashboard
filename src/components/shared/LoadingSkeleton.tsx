@@ -16,18 +16,18 @@ export function LoadingSkeleton() {
       <div data-testid="skeleton-progress-bar" className="h-8 bg-gray-200 rounded animate-pulse" />
       
       {/* Category group skeletons */}
-      <div data-testid="skeleton-category-1" className="space-y-2">
+      <div data-testid="skeleton-category-group" className="space-y-2">
         <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse" />
         <div className="h-12 bg-gray-100 rounded animate-pulse" />
         <div className="h-12 bg-gray-100 rounded animate-pulse" />
       </div>
       
-      <div data-testid="skeleton-category-2" className="space-y-2">
+      <div data-testid="skeleton-category-group" className="space-y-2">
         <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse" />
         <div className="h-12 bg-gray-100 rounded animate-pulse" />
       </div>
       
-      <div data-testid="skeleton-category-3" className="space-y-2">
+      <div data-testid="skeleton-category-group" className="space-y-2">
         <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse" />
         <div className="h-12 bg-gray-100 rounded animate-pulse" />
         <div className="h-12 bg-gray-100 rounded animate-pulse" />

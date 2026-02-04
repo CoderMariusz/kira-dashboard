@@ -30,7 +30,7 @@ export const BoughtSection = memo(function BoughtSection({ items }: BoughtSectio
   return (
     <details className="mt-6">
       <summary className="cursor-pointer text-sm text-muted-foreground font-medium">
-        Bought items ({boughtItems.length})
+        Kupione ({boughtItems.length})
       </summary>
       <div className="mt-3 space-y-2">
         {boughtItems.map(item => (

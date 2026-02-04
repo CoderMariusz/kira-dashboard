@@ -36,7 +36,7 @@ export default async function ShoppingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error ? (
+          {error && error.code !== 'PGRST116' ? (
             <EmptyState
               icon="⚠️"
               title="Failed to load shopping list"

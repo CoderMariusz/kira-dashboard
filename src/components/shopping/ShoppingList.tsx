@@ -1,11 +1,13 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useShopping } from '@/lib/hooks/useShopping';
 import { useCategories } from '@/lib/hooks/useCategories';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { CategoryGroup } from './CategoryGroup';
 import { BoughtSection } from './BoughtSection';
+import { AddItemForm } from './AddItemForm';
 
 interface ShoppingListProps {
   /** The shopping list's unique identifier */
@@ -31,9 +33,26 @@ export function ShoppingList({ listId }: ShoppingListProps) {
   const isLoading = itemsLoading || categoriesLoading;
   const error = itemsError || categoriesError;
   
+  // Memoize computed values (must be before early returns — Rules of Hooks)
+  const { boughtCount, totalCount, progressPercent } = useMemo(() => {
+    if (!items || items.length === 0) return { boughtCount: 0, totalCount: 0, progressPercent: 0 };
+    const bought = items.filter(item => item.is_bought).length;
+    const total = items.length;
+    return {
+      boughtCount: bought,
+      totalCount: total,
+      progressPercent: total > 0 ? (bought / total) * 100 : 0,
+    };
+  }, [items]);
+  
   // Show loading skeleton
   if (isLoading) {
-    return <LoadingSkeleton />;
+    return (
+      <div>
+        <AddItemForm listId={listId} />
+        <LoadingSkeleton />
+      </div>
+    );
   }
   
   // Show error state
@@ -50,21 +69,22 @@ export function ShoppingList({ listId }: ShoppingListProps) {
   // Show empty state
   if (!items || items.length === 0) {
     return (
-      <EmptyState
-        icon="🛒"
-        title="No items yet"
-        description="Add your first item to get started"
-      />
+      <div>
+        <AddItemForm listId={listId} />
+        <EmptyState
+          icon="🛒"
+          title="No items yet"
+          description="Add your first item to get started"
+        />
+      </div>
     );
   }
   
-  // Calculate progress with zero-division safety
-  const boughtCount = items.filter(item => item.is_bought).length;
-  const totalCount = items.length;
-  const progressPercent = totalCount > 0 ? (boughtCount / totalCount) * 100 : 0;
-  
   return (
     <div>
+      {/* Add item form */}
+      <AddItemForm listId={listId} />
+      
       {/* Progress bar */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
