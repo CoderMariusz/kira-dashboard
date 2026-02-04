@@ -222,12 +222,24 @@ async function handleShoppingAdd(
     (categories || []).map((c) => [c.name.toLowerCase(), { id: c.id, name: c.name }])
   );
 
+  // Fuzzy category lookup: exact match first, then partial (e.g. "chemia" matches "chemia i higiena")
+  function findCategory(key: string): { id: string; name: string } | undefined {
+    if (!key) return undefined;
+    const exact = categoryMap.get(key);
+    if (exact) return exact;
+    // Partial match: category name starts with or contains the key
+    for (const [name, cat] of categoryMap.entries()) {
+      if (name.startsWith(key) || key.startsWith(name)) return cat;
+    }
+    return undefined;
+  }
+
   const insertedItems: Array<{ id: string; name: string; category_id: string | null }> = [];
 
   for (const item of items) {
     const safeName = sanitizeText(String(item.name), 200);
     const categoryKey = item.category?.toLowerCase() || '';
-    const matchedCategory = categoryMap.get(categoryKey);
+    const matchedCategory = findCategory(categoryKey);
 
     const { data: newItem, error } = await supabase
       .from('shopping_items')
