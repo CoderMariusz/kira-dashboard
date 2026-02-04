@@ -165,7 +165,7 @@ export async function PATCH(
       actor_name: profile.display_name,
       metadata: {
         item_name: sanitizeText(item.name, 200),
-        category: sanitizeText(item.category_name ?? 'Inne', 100),
+        category: 'shopping',
       },
     };
 

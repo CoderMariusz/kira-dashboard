@@ -90,23 +90,19 @@ export function useAddItem(listId: string) {
 
       // Optimistically add temp item
       queryClient.setQueryData<ShoppingItem[]>(['shopping', listId], (old = []) => {
-        const tempItem: ShoppingItem = {
+        const tempItem = {
           id: `temp-${Date.now()}`,
           list_id: listId,
           name: newItem.name,
           quantity: newItem.quantity ?? 1,
-          unit: newItem.unit ?? null,
           category_id: newItem.category_id ?? null,
-          category_name: newItem.category_name ?? 'Inne',
           store: null,
           is_bought: false,
           added_by: null,
           bought_by: null,
-          estimated_price: null,
-          source: 'manual',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        };
+        } as ShoppingItem;
         return [...old, tempItem];
       });
 

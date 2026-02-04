@@ -36,7 +36,6 @@ interface AddItemFormProps {
 export function AddItemForm({ listId }: AddItemFormProps) {
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [unit, setUnit] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +47,6 @@ export function AddItemForm({ listId }: AddItemFormProps) {
   const resetForm = useCallback(() => {
     setName('');
     setQuantity(1);
-    setUnit(null);
     setCategoryId(null);
     setError(null);
   }, []);
@@ -70,7 +68,6 @@ export function AddItemForm({ listId }: AddItemFormProps) {
     mutate({
       name: name.trim(),
       quantity,
-      unit,
       category_id: categoryId,
       category_name: selectedCategory?.name,
     });
@@ -126,26 +123,6 @@ export function AddItemForm({ listId }: AddItemFormProps) {
               disabled={isPending}
               className="w-full px-3 py-2 border rounded-md"
             />
-          </div>
-
-          {/* Unit field */}
-          <div>
-            <label htmlFor="item-unit" className="block text-sm font-medium mb-1">
-              Jednostka
-            </label>
-            <select
-              id="item-unit"
-              value={unit ?? ''}
-              onChange={(e) => setUnit(e.target.value || null)}
-              disabled={isPending}
-              className="w-full px-3 py-2 border rounded-md"
-            >
-              <option value="">-</option>
-              <option value="szt">szt</option>
-              <option value="kg">kg</option>
-              <option value="l">l</option>
-              <option value="opak">opak</option>
-            </select>
           </div>
 
           {/* Category field */}

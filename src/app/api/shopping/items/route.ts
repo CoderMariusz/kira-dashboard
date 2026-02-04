@@ -79,17 +79,13 @@ export async function POST(request: NextRequest) {
 
     // 4. Sanitize and prepare item data
     const safeName = sanitizeText(body.name, 200);
-    const safeCategoryName = sanitizeText(body.category_name ?? 'Inne', 100);
 
-    const itemData: ShoppingItemInsert = {
+    const itemData = {
       list_id: body.list_id,
       name: safeName,
       quantity: body.quantity ?? 1,
-      unit: body.unit ?? null,
       category_id: body.category_id ?? null,
-      category_name: safeCategoryName,
       added_by: profile.id,
-      source: 'manual',
     };
 
     // 5. Insert shopping item
@@ -116,7 +112,7 @@ export async function POST(request: NextRequest) {
       actor_name: profile.display_name,
       metadata: {
         item_name: safeName,
-        category: safeCategoryName,
+        category: body.category_name ?? 'Inne',
       },
     };
 
