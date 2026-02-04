@@ -143,8 +143,7 @@ async function handleTaskCreate(
         ? subtasks.map((t: string) => ({ title: t, done: false }))
         : [],
       created_by: null,
-      source: 'kira',
-      original_message: JSON.stringify(params),
+      assigned_to: assigneeId,
     })
     .select()
     .single();
@@ -222,7 +221,7 @@ async function handleShoppingAdd(
     (categories || []).map((c) => [c.name.toLowerCase(), { id: c.id, name: c.name }])
   );
 
-  const insertedItems: Array<{ id: string; name: string; category_name: string }> = [];
+  const insertedItems: Array<{ id: string; name: string; category_id: string | null }> = [];
 
   for (const item of items) {
     const safeName = sanitizeText(String(item.name), 200);
@@ -235,15 +234,12 @@ async function handleShoppingAdd(
         list_id: listData.id,
         name: safeName,
         quantity: item.quantity ?? 1,
-        unit: item.unit ?? null,
         category_id: matchedCategory?.id ?? null,
-        category_name: matchedCategory?.name ?? item.category ?? 'Inne',
         store: item.store ?? null,
         is_bought: false,
         added_by: null,
-        source: 'kira',
       })
-      .select('id, name, category_name')
+      .select('id, name, category_id')
       .single();
 
     if (error) {
@@ -372,12 +368,13 @@ async function handleShoppingList(
     return { success: true, data: { items: [] }, message: 'Brak aktywnej listy zakupów' };
   }
 
+  // Join with categories to get names
   const { data: items, error } = await supabase
     .from('shopping_items')
-    .select('id, name, quantity, unit, category_name, store, is_bought')
+    .select('id, name, quantity, store, is_bought, category_id, shopping_categories(name)')
     .eq('list_id', listData.id)
     .eq('is_bought', false)
-    .order('category_name');
+    .order('category_id');
 
   if (error) throw new Error(`Shopping list query failed: ${error.message}`);
 
@@ -388,18 +385,18 @@ async function handleShoppingList(
   }
 
   // Group by category
-  const grouped: Record<string, typeof itemList> = {};
+  const grouped: Record<string, any[]> = {};
   for (const item of itemList) {
-    const cat = item.category_name || 'Inne';
+    const cat = (item as any).shopping_categories?.name || 'Inne';
     if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(item);
+    grouped[cat].push({ ...item, category_name: cat });
   }
 
   let message = `Na liście jest ${itemList.length} ${itemList.length === 1 ? 'produkt' : 'produktów'}:\n`;
   for (const [category, catItems] of Object.entries(grouped)) {
     message += `\n📦 ${category}:\n`;
-    message += catItems.map(i => {
-      const qty = i.quantity > 1 ? `${i.quantity}${i.unit ? ' ' + i.unit : 'x'} ` : '';
+    message += catItems.map((i: any) => {
+      const qty = i.quantity > 1 ? `${i.quantity}x ` : '';
       return `• ${qty}${i.name}`;
     }).join('\n');
   }
