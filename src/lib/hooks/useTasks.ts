@@ -127,7 +127,8 @@ async function updateTask({ id, updates }: UpdateTaskParams): Promise<Task> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dbUpdates: Record<string, any> = { ...updates };
   if ('assignee_id' in dbUpdates) {
-    dbUpdates.assigned_to = dbUpdates.assignee_id;
+    // Convert empty string to null (PostgREST rejects '' for UUID columns)
+    dbUpdates.assigned_to = dbUpdates.assignee_id || null;
     delete dbUpdates.assignee_id;
   }
   

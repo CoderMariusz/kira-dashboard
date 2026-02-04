@@ -203,7 +203,7 @@ export function Board({ type }: BoardProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex flex-col gap-4 md:flex-row md:overflow-x-auto pb-4">
         {columns.map((col) => (
           <Column
             key={col.key}

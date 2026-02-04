@@ -35,7 +35,7 @@ export function Column({ boardId, config, tasks, onTaskClick, className }: Colum
   const taskIds = tasks.map((t) => t.id);
 
   return (
-    <div className={cn('flex min-w-[280px] flex-1 flex-col', className)}>
+    <div className={cn('flex w-full md:min-w-[280px] flex-1 flex-col', className)}>
       {/* ═══ COLUMN HEADER ═══ */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -59,7 +59,7 @@ export function Column({ boardId, config, tasks, onTaskClick, className }: Colum
           ref={setNodeRef}
           className={cn(
             'flex flex-1 flex-col gap-2 rounded-lg p-2 transition-colors',
-            'min-h-[200px]',
+            'min-h-[80px] md:min-h-[200px]',
             isOver
               ? 'bg-blue-50/80 ring-2 ring-blue-200'
               : 'bg-gray-50/50'
