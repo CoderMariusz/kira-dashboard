@@ -83,6 +83,24 @@ export function Board({ type }: BoardProps) {
   // ═══ FILTERED TASKS ═══
   const tasksByColumn = useFilteredTasks(tasks, columns, filters);
 
+  // Get unique assignees from tasks for filter (MUST be before any early return!)
+  const uniqueAssignees = useMemo(() => {
+    const seen = new Set<string>();
+    const assignees: { id: string; display_name: string }[] = [];
+    
+    for (const task of tasks ?? []) {
+      if (task.assignee && !seen.has(task.assignee.id)) {
+        seen.add(task.assignee.id);
+        assignees.push({
+          id: task.assignee.id,
+          display_name: task.assignee.display_name
+        });
+      }
+    }
+    
+    return assignees;
+  }, [tasks]);
+
   // ═══ DRAG HANDLERS ═══
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
@@ -178,24 +196,6 @@ export function Board({ type }: BoardProps) {
       </div>
     );
   }
-
-  // Get unique assignees from tasks for filter (MUST be before any early return!)
-  const uniqueAssignees = useMemo(() => {
-    const seen = new Set<string>();
-    const assignees: { id: string; display_name: string }[] = [];
-    
-    for (const task of tasks ?? []) {
-      if (task.assignee && !seen.has(task.assignee.id)) {
-        seen.add(task.assignee.id);
-        assignees.push({
-          id: task.assignee.id,
-          display_name: task.assignee.display_name
-        });
-      }
-    }
-    
-    return assignees;
-  }, [tasks]);
 
   // ═══ NO BOARD STATE ═══
   if (!board) {
