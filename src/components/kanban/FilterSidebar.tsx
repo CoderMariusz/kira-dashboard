@@ -1,16 +1,3 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ConfirmDialog } from '@/components/kanban/ConfirmDialog';
-import { toast } from 'sonner';
-import { toggleInArray, localStorage } from '@/lib/utils/array';
-import type { FilterState } from '@/lib/types/filters';
-import type { Label as LabelType, Profile } from '@/lib/types/app';
-
 /**
  * FilterSidebar Component
  * Kira Dashboard - Sidebar for filtering tasks with saved presets

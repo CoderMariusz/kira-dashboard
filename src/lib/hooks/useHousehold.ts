@@ -60,7 +60,7 @@ export function useHousehold(profileId?: string) {
         const { data: userProfile, error: userProfileError } = await supabase
           .from('profiles')
           .select('id, household_id')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .single() as { data: Pick<Profile, 'id' | 'household_id'> | null; error: Error | null };
 
         if (userProfileError) throw userProfileError;
@@ -116,7 +116,7 @@ export function useHouseholdId() {
       const { data: profile } = await supabase
         .from('profiles')
         .select('household_id')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .single() as { data: Pick<Profile, 'household_id'> | null; error: Error | null };
 
       return profile?.household_id ?? null;
