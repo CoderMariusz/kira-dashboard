@@ -61,10 +61,11 @@ describe('T2: Responsive Typography', () => {
       }} onEdit={vi.fn()} onDelete={vi.fn()} />);
 
       const bodyText = screen.getByText('This is body text');
-      expect(bodyText).toHaveClass('text-base');
+      // Compact description: text-xs on small phones, sm:text-sm on larger
+      expect(bodyText).toHaveClass('text-xs');
     });
 
-    it('AC2.1: body text should use md:text-sm on desktop (14px)', async () => {
+    it('AC2.1: body text should use sm:text-sm on larger screens', async () => {
       const { TaskCard } = await import('@/components/kanban/TaskCard');
 
       render(<TaskCard task={{
@@ -78,7 +79,7 @@ describe('T2: Responsive Typography', () => {
       }} onEdit={vi.fn()} onDelete={vi.fn()} />);
 
       const bodyText = screen.getByText('This is body text');
-      expect(bodyText).toHaveClass('md:text-sm');
+      expect(bodyText).toHaveClass('sm:text-sm');
     });
   });
 

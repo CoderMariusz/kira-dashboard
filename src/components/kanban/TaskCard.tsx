@@ -71,14 +71,14 @@ export function TaskCard({
       role="article"
       onClick={onClick}
       className={cn(
-        'cursor-pointer border bg-white p-3 shadow-sm transition-shadow hover:shadow-md overflow-hidden whitespace-normal',
+        'cursor-pointer border bg-white p-2 sm:p-3 shadow-sm transition-shadow hover:shadow-md overflow-hidden whitespace-normal',
         isDragging && 'rotate-2 opacity-90 shadow-lg',
         isGhost && 'opacity-30',
         className
       )}
     >
       {/* Row 1: Priority + Labels */}
-      <div className={cn("mb-2 flex flex-wrap items-center gap-1", RESPONSIVE_TEXT.SMALL)}>
+      <div className={cn("mb-1 sm:mb-2 flex flex-wrap items-center gap-1", RESPONSIVE_TEXT.SMALL)}>
         <PriorityBadge priority={task.priority as TaskPriority} />
         {(task.labels ?? []).slice(0, 3).map((label) =>
           typeof label === 'string' ? null : (
@@ -88,13 +88,13 @@ export function TaskCard({
       </div>
 
       {/* Row 2: Title */}
-      <h3 className={cn("mb-2 font-medium leading-snug text-gray-900", RESPONSIVE_TEXT.BASE)}>
+      <h3 className={cn("mb-1 sm:mb-2 font-medium leading-snug text-gray-900 text-sm sm:text-base")}>
         {task.title}
       </h3>
 
-      {/* Row 2.5: Description */}
+      {/* Row 2.5: Description — hidden on small phones, shown on sm+ */}
       {task.description && (
-        <p className={cn("mb-2 text-gray-600", RESPONSIVE_TEXT.BASE)}>
+        <p className={cn("mb-1 sm:mb-2 text-gray-600 text-xs sm:text-sm line-clamp-2")}>
           {task.description}
         </p>
       )}
@@ -109,7 +109,8 @@ export function TaskCard({
               className={cn("flex items-center gap-1", RESPONSIVE_TEXT.SMALL, dueDate.isOverdue && "font-medium text-red-600")}
             >
               <Calendar className="h-3 w-3" />
-              <span>{dueDate.text} ({task.due_date})</span>
+              <span className="sm:hidden">{dueDate.text}</span>
+              <span className="hidden sm:inline">{dueDate.text} ({task.due_date})</span>
             </span>
           )}
 

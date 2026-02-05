@@ -19,13 +19,18 @@ export const TOUCH_TARGET = {
 /**
  * Kanban board layout classes
  * Shared between Board and BoardSkeleton for consistency
+ *
+ * Layout strategy:
+ * - Small phones (<640px): columns stack vertically, full width
+ * - Larger phones/tablets (640-1024px): horizontal scroll with snap
+ * - Desktop (1024px+): CSS grid, all columns visible side by side
  */
 export const BOARD_LAYOUT = {
-  /** Container classes for horizontal scrolling board */
-  CONTAINER: 'flex overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 md:grid md:overflow-x-hidden pb-4',
+  /** Container: vertical stack → horizontal scroll → grid */
+  CONTAINER: 'flex flex-col gap-3 sm:flex-row sm:overflow-x-auto sm:snap-x sm:snap-mandatory sm:scrollbar-hide sm:gap-4 lg:grid lg:overflow-x-hidden pb-4',
   
-  /** Column classes for swipeable columns on mobile */
-  COLUMN: 'flex flex-none w-[90vw] max-w-full snap-center md:w-full md:min-w-[280px] md:flex-1 flex-col',
+  /** Column: full width stacked → swipeable → grid cell */
+  COLUMN: 'flex flex-col sm:flex-none sm:w-[85vw] sm:max-w-full sm:snap-center lg:w-full lg:min-w-[200px] lg:flex-1',
 } as const;
 
 /**

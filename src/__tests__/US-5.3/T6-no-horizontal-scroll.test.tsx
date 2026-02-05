@@ -122,7 +122,7 @@ describe('T6: No Horizontal Scroll', () => {
   });
 
   describe('Board Component - No Horizontal Overflow (AC6.2)', () => {
-    it('AC6.2: Board should not cause horizontal scroll on mobile', async () => {
+    it('AC6.2: Board should stack vertically on small phones (no horizontal scroll)', async () => {
       const { Board } = await import('@/components/kanban/Board');
       const Wrapper = createWrapper();
 
@@ -130,8 +130,10 @@ describe('T6: No Horizontal Scroll', () => {
 
       const boardContainer = screen.getByTestId('kanban-board');
       expect(boardContainer).not.toHaveClass('overflow-x-visible');
-      // Mobile: overflow-x-auto for controlled horizontal scroll (snap)
-      expect(boardContainer).toHaveClass('overflow-x-auto');
+      // Small phones: vertical stack (flex-col), no horizontal scroll
+      expect(boardContainer).toHaveClass('flex-col');
+      // sm+: controlled horizontal scroll
+      expect(boardContainer).toHaveClass('sm:overflow-x-auto');
     });
 
     it('AC6.2: Board should not cause horizontal scroll on tablet', async () => {
@@ -141,21 +143,19 @@ describe('T6: No Horizontal Scroll', () => {
       render(<Wrapper><Board type="home" /></Wrapper>);
 
       const boardContainer = screen.getByTestId('kanban-board');
-      expect(boardContainer).not.toHaveClass('md:overflow-x-visible');
-      // Desktop/tablet: overflow hidden via md: breakpoint
-      expect(boardContainer).toHaveClass('md:overflow-x-hidden');
+      // Desktop: grid with overflow hidden
+      expect(boardContainer).toHaveClass('lg:overflow-x-hidden');
     });
 
-    it('AC6.2: Board should not cause horizontal scroll on desktop', async () => {
+    it('AC6.2: Board should use grid on desktop (lg+)', async () => {
       const { Board } = await import('@/components/kanban/Board');
       const Wrapper = createWrapper();
 
       render(<Wrapper><Board type="home" /></Wrapper>);
 
       const boardContainer = screen.getByTestId('kanban-board');
-      expect(boardContainer).not.toHaveClass('overflow-x-visible');
-      // Desktop uses md:grid + md:overflow-x-hidden (md covers lg+)
-      expect(boardContainer).toHaveClass('md:overflow-x-hidden');
+      expect(boardContainer).toHaveClass('lg:grid');
+      expect(boardContainer).toHaveClass('lg:overflow-x-hidden');
     });
   });
 
@@ -172,8 +172,8 @@ describe('T6: No Horizontal Scroll', () => {
       /></Wrapper>);
 
       const column = screen.getByRole('region');
-      // Column has max-w-full to prevent overflow + md:w-full for desktop
-      expect(column).toHaveClass('max-w-full');
+      // Column has sm:max-w-full to prevent overflow + lg:w-full for desktop
+      expect(column).toHaveClass('flex-col');
       expect(column).not.toHaveClass('w-screen', 'min-w-screen');
     });
   });

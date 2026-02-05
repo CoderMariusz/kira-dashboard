@@ -81,39 +81,44 @@ describe('T3: Kanban Swipeable Columns', () => {
   });
 
   describe('Board Component - Mobile Layout (AC3.1)', () => {
-    it('AC3.1: mobile Board should have overflow-x-auto for horizontal scrolling', async () => {
+    it('AC3.1: mobile Board should stack vertically on small screens and scroll on sm+', async () => {
       const { Board } = await import('@/components/kanban/Board');
       const Wrapper = createWrapper();
 
       render(<Wrapper><Board type="home" /></Wrapper>);
 
       const boardContainer = screen.getByTestId('kanban-board');
-      expect(boardContainer).toHaveClass('overflow-x-auto');
+      // Small phones: vertical stack (flex-col)
+      expect(boardContainer).toHaveClass('flex-col');
+      // Larger phones: horizontal scroll with snap
+      expect(boardContainer).toHaveClass('sm:flex-row');
+      expect(boardContainer).toHaveClass('sm:overflow-x-auto');
     });
 
-    it('AC3.1: mobile Board should have snap-x for snap scrolling', async () => {
+    it('AC3.1: Board should have snap scrolling on sm+ breakpoint', async () => {
       const { Board } = await import('@/components/kanban/Board');
       const Wrapper = createWrapper();
 
       render(<Wrapper><Board type="home" /></Wrapper>);
 
       const boardContainer = screen.getByTestId('kanban-board');
-      expect(boardContainer).toHaveClass('snap-x');
+      expect(boardContainer).toHaveClass('sm:snap-x');
+      expect(boardContainer).toHaveClass('sm:snap-mandatory');
     });
 
-    it('AC3.1: mobile Board should have snap-mandatory for forced snap', async () => {
+    it('AC3.1: Board should hide scrollbar on sm+', async () => {
       const { Board } = await import('@/components/kanban/Board');
       const Wrapper = createWrapper();
 
       render(<Wrapper><Board type="home" /></Wrapper>);
 
       const boardContainer = screen.getByTestId('kanban-board');
-      expect(boardContainer).toHaveClass('snap-mandatory');
+      expect(boardContainer).toHaveClass('sm:scrollbar-hide');
     });
   });
 
   describe('Column Component - Mobile Sizing (AC3.2)', () => {
-    it('AC3.2: each column should be flex-none to prevent shrinking', async () => {
+    it('AC3.2: each column should be flex-none on sm+ to prevent shrinking', async () => {
       const { Column } = await import('@/components/kanban/Column');
       const Wrapper = createWrapper();
 
@@ -125,10 +130,10 @@ describe('T3: Kanban Swipeable Columns', () => {
       /></Wrapper>);
 
       const column = screen.getByRole('region');
-      expect(column).toHaveClass('flex-none');
+      expect(column).toHaveClass('sm:flex-none');
     });
 
-    it('AC3.2: each column should be w-[90vw] on mobile (90% viewport width)', async () => {
+    it('AC3.2: each column should be sm:w-[85vw] on tablets (85% viewport width)', async () => {
       const { Column } = await import('@/components/kanban/Column');
       const Wrapper = createWrapper();
 
@@ -140,10 +145,10 @@ describe('T3: Kanban Swipeable Columns', () => {
       /></Wrapper>);
 
       const column = screen.getByRole('region');
-      expect(column).toHaveClass('w-[90vw]');
+      expect(column).toHaveClass('sm:w-[85vw]');
     });
 
-    it('AC3.2: each column should have snap-center to align in viewport', async () => {
+    it('AC3.2: each column should have snap-center on sm+ to align in viewport', async () => {
       const { Column } = await import('@/components/kanban/Column');
       const Wrapper = createWrapper();
 
@@ -155,19 +160,19 @@ describe('T3: Kanban Swipeable Columns', () => {
       /></Wrapper>);
 
       const column = screen.getByRole('region');
-      expect(column).toHaveClass('snap-center');
+      expect(column).toHaveClass('sm:snap-center');
     });
   });
 
   describe('Board Component - Desktop Layout (AC3.3)', () => {
-    it('AC3.3: desktop Board should use grid layout', async () => {
+    it('AC3.3: desktop Board should use grid layout on lg+', async () => {
       const { Board } = await import('@/components/kanban/Board');
       const Wrapper = createWrapper();
 
       render(<Wrapper><Board type="home" /></Wrapper>);
 
       const boardContainer = screen.getByTestId('kanban-board');
-      expect(boardContainer).toHaveClass('md:grid');
+      expect(boardContainer).toHaveClass('lg:grid');
     });
   });
 
