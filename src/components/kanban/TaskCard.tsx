@@ -9,10 +9,10 @@ import { RESPONSIVE_TEXT } from '@/lib/constants/responsive';
 import { PriorityBadge } from './PriorityBadge';
 import { LabelBadge } from './LabelBadge';
 import { cn } from '@/lib/utils';
-import type { TaskWithAssignee, TaskPriority } from '@/lib/types/app';
+import type { TaskWithAssignee, TaskPriority, Label } from '@/lib/types/app';
 
 interface TaskCardProps {
-  task: TaskWithAssignee;
+  task: Omit<TaskWithAssignee, 'labels'> & { labels?: Label[] | string[] };
   onClick?: () => void;
   /** Czy karta jest aktualnie przeciągana (drag overlay) */
   isDragging?: boolean;
@@ -80,9 +80,11 @@ export function TaskCard({
       {/* Row 1: Priority + Labels */}
       <div className={cn("mb-2 flex flex-wrap items-center gap-1", RESPONSIVE_TEXT.SMALL)}>
         <PriorityBadge priority={task.priority as TaskPriority} />
-        {((task.labels as string[]) ?? []).slice(0, 3).map((label) => (
-          <LabelBadge key={label} label={label} />
-        ))}
+        {(task.labels ?? []).slice(0, 3).map((label) =>
+          typeof label === 'string' ? null : (
+            <LabelBadge key={label.id} label={label} />
+          )
+        )}
       </div>
 
       {/* Row 2: Title */}

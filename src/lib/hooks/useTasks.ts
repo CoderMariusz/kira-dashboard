@@ -8,7 +8,7 @@ import type { Task, TaskWithAssignee, TaskColumn } from '@/lib/types/app';
 // FETCH: Tasks by board_id (z assignee join)
 // ═══════════════════════════════════════════════════════════
 
-async function fetchTasksByBoard(boardId: string): Promise<TaskWithAssignee[]> {
+async function fetchTasksByBoard(boardId: string): Promise<(TaskWithAssignee & { labels: any[] })[]> {
   const supabase = createClient();
   
   const { data, error } = await supabase
@@ -19,20 +19,28 @@ async function fetchTasksByBoard(boardId: string): Promise<TaskWithAssignee[]> {
         id,
         display_name,
         avatar_url
+      ),
+      labels:task_labels(
+        labels(*)
       )
     `)
     .eq('board_id', boardId)
     .order('position', { ascending: true });
 
   if (error) throw error;
-  return (data ?? []) as TaskWithAssignee[];
+  
+  // Transform labels from nested structure to flat array
+  return (data ?? []).map((task: any) => ({
+    ...task,
+    labels: (task.labels ?? []).map((tl: any) => tl.labels)
+  })) as (TaskWithAssignee & { labels: any[] })[];
 }
 
 // ═══════════════════════════════════════════════════════════
 // FETCH: Pojedynczy task po ID (z assignee join)
 // ═══════════════════════════════════════════════════════════
 
-async function fetchTaskById(taskId: string): Promise<TaskWithAssignee | null> {
+async function fetchTaskById(taskId: string): Promise<(TaskWithAssignee & { labels: any[] }) | null> {
   const supabase = createClient();
   
   const { data, error } = await supabase
@@ -43,6 +51,9 @@ async function fetchTaskById(taskId: string): Promise<TaskWithAssignee | null> {
         id,
         display_name,
         avatar_url
+      ),
+      labels:task_labels(
+        labels(*)
       )
     `)
     .eq('id', taskId)
@@ -53,7 +64,13 @@ async function fetchTaskById(taskId: string): Promise<TaskWithAssignee | null> {
     throw error;
   }
 
-  return data as TaskWithAssignee;
+  if (!data) return null;
+  
+  // Transform labels from nested structure to flat array
+  return {
+    ...data,
+    labels: (data.labels ?? []).map((tl: any) => tl.labels)
+  } as TaskWithAssignee & { labels: any[] };
 }
 
 // ═══════════════════════════════════════════════════════════

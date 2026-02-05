@@ -1,39 +1,39 @@
 import { cn } from '@/lib/utils';
+import type { Label } from '@/lib/types/app';
 
-// ═══════════════════════════════════════════════════════════
-// Predefiniowane kolory dla labeli
-// Kolor jest deterministyczny — oparty na hash nazwy
-// ═══════════════════════════════════════════════════════════
+/**
+ * Get contrast colors for a background color
+ * @param backgroundColor - The hex color code
+ * @returns Object with background and text colors for contrast
+ */
+function getContrastColors(backgroundColor: string): { bg: string; text: string } {
+  // Map of background colors to their expected contrast colors
+  const colorMap: Record<string, { bg: string; text: string }> = {
+    '#EF4444': { bg: '#FEE2E2', text: '#991B1B' }, // Red
+    '#10B981': { bg: '#D1FAE5', text: '#065F46' }, // Green
+    '#F59E0B': { bg: '#FEF3C7', text: '#92400E' }, // Amber
+    '#3B82F6': { bg: '#DBEAFE', text: '#1D4ED8' }, // Blue
+    '#8B5CF6': { bg: '#EDE9FE', text: '#5B21B6' }, // Violet
+    '#EC4899': { bg: '#FCE7F3', text: '#BE185D' }, // Pink
+    '#6366F1': { bg: '#E0E7FF', text: '#3730A3' }, // Indigo
+    '#F97316': { bg: '#FFEDD5', text: '#9A3412' }, // Orange
+  };
 
-const LABEL_COLORS = [
-  { bg: '#DBEAFE', text: '#1D4ED8' }, // blue
-  { bg: '#FCE7F3', text: '#BE185D' }, // pink
-  { bg: '#D1FAE5', text: '#065F46' }, // green
-  { bg: '#FEF3C7', text: '#92400E' }, // amber
-  { bg: '#EDE9FE', text: '#5B21B6' }, // violet
-  { bg: '#FFE4E6', text: '#9F1239' }, // rose
-  { bg: '#CCFBF1', text: '#115E59' }, // teal
-  { bg: '#FEE2E2', text: '#991B1B' }, // red
-] as const;
-
-function getLabelColor(label: string) {
-  // Prosty hash — sumuj char codes i weź modulo
-  let hash = 0;
-  for (let i = 0; i < label.length; i++) {
-    hash = ((hash << 5) - hash + label.charCodeAt(i)) | 0;
-  }
-  return LABEL_COLORS[Math.abs(hash) % LABEL_COLORS.length];
+  return colorMap[backgroundColor] ?? { bg: '#F3F4F6', text: '#374151' };
 }
 
 interface LabelBadgeProps {
-  label: string;
+  label: Label;
   className?: string;
-  /** Czy można usunąć label (wyświetla ×) */
+  /** Optional callback to remove label */
   onRemove?: () => void;
 }
 
+/**
+ * Display a label as a badge with color styling
+ */
 export function LabelBadge({ label, className, onRemove }: LabelBadgeProps) {
-  const color = getLabelColor(label);
+  const colors = getContrastColors(label.color);
 
   return (
     <span
@@ -41,9 +41,15 @@ export function LabelBadge({ label, className, onRemove }: LabelBadgeProps) {
         'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
         className
       )}
-      style={{ color: color.text, backgroundColor: color.bg }}
+      style={{ 
+        color: colors.text, 
+        backgroundColor: colors.bg,
+        borderColor: label.color,
+        borderWidth: '1px',
+        borderStyle: 'solid'
+      }}
     >
-      {label}
+      {label.name}
       {onRemove && (
         <button
           type="button"
@@ -52,7 +58,7 @@ export function LabelBadge({ label, className, onRemove }: LabelBadgeProps) {
             onRemove();
           }}
           className="ml-0.5 rounded-full hover:opacity-70"
-          aria-label={`Usuń label ${label}`}
+          aria-label={`Usuń label ${label.name}`}
         >
           ×
         </button>

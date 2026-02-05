@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
+import { Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   DndContext,
   closestCorners,
@@ -16,13 +18,18 @@ import { useBoard } from '@/lib/hooks/useBoard';
 import { useTasks, useMoveTask } from '@/lib/hooks/useTasks';
 import { useTasksRealtime } from '@/lib/hooks/useRealtime';
 import { useUIStore } from '@/lib/store';
+import { useHousehold } from '@/lib/hooks/useHousehold';
+import { useLabels } from '@/lib/hooks/useLabels';
+import { useFilteredTasks } from '@/lib/hooks/useFilteredTasks';
 import { BOARD_COLUMNS } from '@/lib/utils/constants';
 import { BOARD_LAYOUT } from '@/lib/constants/responsive';
 import { Column } from './Column';
 import { TaskDragOverlay } from './DragOverlay';
 import { TaskModal } from './TaskModal';
 import { BoardSkeleton } from './BoardSkeleton';
+import { FilterSidebar } from './FilterSidebar';
 import type { BoardType, ColumnConfig, TaskColumn, TaskWithAssignee } from '@/lib/types/app';
+import type { FilterState } from '@/lib/types/filters';
 
 interface BoardProps {
   type: BoardType;
@@ -30,13 +37,24 @@ interface BoardProps {
 
 export function Board({ type }: BoardProps) {
   // ═══ DATA ═══
+  const { data: household } = useHousehold();
   const { data: board, isLoading: boardLoading, error: boardError } = useBoard(type);
   const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasks(board?.id);
+  const { data: labels = [] } = useLabels(household?.id);
   const moveTaskMutation = useMoveTask(board?.id ?? '');
   const openTaskModal = useUIStore((s) => s.openTaskModal);
 
   // ═══ REALTIME ═══
   useTasksRealtime(board?.id);
+
+  // ═══ FILTER STATE ═══
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    labels: [],
+    priorities: [],
+    assignees: [],
+    search: '',
+  });
 
   // ═══ DRAG STATE ═══
   const [activeTask, setActiveTask] = useState<TaskWithAssignee | null>(null);
@@ -62,31 +80,8 @@ export function Board({ type }: BoardProps) {
     return [...(BOARD_COLUMNS[type] ?? BOARD_COLUMNS.home)] as ColumnConfig[];
   }, [type]);
 
-  // ═══ TASKS PER COLUMN ═══
-  const tasksByColumn = useMemo(() => {
-    const grouped: Record<string, TaskWithAssignee[]> = {};
-
-    for (const col of columns) {
-      grouped[col.key] = [];
-    }
-
-    if (tasks) {
-      for (const task of tasks) {
-        const col = task.column as string;
-        if (grouped[col]) {
-          grouped[col].push(task);
-        } else {
-          grouped[columns[0].key]?.push(task);
-        }
-      }
-
-      for (const col of Object.keys(grouped)) {
-        grouped[col].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-      }
-    }
-
-    return grouped;
-  }, [tasks, columns]);
+  // ═══ FILTERED TASKS ═══
+  const tasksByColumn = useFilteredTasks(tasks, columns, filters);
 
   // ═══ DRAG HANDLERS ═══
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -197,6 +192,32 @@ export function Board({ type }: BoardProps) {
   }
 
   // ═══ RENDER ═══
+  
+  // Calculate active filter count for badge
+  const activeFilterCount =
+    filters.labels.length +
+    filters.priorities.length +
+    filters.assignees.length +
+    (filters.search ? 1 : 0);
+
+  // Get unique assignees from tasks for filter
+  const uniqueAssignees = useMemo(() => {
+    const seen = new Set<string>();
+    const assignees: { id: string; display_name: string }[] = [];
+    
+    for (const task of tasks ?? []) {
+      if (task.assignee && !seen.has(task.assignee.id)) {
+        seen.add(task.assignee.id);
+        assignees.push({
+          id: task.assignee.id,
+          display_name: task.assignee.display_name
+        });
+      }
+    }
+    
+    return assignees;
+  }, [tasks]);
+
   return (
     <DndContext
       sensors={sensors}
@@ -205,6 +226,26 @@ export function Board({ type }: BoardProps) {
       onDragEnd={handleDragEnd}
     >
       <>
+        {/* Header with filter button */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">{board?.name}</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFilterOpen(!filterOpen)}
+            aria-label="Filtry"
+            className="relative"
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Filtry
+            {activeFilterCount > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-semibold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+        </div>
+
         <div data-testid="kanban-board" className={BOARD_LAYOUT.CONTAINER}>
           {columns.map((col) => (
             <Column
@@ -222,6 +263,16 @@ export function Board({ type }: BoardProps) {
 
         {/* Modal tworzenia/edycji zadania */}
         <TaskModal boardType={type} boardId={board.id} />
+
+        {/* Filter Sidebar */}
+        <FilterSidebar
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          filters={filters}
+          onFiltersChange={setFilters}
+          labels={labels}
+          assignees={uniqueAssignees}
+        />
       </>
     </DndContext>
   );

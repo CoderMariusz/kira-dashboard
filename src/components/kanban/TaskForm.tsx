@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PRIORITIES, BOARD_COLUMNS } from '@/lib/utils/constants';
+import { toggleInArray } from '@/lib/utils/array';
 import {
   taskFormSchema,
   defaultTaskValues,
@@ -22,7 +23,9 @@ import {
 } from '@/lib/validations/task';
 import { LabelBadge } from './LabelBadge';
 import { SubtaskList } from './SubtaskList';
-import type { BoardType } from '@/lib/types/app';
+import { useLabels } from '@/lib/hooks/useLabels';
+import { useHousehold } from '@/lib/hooks/useHousehold';
+import type { BoardType, Label as LabelType } from '@/lib/types/app';
 
 interface TaskFormProps {
   /** Początkowe wartości (dla edycji — US-2.4) */
@@ -44,7 +47,9 @@ export function TaskForm({
   onSubmit,
   onCancel,
 }: TaskFormProps) {
-  const [newLabel, setNewLabel] = useState('');
+  // ═══ DATA ═══
+  const { data: household } = useHousehold();
+  const { data: dbLabels = [] } = useLabels(household?.id);
 
   // ═══ FORM ═══
   const form = useForm<TaskFormValues>({
@@ -64,27 +69,22 @@ export function TaskForm({
     formState: { errors },
   } = form;
 
-  // Watch labels dla real-time display
-  const currentLabels = watch('labels') ?? [];
+  // Watch labels - now contains label IDs (strings)
+  const currentLabelIds = watch('labels') ?? [];
   const currentSubtasks = watch('subtasks') ?? [];
 
   // Kolumny dostępne dla tego boardu
   const availableColumns = BOARD_COLUMNS[boardType];
 
   // ═══ LABEL MANAGEMENT ═══
-  const addLabel = () => {
-    const label = newLabel.trim();
-    if (!label || currentLabels.includes(label)) return;
-    setValue('labels', [...currentLabels, label]);
-    setNewLabel('');
+  const toggleLabel = (labelId: string) => {
+    setValue('labels', toggleInArray(currentLabelIds, labelId));
   };
 
-  const removeLabel = (labelToRemove: string) => {
-    setValue(
-      'labels',
-      currentLabels.filter((l) => l !== labelToRemove)
-    );
-  };
+  // Map label IDs to Label objects for display
+  const selectedLabels: LabelType[] = currentLabelIds
+    .map((id) => dbLabels.find((l) => l.id === id))
+    .filter((l): l is LabelType => l !== undefined);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -181,33 +181,39 @@ export function TaskForm({
       {/* ═══ LABELS ═══ */}
       <div className="space-y-1.5">
         <Label>Etykiety</Label>
-        {/* Wyświetl istniejące labele */}
-        {currentLabels.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {currentLabels.map((label) => (
+        
+        {/* Selected labels display */}
+        {selectedLabels.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {selectedLabels.map((label) => (
               <LabelBadge
-                key={label}
+                key={label.id}
                 label={label}
-                onRemove={() => removeLabel(label)}
+                onRemove={() => toggleLabel(label.id)}
               />
             ))}
           </div>
         )}
-        {/* Input do dodawania nowego labela */}
-        <div className="flex items-center gap-2">
-          <Input
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addLabel();
-              }
-            }}
-            placeholder="Dodaj etykietę + Enter"
-            className="h-8 text-sm"
-          />
-        </div>
+
+        {/* Available labels as selectable options */}
+        {dbLabels.length > 0 && (
+          <div className="space-y-1 border-t pt-2">
+            {dbLabels.map((label) => (
+              <label
+                key={label.id}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={currentLabelIds.includes(label.id)}
+                  onChange={() => toggleLabel(label.id)}
+                  className="rounded"
+                />
+                <LabelBadge label={label} />
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ═══ SUBTASKS ═══ */}

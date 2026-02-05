@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Epic 7: Advanced Features
+
+### Added
+- **US-7.1: Household Invite System** — Email/link invites via SendGrid, accept flow, member management
+- **US-7.2: Labels & Filters** — DB-backed labels (replacing text[] tags), FilterSidebar with search/priority/assignee/label filters, saved filter presets (localStorage)
+- **US-7.3: Analytics Dashboard** — Overview cards, completion trend (line chart), priority distribution (pie chart), shopping categories (bar chart), activity heatmap (CSS grid), CSV export
+
+### Changed
+- TaskCard now displays DB-backed Label objects with custom colors
+- Board component integrates FilterSidebar with active filter count badge
+- TaskForm includes label selector with multi-select toggle
+
+### Infrastructure
+- New shared utilities: `toggleInArray()`, `generateDateArray()`, `isValidEmail()`
+- New shared types: `FilterState`, `HouseholdInvite`, analytics types
+- ChartCard wrapper component for consistent chart layout
+
+---
+
 ## [Unreleased]
 
 ### Added (US-5.3 — Mobile-First Responsive Design)

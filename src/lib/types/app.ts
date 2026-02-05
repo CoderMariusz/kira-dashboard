@@ -22,6 +22,9 @@ export type Task = Tables<'tasks'>;
 export type ShoppingList = Tables<'shopping_lists'>;
 export type ShoppingItem = Tables<'shopping_items'>;
 export type ActivityLog = Tables<'activity_log'>;
+export type HouseholdInvite = Tables<'household_invites'>;
+export type Label = Tables<'labels'>;
+export type TaskLabel = Tables<'task_labels'>;
 
 // ═══════════════════════════════════════════════════════════
 // Rozszerzone typy (z join-ami)
