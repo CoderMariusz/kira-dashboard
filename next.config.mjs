@@ -9,6 +9,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Silence Turbopack warning about missing turbopack config when webpack
+  // config is present (added by @serwist/next). Build uses --webpack flag.
+  turbopack: {},
 };
 
 const withSerwist = withSerwistInit({
