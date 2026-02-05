@@ -179,28 +179,7 @@ export function Board({ type }: BoardProps) {
     );
   }
 
-  // ═══ NO BOARD STATE ═══
-  if (!board) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 p-8 text-center">
-        <p className="text-sm text-gray-500">
-          Tablica &quot;{type === 'home' ? 'Dom' : 'Praca'}&quot; nie została jeszcze
-          utworzona.
-        </p>
-      </div>
-    );
-  }
-
-  // ═══ RENDER ═══
-  
-  // Calculate active filter count for badge
-  const activeFilterCount =
-    filters.labels.length +
-    filters.priorities.length +
-    filters.assignees.length +
-    (filters.search ? 1 : 0);
-
-  // Get unique assignees from tasks for filter
+  // Get unique assignees from tasks for filter (MUST be before any early return!)
   const uniqueAssignees = useMemo(() => {
     const seen = new Set<string>();
     const assignees: { id: string; display_name: string }[] = [];
@@ -217,6 +196,27 @@ export function Board({ type }: BoardProps) {
     
     return assignees;
   }, [tasks]);
+
+  // ═══ NO BOARD STATE ═══
+  if (!board) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 p-8 text-center">
+        <p className="text-sm text-gray-500">
+          Tablica &quot;{type === 'home' ? 'Dom' : 'Praca'}&quot; nie została jeszcze
+          utworzona.
+        </p>
+      </div>
+    );
+  }
+
+  // ═══ RENDER ═══
+
+  // Calculate active filter count for badge
+  const activeFilterCount =
+    filters.labels.length +
+    filters.priorities.length +
+    filters.assignees.length +
+    (filters.search ? 1 : 0);
 
   return (
     <DndContext
