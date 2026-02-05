@@ -1,10 +1,9 @@
 'use client';
 
-import { formatDistanceToNow } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import { CheckCircle, Plus, Trash, ShoppingCart, Bell, Edit, LayoutGrid } from 'lucide-react';
 import type { ActivityLog } from '@/lib/types/database';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ActivityAvatar } from './ActivityAvatar';
+import { polishPluralize } from '@/lib/utils/polish';
+import { ENTITY_ICONS, UI_TEXT } from '@/lib/constants/activity';
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -28,24 +27,20 @@ function formatRelativeTime(date: string): string {
 
   // If less than 1 minute ago
   if (diffInMinutes < 1) {
-    return 'Przed chwilą';
+    return UI_TEXT.relativeTime.justNow;
   }
 
   // If less than 60 minutes ago, show minutes
   if (diffInMinutes < 60) {
-    // Polish pluralization for minutes
-    if (diffInMinutes === 1) return '1 minutę temu';
-    if (diffInMinutes >= 2 && diffInMinutes <= 4) return `${diffInMinutes} minuty temu`;
-    return `${diffInMinutes} minut temu`;
+    const minutesText = polishPluralize(diffInMinutes, 'minutę', 'minuty', 'minut');
+    return `${diffInMinutes} ${minutesText} temu`;
   }
 
   // If less than 24 hours ago, show hours
   if (diffInHours < 24) {
     const hours = Math.floor(diffInHours);
-    // Polish pluralization for hours
-    if (hours === 1) return '1 godzinę temu';
-    if (hours >= 2 && hours <= 4) return `${hours} godziny temu`;
-    return `${hours} godzin temu`;
+    const hoursText = polishPluralize(hours, 'godzinę', 'godziny', 'godzin');
+    return `${hours} ${hoursText} temu`;
   }
 
   // If yesterday (between 24 and 48 hours ago)
@@ -59,64 +54,16 @@ function formatRelativeTime(date: string): string {
   return activityDate.toLocaleDateString('pl-PL');
 }
 
-// Overloaded version for tests that need time
-function formatRelativeTimeWithTime(date: string, includeTime: boolean): string {
-  if (!includeTime) {
-    return formatRelativeTime(date);
-  }
-  
-  const now = new Date();
-  const activityDate = new Date(date);
-  const diffInHours = (now.getTime() - activityDate.getTime()) / (1000 * 60 * 60);
-  const diffInDays = diffInHours / 24;
-
-  // If yesterday (between 24 and 48 hours ago)
-  if (diffInDays >= 1 && diffInDays < 2) {
-    const hours = activityDate.getHours().toString().padStart(2, '0');
-    const minutes = activityDate.getMinutes().toString().padStart(2, '0');
-    return `Wczoraj o ${hours}:${minutes}`;
-  }
-
-  return formatRelativeTime(date);
-}
-
 function getEntityIcon(entityType: string): string {
-  switch (entityType) {
-    case 'task':
-      return '📋';
-    case 'shopping':
-      return '🛒';
-    case 'reminder':
-      return '🔔';
-    case 'board':
-      return '📊';
-    default:
-      return '📋';
-  }
+  return ENTITY_ICONS[entityType as keyof typeof ENTITY_ICONS] || ENTITY_ICONS.task;
 }
 
-function getActionIcon(entityType: string, action: string): React.ReactNode {
-  if (entityType === 'task') {
-    if (action === 'created') return <Plus className="w-4 h-4" />;
-    if (action === 'completed') return <CheckCircle className="w-4 h-4" />;
-    if (action === 'deleted') return <Trash className="w-4 h-4" />;
-    if (action === 'updated') return <Edit className="w-4 h-4" />;
-  }
-  if (entityType === 'shopping') {
-    return <ShoppingCart className="w-4 h-4" />;
-  }
-  if (entityType === 'reminder') {
-    return <Bell className="w-4 h-4" />;
-  }
-  if (entityType === 'board') {
-    return <LayoutGrid className="w-4 h-4" />;
-  }
-  return null;
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ActivityMetadata = Record<string, any>;
 
 function getActionMessage(activity: ActivityLog): string {
   const { entity_type, action } = activity;
-  const metadata = activity.metadata as Record<string, any> | null;
+  const metadata = activity.metadata as ActivityMetadata | null;
 
   switch (entity_type) {
     case 'task':
@@ -127,11 +74,9 @@ function getActionMessage(activity: ActivityLog): string {
       break;
     case 'shopping':
       if (action === 'created') {
-        const count = metadata?.count || 0;
-        // Polish pluralization
-        if (count === 1) return 'dodał/a 1 produkt do listy zakupów';
-        if (count >= 2 && count <= 4) return `dodał/a ${count} produkty do listy zakupów`;
-        return `dodał/a ${count} produktów do listy zakupów`;
+        const count = Number(metadata?.count) || 0;
+        const productsText = polishPluralize(count, 'produkt', 'produkty', 'produktów');
+        return `dodał/a ${count} ${productsText} do listy zakupów`;
       }
       if (action === 'completed') return 'kupił/a';
       if (action === 'deleted') return 'usunął/ęła';
@@ -149,7 +94,7 @@ function getActionMessage(activity: ActivityLog): string {
 
 function getMetadataValue(activity: ActivityLog): string | null {
   const { entity_type, action } = activity;
-  const metadata = activity.metadata as Record<string, any> | null;
+  const metadata = activity.metadata as ActivityMetadata | null;
 
   if (!metadata) return null;
 
@@ -171,51 +116,6 @@ function getMetadataValue(activity: ActivityLog): string | null {
 }
 
 // ═══════════════════════════════════════════════════════════
-// COMPONENT: ActivityAvatar
-// ═══════════════════════════════════════════════════════════
-
-interface ActivityAvatarProps {
-  actorName: string;
-  actorId: string | null;
-}
-
-function ActivityAvatar({ actorName, actorId }: ActivityAvatarProps) {
-  const isKira = !actorId || actorName === 'Kira';
-  const displayName = actorName || 'Kira';
-
-  if (isKira) {
-    return (
-      <img
-        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23e9d5ff'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🤖%3C/text%3E%3C/svg%3E"
-        alt={displayName}
-        className="w-10 h-10 rounded-full object-cover"
-      />
-    );
-  }
-
-  // Get initials from name
-  const initials = displayName
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-
-  // Generate SVG with initials
-  const svg = encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23dbeafe'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='%232563eb' font-family='sans-serif' font-weight='500'>${initials}</text></svg>`
-  );
-
-  return (
-    <img
-      src={`data:image/svg+xml,${svg}`}
-      alt={displayName}
-      className="w-10 h-10 rounded-full object-cover"
-    />
-  );
-}
-
-// ═══════════════════════════════════════════════════════════
 // COMPONENT: ActivityItem
 // ═══════════════════════════════════════════════════════════
 
@@ -226,13 +126,13 @@ export function ActivityItem({ activity }: ActivityItemProps) {
   const timeAgo = formatRelativeTime(activity.created_at);
 
   // Get shopping items for display
-  const meta = activity.metadata as Record<string, any> | null;
-  const shoppingItems = meta?.items as string[] | undefined;
-  const displayItems = shoppingItems?.slice(0, 3) || [];
-  const remainingCount = shoppingItems ? Math.max(0, shoppingItems.length - 3) : 0;
+  const meta = activity.metadata as ActivityMetadata | null;
+  const shoppingItems = (meta?.items as string[]) || [];
+  const displayItems = shoppingItems.slice(0, 3);
+  const remainingCount = Math.max(0, shoppingItems.length - 3);
 
   // Delivery method icon for reminders
-  const deliveryMethod = meta?.delivery_method as string | undefined;
+  const deliveryMethod = (meta?.delivery_method as string) || undefined;
   const deliveryIcon = deliveryMethod === 'whatsapp' ? '💬' : deliveryMethod === 'email' ? '📧' : null;
 
   return (
@@ -283,10 +183,10 @@ export function ActivityItem({ activity }: ActivityItemProps) {
         )}
 
         {/* Board badge for tasks */}
-        {(activity.metadata as Record<string, any>)?.board_name && (
+        {meta?.board_name && (
           <div className="mt-1">
             <span className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded font-medium">
-              {String((activity.metadata as Record<string, any>).board_name).toUpperCase()}
+              {String(meta.board_name).toUpperCase()}
             </span>
           </div>
         )}

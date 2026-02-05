@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { useHousehold } from '@/lib/hooks/useHousehold';
 import {
   Select,
@@ -11,6 +11,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ActivityAvatar } from './ActivityAvatar';
+import { ENTITY_TYPE_OPTIONS, ACTOR_TYPES } from '@/lib/constants/activity';
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -18,58 +20,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export interface ActivityFiltersProps {
   householdId: string | undefined;
-}
-
-const ENTITY_TYPES = [
-  { value: 'all', label: 'Wszystko' },
-  { value: 'task', label: 'Zadania' },
-  { value: 'shopping', label: 'Zakupy' },
-  { value: 'reminder', label: 'Przypomnienia' },
-  { value: 'board', label: 'Tablice' },
-];
-
-// ═══════════════════════════════════════════════════════════
-// COMPONENT: ActivityAvatarSmall
-// ═══════════════════════════════════════════════════════════
-
-interface ActivityAvatarSmallProps {
-  actorName: string;
-  actorId: string | null;
-  size?: 'sm' | 'md';
-}
-
-function ActivityAvatarSmall({ actorName, actorId, size = 'sm' }: ActivityAvatarSmallProps) {
-  const isKira = !actorId || actorName === 'Kira';
-  const sizeClasses = size === 'sm' ? 'w-5 h-5 text-xs' : 'w-6 h-6 text-sm';
-
-  if (isKira) {
-    return (
-      <div
-        className={`${sizeClasses} rounded-full bg-purple-100 flex items-center justify-center`}
-        aria-label="Kira"
-        role="img"
-      >
-        🤖
-      </div>
-    );
-  }
-
-  const initials = actorName
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-
-  return (
-    <div
-      className={`${sizeClasses} rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-medium`}
-      aria-label={actorName}
-      role="img"
-    >
-      {initials}
-    </div>
-  );
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -89,7 +39,7 @@ function ActivityFiltersSkeleton() {
 // COMPONENT: ActivityFilters
 // ═══════════════════════════════════════════════════════════
 
-export function ActivityFilters({ householdId }: ActivityFiltersProps) {
+export function ActivityFilters({ householdId: _householdId }: ActivityFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: household, isLoading } = useHousehold();
@@ -129,13 +79,13 @@ export function ActivityFilters({ householdId }: ActivityFiltersProps) {
 
   // Build actor options from household members + Kira
   const actorOptions = [
-    { value: 'all', label: 'Wszyscy', id: null as string | null },
+    { value: ACTOR_TYPES.ALL, label: 'Wszyscy', id: null as string | null },
     ...(household?.members?.map((member) => ({
       value: member.id,
       label: member.display_name,
       id: member.id,
     })) || []),
-    { value: 'kira', label: 'Kira', id: null as string | null },
+    { value: ACTOR_TYPES.KIRA, label: 'Kira', id: null as string | null },
   ];
 
   if (isLoading) {
@@ -156,7 +106,7 @@ export function ActivityFilters({ householdId }: ActivityFiltersProps) {
           <SelectValue placeholder="Wszystko" />
         </SelectTrigger>
         <SelectContent>
-          {ENTITY_TYPES.map((type) => (
+          {ENTITY_TYPE_OPTIONS.map((type) => (
             <SelectItem key={type.value} value={type.value}>
               {type.label}
             </SelectItem>
@@ -174,9 +124,9 @@ export function ActivityFilters({ householdId }: ActivityFiltersProps) {
         </SelectTrigger>
         <SelectContent>
           {actorOptions.map((actor) => (
-            <SelectItem key={actor.value || 'all'} value={actor.value}>
+            <SelectItem key={actor.value || ACTOR_TYPES.ALL} value={actor.value}>
               <div className="flex items-center gap-2">
-                <ActivityAvatarSmall
+                <ActivityAvatar
                   actorName={actor.label}
                   actorId={actor.id}
                   size="sm"

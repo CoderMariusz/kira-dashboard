@@ -8,6 +8,7 @@ import { ActivityFilters } from '@/components/activity/ActivityFilters';
 import { ActivityFeed } from '@/components/activity/ActivityFeed';
 import { useHousehold } from '@/lib/hooks/useHousehold';
 import { useActivityRealtime } from '@/lib/hooks/useActivity';
+import { PAGE_CONFIG } from '@/lib/constants/activity';
 
 /**
  * Activity Page Inner
@@ -55,8 +56,8 @@ function ActivityPageInner() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">📊 Aktywność</CardTitle>
-          <CardDescription>Historia zmian i aktywności</CardDescription>
+          <CardTitle className="text-2xl">{PAGE_CONFIG.title}</CardTitle>
+          <CardDescription>{PAGE_CONFIG.description}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -78,8 +79,8 @@ function ActivityPageInner() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">📊 Aktywność</CardTitle>
-        <CardDescription>Historia zmian i aktywności</CardDescription>
+        <CardTitle className="text-2xl">{PAGE_CONFIG.title}</CardTitle>
+        <CardDescription>{PAGE_CONFIG.description}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">

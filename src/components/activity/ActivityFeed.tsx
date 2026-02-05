@@ -4,6 +4,7 @@ import { ActivityItem, ActivityItemSkeleton } from './ActivityItem';
 import { useActivity, useActivityRealtime, type ActivityFilters } from '@/lib/hooks/useActivity';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
+import { UI_TEXT } from '@/lib/constants/activity';
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -35,8 +36,8 @@ function ActivityFeedSkeleton() {
 function EmptyState() {
   return (
     <div className="text-center py-12 text-gray-500" data-testid="empty-state">
-      <p className="text-lg">Brak aktywności</p>
-      <p className="text-sm mt-2">Działania w gospodarstwie pojawią się tutaj</p>
+      <p className="text-lg">{UI_TEXT.noActivity}</p>
+      <p className="text-sm mt-2">{UI_TEXT.noActivitySubtitle}</p>
     </div>
   );
 }
@@ -53,16 +54,16 @@ interface ErrorStateProps {
 function ErrorState({ error, onRetry }: ErrorStateProps) {
   return (
     <div className="text-center py-12" data-testid="error-state">
-      <p className="text-red-500 mb-4">Wystąpił błąd podczas ładowania aktywności</p>
-      <p className="text-sm text-gray-500 mb-4">{error?.message || 'Spróbuj ponownie'}</p>
+      <p className="text-red-500 mb-4">{UI_TEXT.errorLoading}</p>
+      <p className="text-sm text-gray-500 mb-4">{error?.message || UI_TEXT.retry}</p>
       <Button
         onClick={onRetry}
         variant="outline"
         className="gap-2"
-        aria-label="Ponów próbę"
+        aria-label={UI_TEXT.retry}
       >
         <RefreshCw className="w-4 h-4" />
-        Ponów próbę
+        {UI_TEXT.retry}
       </Button>
     </div>
   );
@@ -86,15 +87,15 @@ function LoadMoreButton({ onClick, isLoading, disabled }: LoadMoreButtonProps) {
         disabled={disabled}
         variant="outline"
         className="w-full sm:w-auto gap-2"
-        aria-label="Załaduj więcej"
+        aria-label={UI_TEXT.loadMore}
       >
         {isLoading ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" role="status" />
-            <span>Ładowanie...</span>
+            <span>{UI_TEXT.loading}</span>
           </>
         ) : (
-          'Załaduj więcej'
+          UI_TEXT.loadMore
         )}
       </Button>
     </div>
