@@ -49,9 +49,13 @@ async function fetchActivities({
     query = query.eq('entity_type', filters.entityType);
   }
 
-  // Filter by actor ID
+  // Filter by actor ID ('kira' = system actor with null actor_id)
   if (filters?.actorId) {
-    query = query.eq('actor_id', filters.actorId);
+    if (filters.actorId === 'kira') {
+      query = query.is('actor_id', null);
+    } else {
+      query = query.eq('actor_id', filters.actorId);
+    }
   }
 
   // Filter by date range (from)
