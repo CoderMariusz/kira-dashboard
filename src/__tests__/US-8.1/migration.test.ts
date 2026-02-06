@@ -38,7 +38,7 @@ describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .filter('parent_id', 'is', 'not.null')
+        .not('parent_id', 'is', null)
         .limit(10);
 
       expect(error).toBeNull();
