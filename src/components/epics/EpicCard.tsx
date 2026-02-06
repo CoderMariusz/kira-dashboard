@@ -1,25 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-
-interface Story {
-  id: string;
-  title: string;
-  status: "idea" | "in_progress" | "done";
-}
-
-interface Epic {
-  id: string;
-  title: string;
-  description?: string;
-  stories: Story[];
-}
+import { calculateEpicProgress, getStatusConfig } from "@/lib/utils/epic-helpers";
+import type { Epic, Story } from "@/types/epic-types";
 
 interface EpicCardProps {
   epic: Epic;
@@ -27,14 +16,28 @@ interface EpicCardProps {
   onAddStory?: (epicId: string) => void;
 }
 
-export function EpicCard({ epic, defaultExpanded = true, onAddStory }: EpicCardProps) {
+export const EpicCard = memo(function EpicCard({ 
+  epic, 
+  defaultExpanded = true, 
+  onAddStory 
+}: EpicCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  const doneCount = epic.stories.filter((s) => s.status === "done").length;
-  const totalCount = epic.stories.length;
-  const progressPercentage = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+  // Calculate progress statistics
+  const progress = useMemo(
+    () => calculateEpicProgress(epic.stories),
+    [epic.stories]
+  );
 
-  const storyCountText = totalCount === 1 ? "1 story" : `${totalCount} stories`;
+  // Toggle expansion
+  const handleToggleExpanded = useCallback(() => {
+    setIsExpanded((prev) => !prev);
+  }, []);
+
+  // Handle add story click
+  const handleAddStoryClick = useCallback(() => {
+    onAddStory?.(epic.id);
+  }, [epic.id, onAddStory]);
 
   return (
     <Card
@@ -47,14 +50,14 @@ export function EpicCard({ epic, defaultExpanded = true, onAddStory }: EpicCardP
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold">{epic.title}</h3>
-            <Badge variant="secondary">{storyCountText}</Badge>
+            <Badge variant="secondary">{progress.storyCountText}</Badge>
           </div>
           <div className="flex items-center gap-2">
             {onAddStory && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onAddStory(epic.id)}
+                onClick={handleAddStoryClick}
                 className="min-h-[44px]"
               >
                 Add Story
@@ -63,7 +66,7 @@ export function EpicCard({ epic, defaultExpanded = true, onAddStory }: EpicCardP
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={handleToggleExpanded}
               aria-label={isExpanded ? "Collapse" : "Expand"}
               className="min-h-[44px] min-w-[44px] p-2"
               tabIndex={0}
@@ -81,16 +84,16 @@ export function EpicCard({ epic, defaultExpanded = true, onAddStory }: EpicCardP
         )}
         <div className="mt-2 flex items-center gap-2">
           <Progress
-            value={progressPercentage}
+            value={progress.progressPercentage}
             className="flex-1"
             role="progressbar"
-            aria-valuenow={progressPercentage}
+            aria-valuenow={progress.progressPercentage}
             aria-valuemin={0}
             aria-valuemax={100}
-            style={{ width: `${progressPercentage}%` }}
+            style={{ width: `${progress.progressPercentage}%` }}
           />
           <span className="text-sm text-muted-foreground min-w-[3rem] text-right">
-            {progressPercentage}%
+            {progress.progressPercentage}%
           </span>
         </div>
       </CardHeader>
@@ -110,13 +113,7 @@ export function EpicCard({ epic, defaultExpanded = true, onAddStory }: EpicCardP
               ) : (
                 <div className="space-y-2">
                   {epic.stories.map((story) => (
-                    <div
-                      key={story.id}
-                      className="flex items-center justify-between p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <span className="text-sm">{story.title}</span>
-                      <StatusBadge status={story.status} />
-                    </div>
+                    <StoryItem key={story.id} story={story} />
                   ))}
                 </div>
               )}
@@ -126,29 +123,35 @@ export function EpicCard({ epic, defaultExpanded = true, onAddStory }: EpicCardP
       </AnimatePresence>
     </Card>
   );
-}
+});
 
-function StatusBadge({ status }: { status: string }) {
-  const statusStyles = {
-    idea: "bg-slate-500",
-    in_progress: "bg-amber-500",
-    done: "bg-green-500",
-  };
+/**
+ * Story item component - memoized for performance
+ */
+const StoryItem = memo(function StoryItem({ story }: { story: Story }) {
+  return (
+    <div
+      key={story.id}
+      className="flex items-center justify-between p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors"
+    >
+      <span className="text-sm">{story.title}</span>
+      <StatusBadge status={story.status} />
+    </div>
+  );
+});
 
-  const statusLabels = {
-    idea: "Idea",
-    in_progress: "In Progress",
-    done: "Done",
-  };
+/**
+ * Status badge component - memoized for performance
+ */
+const StatusBadge = memo(function StatusBadge({ status }: { status: string }) {
+  const config = useMemo(() => getStatusConfig(status), [status]);
 
   return (
     <div className="flex items-center gap-1">
-      <span
-        className={`w-2 h-2 rounded-full ${statusStyles[status as keyof typeof statusStyles] || "bg-slate-500"}`}
-      />
+      <span className={`w-2 h-2 rounded-full ${config.bgClass}`} />
       <span className="text-xs text-muted-foreground">
-        {statusLabels[status as keyof typeof statusLabels] || status}
+        {config.label}
       </span>
     </div>
   );
-}
+});

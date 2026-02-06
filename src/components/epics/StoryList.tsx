@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -10,13 +10,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-
-interface Story {
-  id: string;
-  title: string;
-  description?: string;
-  status: "idea" | "in_progress" | "done";
-}
+import { getStatusConfig, sortStoriesByStatus } from "@/lib/utils/epic-helpers";
+import type { Story } from "@/types/epic-types";
 
 interface StoryListProps {
   stories: Story[];
@@ -28,7 +23,7 @@ interface StoryListProps {
   onDrop?: (e: React.DragEvent, story: Story) => void;
 }
 
-export function StoryList({
+export const StoryList = memo(function StoryList({
   stories,
   filterStatus,
   sortBy,
@@ -39,26 +34,38 @@ export function StoryList({
 }: StoryListProps) {
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
 
-  // Filter stories
-  let filteredStories = stories;
-  if (filterStatus) {
-    filteredStories = stories.filter((s) => s.status === filterStatus);
-  }
-
-  // Sort stories
-  if (sortBy === "status") {
-    const statusOrder = { idea: 0, in_progress: 1, done: 2 };
-    filteredStories = [...filteredStories].sort(
-      (a, b) => statusOrder[a.status] - statusOrder[b.status]
-    );
-  }
-
-  const handleStoryClick = (story: Story) => {
-    if (onStoryClick) {
-      onStoryClick(story);
+  // Filter and sort stories
+  const processedStories = useMemo(() => {
+    let filtered = stories;
+    
+    // Apply filter
+    if (filterStatus) {
+      filtered = stories.filter((s) => s.status === filterStatus);
     }
-    setSelectedStory(story);
-  };
+    
+    // Apply sort
+    if (sortBy === "status") {
+      filtered = sortStoriesByStatus(filtered);
+    }
+    
+    return filtered;
+  }, [stories, filterStatus, sortBy]);
+
+  // Handle story click
+  const handleStoryClick = useCallback(
+    (story: Story) => {
+      if (onStoryClick) {
+        onStoryClick(story);
+      }
+      setSelectedStory(story);
+    },
+    [onStoryClick]
+  );
+
+  // Handle modal close
+  const handleCloseModal = useCallback(() => {
+    setSelectedStory(null);
+  }, []);
 
   if (stories.length === 0) {
     return (
@@ -71,100 +78,165 @@ export function StoryList({
   return (
     <>
       <div className="space-y-2">
-        {filteredStories.map((story) => (
-          <motion.div
+        {processedStories.map((story) => (
+          <StoryCard
             key={story.id}
-            layout
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Card
-              role="article"
-              aria-label={story.title}
-              data-testid={`story-card-${story.id}`}
-              tabIndex={0}
-              className="cursor-pointer hover:shadow-md transition-shadow min-h-[44px]"
-              draggable={draggable}
-              onClick={() => handleStoryClick(story)}
-              onDragStart={(e) => onDragStart?.(e as unknown as React.DragEvent, story)}
-              onDrop={(e) => onDrop?.(e as unknown as React.DragEvent, story)}
-              onDragOver={(e) => e.preventDefault()}
-            >
-              <CardContent className="p-3 flex items-center justify-between">
-                <div className="flex-1">
-                  <h4 className="text-sm font-medium">{story.title}</h4>
-                  {story.description && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {story.description}
-                    </p>
-                  )}
-                </div>
-                <StatusIndicator storyId={story.id} status={story.status} />
-              </CardContent>
-            </Card>
-          </motion.div>
+            story={story}
+            draggable={draggable}
+            onClick={handleStoryClick}
+            onDragStart={onDragStart}
+            onDrop={onDrop}
+          />
         ))}
       </div>
 
-      <Dialog open={!!selectedStory} onOpenChange={() => setSelectedStory(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{selectedStory?.title}</DialogTitle>
-            {selectedStory?.description && (
-              <DialogDescription>{selectedStory.description}</DialogDescription>
-            )}
-          </DialogHeader>
-          <div className="mt-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Status:</span>
-              <StatusIndicator storyId={selectedStory?.id || ""} status={selectedStory?.status || "idea"} />
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <StoryDetailDialog
+        story={selectedStory}
+        isOpen={!!selectedStory}
+        onClose={handleCloseModal}
+      />
     </>
   );
+});
+
+/**
+ * Individual story card - memoized for performance
+ */
+interface StoryCardProps {
+  story: Story;
+  draggable?: boolean;
+  onClick: (story: Story) => void;
+  onDragStart?: (e: React.DragEvent, story: Story) => void;
+  onDrop?: (e: React.DragEvent, story: Story) => void;
 }
 
-function StatusIndicator({
-  storyId,
-  status,
-}: {
+const StoryCard = memo(function StoryCard({
+  story,
+  draggable,
+  onClick,
+  onDragStart,
+  onDrop,
+}: StoryCardProps) {
+  const handleClick = useCallback(() => {
+    onClick(story);
+  }, [story, onClick]);
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      onDragStart?.(e, story);
+    },
+    [story, onDragStart]
+  );
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      onDrop?.(e, story);
+    },
+    [story, onDrop]
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Card
+        role="article"
+        aria-label={story.title}
+        data-testid={`story-card-${story.id}`}
+        tabIndex={0}
+        className="cursor-pointer hover:shadow-md transition-shadow min-h-[44px]"
+        draggable={draggable}
+        onClick={handleClick}
+        onDragStart={handleDragStart}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+      >
+        <CardContent className="p-3 flex items-center justify-between">
+          <div className="flex-1">
+            <h4 className="text-sm font-medium">{story.title}</h4>
+            {story.description && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {story.description}
+              </p>
+            )}
+          </div>
+          <StatusIndicator storyId={story.id} status={story.status} />
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+});
+
+/**
+ * Status indicator - memoized for performance
+ */
+interface StatusIndicatorProps {
   storyId: string;
   status: string;
-}) {
-  const statusColors = {
-    idea: "#64748b",
-    in_progress: "#f59e0b",
-    done: "#22c55e",
-  };
+}
 
-  const statusLabels = {
-    idea: "Idea",
-    in_progress: "In Progress",
-    done: "Done",
-  };
-
-  const statusClasses = {
-    idea: "status-idea",
-    in_progress: "status-in-progress",
-    done: "status-done",
-  };
+const StatusIndicator = memo(function StatusIndicator({
+  storyId,
+  status,
+}: StatusIndicatorProps) {
+  const config = useMemo(() => getStatusConfig(status), [status]);
 
   return (
     <div
       data-testid={`status-indicator-${storyId}`}
-      className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${statusClasses[status as keyof typeof statusClasses] || ""}`}
-      aria-label={`Status: ${statusLabels[status as keyof typeof statusLabels] || status}`}
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${config.class}`}
+      aria-label={`Status: ${config.label}`}
     >
       <span
         className="w-2.5 h-2.5 rounded-full"
-        style={{ backgroundColor: statusColors[status as keyof typeof statusColors] || "#64748b" }}
+        style={{ backgroundColor: config.color }}
       />
       <span className="text-xs font-medium capitalize">
-        {statusLabels[status as keyof typeof statusLabels] || status}
+        {config.label}
       </span>
     </div>
   );
+});
+
+/**
+ * Story detail dialog - memoized for performance
+ */
+interface StoryDetailDialogProps {
+  story: Story | null;
+  isOpen: boolean;
+  onClose: () => void;
 }
+
+const StoryDetailDialog = memo(function StoryDetailDialog({
+  story,
+  isOpen,
+  onClose,
+}: StoryDetailDialogProps) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{story?.title}</DialogTitle>
+          {story?.description && (
+            <DialogDescription>{story.description}</DialogDescription>
+          )}
+        </DialogHeader>
+        {story && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Status:</span>
+              <StatusIndicator storyId={story.id} status={story.status} />
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+});
