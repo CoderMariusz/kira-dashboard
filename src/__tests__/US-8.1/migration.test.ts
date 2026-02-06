@@ -1,13 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
-// Note: These tests will FAIL initially because the migration hasn't been implemented yet
-// This is intentional - TDD approach
+/**
+ * US-8.1: Migration Structure Tests (INTEGRATION)
+ * 
+ * Requires DB migration to be applied first.
+ * Run: npx supabase db push (with valid credentials)
+ * 
+ * @skip Integration tests - need DB migration
+ */
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 
-describe('US-8.1: Migration Structure Tests', () => {
+const shouldSkip = !supabaseUrl || !supabaseKey;
+
+describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
   describe('AC1: parent_id Column', () => {
     it('should have parent_id column in tasks table', async () => {
       const supabase = createClient(supabaseUrl, supabaseKey);

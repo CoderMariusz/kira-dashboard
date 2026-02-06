@@ -1,8 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Note: These tests will FAIL initially because RLS policies haven't been implemented yet
-// This is intentional - TDD approach
+/**
+ * US-8.1: RLS Policies Tests (INTEGRATION)
+ * 
+ * Requires:
+ * 1. DB migration applied
+ * 2. Test users created in Supabase
+ * 
+ * @skip Integration tests - need DB migration + test users
+ */
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
@@ -11,7 +18,9 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 const USER1_EMAIL = 'test-user1@example.com';
 const USER2_EMAIL = 'test-user2@example.com';
 
-describe('US-8.1: RLS Policies Tests', () => {
+const shouldSkip = !supabaseUrl || !supabaseKey;
+
+describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
   let user1Client: SupabaseClient;
   let user2Client: SupabaseClient;
 

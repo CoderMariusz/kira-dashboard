@@ -1,13 +1,25 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Note: These tests will FAIL initially because helper functions haven't been implemented yet
-// This is intentional - TDD approach
+/**
+ * US-8.1: Helper Functions Tests (INTEGRATION)
+ * 
+ * These tests require:
+ * 1. DB migration applied (parent_id column)
+ * 2. Real Supabase credentials in env
+ * 
+ * Run with: VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=... npm test
+ * 
+ * @skip Integration tests - need DB migration first
+ */
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 
-describe('US-8.1: Helper Functions Tests', () => {
+// Skip if no credentials (CI/unit test environment)
+const shouldSkip = !supabaseUrl || !supabaseKey;
+
+describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
   let supabase: SupabaseClient;
   let testEpic: any;
   let testStories: any[] = [];
