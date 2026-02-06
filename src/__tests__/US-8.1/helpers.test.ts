@@ -90,7 +90,7 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
           .insert({
             household_id: profile.household_id,
             name: `Test Board ${testId()}`,
-            type: 'home',
+            type: 'work',
             columns: ['idea', 'doing', 'done']
           })
           .select()
