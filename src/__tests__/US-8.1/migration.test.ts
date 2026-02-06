@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
 /**
@@ -16,6 +16,49 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 const shouldSkip = !supabaseUrl || !supabaseKey;
 
 describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
+  let testBoard: any;
+
+  beforeEach(async () => {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Sign in first - required for RLS
+    await supabase.auth.signInWithPassword({
+      email: 'coder.mariusz@gmail.com',
+      password: 'KiraDash2026!'
+    });
+    
+    // Get or create a test board
+    let { data: board } = await supabase
+      .from('boards')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+    
+    if (!board) {
+      // Get current user's household_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('household_id')
+        .limit(1)
+        .maybeSingle();
+      
+      if (profile?.household_id) {
+        const { data: newBoard } = await supabase
+          .from('boards')
+          .insert({
+            household_id: profile.household_id,
+            name: 'Test Board',
+            type: 'home',
+            columns: ['idea', 'doing', 'done']
+          })
+          .select()
+          .maybeSingle();
+        board = newBoard;
+      }
+    }
+    testBoard = board;
+  });
+
   describe('AC1: parent_id Column', () => {
     it('should have parent_id column in tasks table', async () => {
       const supabase = createClient(supabaseUrl, supabaseKey);
@@ -54,7 +97,8 @@ describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
         .insert({
           title: 'Test Parent Epic',
           description: 'Test epic for cascade delete',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -68,7 +112,8 @@ describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
         .insert({
           title: 'Test Child Story',
           description: 'Test story',
-          status: 'todo',
+          column: 'idea',
+          board_id: testBoard.id,
           parent_id: parent.id
         })
         .select()
@@ -107,7 +152,8 @@ describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
         .insert({
           title: 'Test Task',
           description: 'Test task',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -136,7 +182,8 @@ describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
         .insert({
           title: 'Level 0 Epic',
           description: 'Test epic',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -149,7 +196,8 @@ describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
         .insert({
           title: 'Level 1 Story',
           description: 'Test story',
-          status: 'todo',
+          column: 'idea',
+          board_id: testBoard.id,
           parent_id: level0.id
         })
         .select()
@@ -163,7 +211,8 @@ describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
         .insert({
           title: 'Level 2 Sub-Story',
           description: 'This should fail',
-          status: 'todo',
+          column: 'idea',
+          board_id: testBoard.id,
           parent_id: level1.id
         });
 
@@ -183,7 +232,8 @@ describe.skipIf(shouldSkip)('US-8.1: Migration Structure Tests', () => {
         .insert({
           title: 'Regular Task',
           description: 'Task without parent',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();

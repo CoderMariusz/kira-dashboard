@@ -23,11 +23,55 @@ const shouldSkip = !supabaseUrl || !supabaseKey;
 describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
   let user1Client: SupabaseClient;
   let user2Client: SupabaseClient;
+  let testBoard: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Create clients for two different users
     user1Client = createClient(supabaseUrl, supabaseKey);
     user2Client = createClient(supabaseUrl, supabaseKey);
+    
+    // Sign in user1 with real test user
+    await user1Client.auth.signInWithPassword({
+      email: 'coder.mariusz@gmail.com',
+      password: 'KiraDash2026!'
+    });
+    // Note: user2 stays anonymous for now (real RLS tests would need 2nd user)
+    
+    // Get or create a test board
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    await supabase.auth.signInWithPassword({
+      email: 'coder.mariusz@gmail.com',
+      password: 'KiraDash2026!'
+    });
+    let { data: board } = await supabase
+      .from('boards')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+    
+    if (!board) {
+      // Get current user's household_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('household_id')
+        .limit(1)
+        .maybeSingle();
+      
+      if (profile?.household_id) {
+        const { data: newBoard } = await supabase
+          .from('boards')
+          .insert({
+            household_id: profile.household_id,
+            name: 'Test Board',
+            type: 'home',
+            columns: ['idea', 'doing', 'done']
+          })
+          .select()
+          .maybeSingle();
+        board = newBoard;
+      }
+    }
+    testBoard = board;
   });
 
   describe('AC2: Household Isolation', () => {
@@ -78,7 +122,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
         .insert({
           title: 'User1 Parent Task',
           description: 'Parent task in household 1',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -93,7 +138,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
         .insert({
           title: 'User2 Child Task',
           description: 'Child task in household 2',
-          status: 'todo',
+          column: 'idea',
+          board_id: testBoard.id,
           parent_id: user1Task.id
         });
 
@@ -113,7 +159,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
         .insert({
           title: 'Parent Task',
           description: 'Test parent',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -127,7 +174,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
         .insert({
           title: 'Child Task',
           description: 'Test child',
-          status: 'todo',
+          column: 'idea',
+          board_id: testBoard.id,
           parent_id: parent.id
         })
         .select()
@@ -149,7 +197,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
         .insert({
           title: 'Task 1',
           description: 'First task',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -159,7 +208,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
         .insert({
           title: 'Task 2',
           description: 'Second task',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -190,7 +240,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
         .insert({
           title: 'Parent for Cascade Test',
           description: 'Parent task',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -206,7 +257,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
           .insert({
             title: `Child ${i}`,
             description: `Child task ${i}`,
-            status: 'todo',
+            column: 'idea',
+            board_id: testBoard.id,
             parent_id: parent.id
           })
           .select()
@@ -257,7 +309,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
         .insert({
           title: 'Parent',
           description: 'Parent task',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -269,7 +322,8 @@ describe.skipIf(shouldSkip)('US-8.1: RLS Policies Tests', () => {
         .insert({
           title: 'Child',
           description: 'Child task',
-          status: 'todo',
+          column: 'idea',
+          board_id: testBoard.id,
           parent_id: parent.id
         })
         .select()

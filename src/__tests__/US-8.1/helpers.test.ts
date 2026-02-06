@@ -21,11 +21,51 @@ const shouldSkip = !supabaseUrl || !supabaseKey;
 
 describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
   let supabase: SupabaseClient;
+  let testBoard: any;
   let testEpic: any;
   let testStories: any[] = [];
 
   beforeEach(async () => {
     supabase = createClient(supabaseUrl, supabaseKey);
+    testStories = []; // Reset stories array
+    testEpic = null;
+
+    // Sign in first - required for RLS
+    await supabase.auth.signInWithPassword({
+      email: 'coder.mariusz@gmail.com',
+      password: 'KiraDash2026!'
+    });
+
+    // Get or create a test board
+    let { data: board, error: boardError } = await supabase
+      .from('boards')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+    
+    if (!board) {
+      // Get current user's household_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('household_id')
+        .limit(1)
+        .maybeSingle();
+      
+      if (profile?.household_id) {
+        const { data: newBoard } = await supabase
+          .from('boards')
+          .insert({
+            household_id: profile.household_id,
+            name: 'Test Board',
+            type: 'home',
+            columns: ['idea', 'doing', 'done']
+          })
+          .select()
+          .maybeSingle();
+        board = newBoard;
+      }
+    }
+    testBoard = board;
 
     // Create test epic
     const { data: epic, error: epicError } = await supabase
@@ -33,7 +73,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
       .insert({
         title: 'Test Epic',
         description: 'Test epic for helpers',
-        status: 'todo'
+        column: 'idea',
+        board_id: testBoard.id
       })
       .select()
       .single();
@@ -48,7 +89,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
           .insert({
             title: `Story ${i}`,
             description: `Test story ${i}`,
-            status: 'todo',
+            column: 'idea',
+            board_id: testBoard.id,
             parent_id: testEpic.id
           })
           .select()
@@ -111,7 +153,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
         .insert({
           title: 'Epic Without Children',
           description: 'Test epic',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -177,7 +220,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
         .insert({
           title: 'Empty Epic',
           description: 'Test epic',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -263,7 +307,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
         .insert({
           title: 'Regular Task',
           description: 'Test task',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -300,7 +345,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
         .insert({
           title: 'Epic With Deleted Children',
           description: 'Test epic',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -313,7 +359,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
         .insert({
           title: 'Temporary Child',
           description: 'Will be deleted',
-          status: 'todo',
+          column: 'idea',
+          board_id: testBoard.id,
           parent_id: epic.id
         })
         .select()
@@ -364,7 +411,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
         .insert({
           title: 'Task 1',
           description: 'First task',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -374,7 +422,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
         .insert({
           title: 'Task 2',
           description: 'Second task',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -411,7 +460,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
         .insert({
           title: 'Epic With Many Stories',
           description: 'Performance test epic',
-          status: 'todo'
+          column: 'idea',
+          board_id: testBoard.id
         })
         .select()
         .single();
@@ -426,7 +476,8 @@ describe.skipIf(shouldSkip)('US-8.1: Helper Functions Tests', () => {
           .insert({
             title: `Story ${i}`,
             description: `Performance test story ${i}`,
-            status: 'todo',
+            column: 'idea',
+            board_id: testBoard.id,
             parent_id: epic.id
           })
           .select()

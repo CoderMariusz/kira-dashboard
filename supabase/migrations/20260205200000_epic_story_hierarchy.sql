@@ -32,7 +32,7 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT false;
 
 -- Update all existing tasks to have type='task' and completed=true for done column
 UPDATE tasks SET type = 'task' WHERE type IS NULL;
-UPDATE tasks SET completed = (column = 'done') WHERE completed IS NULL;
+UPDATE tasks SET completed = ("column" = 'done') WHERE completed IS NULL;
 
 -- Set household_id from board for existing tasks
 UPDATE tasks t
@@ -82,15 +82,8 @@ ALTER TABLE tasks ADD CONSTRAINT check_epic_no_parent
 ALTER TABLE tasks ADD CONSTRAINT check_story_has_parent
   CHECK (type != 'story' OR parent_id IS NOT NULL);
 
--- Ensure parent is an epic
-ALTER TABLE tasks ADD CONSTRAINT check_parent_is_epic
-  CHECK (
-    parent_id IS NULL
-    OR EXISTS (
-      SELECT 1 FROM tasks t2
-      WHERE t2.id = tasks.parent_id AND t2.type = 'epic'
-    )
-  );
+-- NOTE: Parent validation is handled by trigger in next migration
+-- (PostgreSQL doesn't allow subqueries in CHECK constraints)
 
 -- ========================================
 -- DONE!

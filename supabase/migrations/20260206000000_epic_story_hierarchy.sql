@@ -17,9 +17,10 @@ CREATE INDEX IF NOT EXISTS idx_tasks_household_lookup ON tasks(board_id);
 -- 3. CONSTRAINT: NO SELF-REFERENCE
 -- ========================================
 -- Prevent a task from being its own parent
-ALTER TABLE tasks
-  ADD CONSTRAINT chk_tasks_no_self_reference
-  CHECK (id IS DISTINCT FROM parent_id);
+DO $$ BEGIN
+  ALTER TABLE tasks ADD CONSTRAINT chk_tasks_no_self_reference CHECK (id IS DISTINCT FROM parent_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ========================================
 -- 4. CONSTRAINT: MAX 2 LEVELS DEPTH
@@ -266,7 +267,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ========================================
 -- 8. ADD REALTIME SUPPORT
 -- ========================================
-ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
+-- Skip if already added (idempotent)
+DO $$ 
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ========================================
 -- MIGRATION COMPLETE
