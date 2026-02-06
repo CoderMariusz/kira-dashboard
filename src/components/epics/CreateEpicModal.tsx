@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import {
@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useFormValidation, ValidationRules } from "@/hooks/useFormValidation";
+import { useModalBehavior } from "@/hooks/useModalBehavior";
 
 interface CreateEpicModalProps {
   isOpen: boolean;
@@ -28,54 +30,40 @@ export function CreateEpicModal({
 }: CreateEpicModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Use the form validation hook
+  const titleValidation = useFormValidation({
+    rules: [
+      ValidationRules.required("Title is required"),
+      ValidationRules.minLength(3, "Title must be at least 3 characters"),
+      ValidationRules.maxLength(100, "Title is too long (maximum 100 characters)"),
+    ],
+  });
 
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setTitle("");
       setDescription("");
-      setError(null);
+      titleValidation.clearError();
       setIsSubmitting(false);
       // Focus title input after a short delay
       setTimeout(() => titleInputRef.current?.focus(), 100);
     }
-  }, [isOpen]);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handle escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  const validate = (): boolean => {
-    if (!title.trim()) {
-      setError("Title is required");
-      return false;
-    }
-    if (title.trim().length < 3) {
-      setError("Title must be at least 3 characters");
-      return false;
-    }
-    if (title.trim().length > 100) {
-      setError("Title is too long (maximum 100 characters)");
-      return false;
-    }
-    return true;
-  };
+  // Use modal behavior hook for escape key handling
+  useModalBehavior({
+    isOpen,
+    onClose,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validate()) {
+    if (!titleValidation.validate(title)) {
       return;
     }
 
@@ -94,8 +82,8 @@ export function CreateEpicModal({
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
-    if (error) {
-      setError(null);
+    if (titleValidation.hasError) {
+      titleValidation.clearError();
     }
   };
 
@@ -156,12 +144,12 @@ export function CreateEpicModal({
                       placeholder="Enter epic title"
                       disabled={isSubmitting}
                       className="min-h-[44px]"
-                      aria-invalid={!!error}
-                      aria-describedby={error ? "title-error" : undefined}
+                      aria-invalid={titleValidation.hasError}
+                      aria-describedby={titleValidation.error ? "title-error" : undefined}
                     />
-                    {error && (
+                    {titleValidation.error && (
                       <p id="title-error" className="text-sm text-red-500">
-                        {error}
+                        {titleValidation.error}
                       </p>
                     )}
                   </div>

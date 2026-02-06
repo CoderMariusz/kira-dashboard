@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useFormValidation, ValidationRules } from "@/hooks/useFormValidation";
+import { useModalBehavior } from "@/hooks/useModalBehavior";
 
 interface Epic {
   id: string;
@@ -42,9 +44,16 @@ export function AddStoryModal({
   const [title, setTitle] = useState("");
   const [acceptanceCriteria, setAcceptanceCriteria] = useState("");
   const [selectedEpicId, setSelectedEpicId] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  const [epicError, setEpicError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Use the form validation hook for title
+  const titleValidation = useFormValidation({
+    rules: [
+      ValidationRules.required("Title is required"),
+    ],
+  });
 
   // Reset form when modal opens
   useEffect(() => {
@@ -52,34 +61,32 @@ export function AddStoryModal({
       setTitle("");
       setAcceptanceCriteria("");
       setSelectedEpicId(defaultEpicId || "");
-      setError(null);
+      titleValidation.clearError();
+      setEpicError(null);
       setIsSubmitting(false);
       // Focus title input after a short delay
       setTimeout(() => titleInputRef.current?.focus(), 100);
     }
-  }, [isOpen, defaultEpicId]);
+  }, [isOpen, defaultEpicId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handle escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  // Use modal behavior hook for escape key handling
+  useModalBehavior({
+    isOpen,
+    onClose,
+  });
 
   const validate = (): boolean => {
-    if (!title.trim()) {
-      setError("Title is required");
+    // Validate title first
+    if (!titleValidation.validate(title)) {
       return false;
     }
+    
+    // Validate epic selection
     if (!selectedEpicId) {
-      setError("Please select an epic");
+      setEpicError("Please select an epic");
       return false;
     }
+    
     return true;
   };
 
@@ -112,15 +119,15 @@ export function AddStoryModal({
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
-    if (error) {
-      setError(null);
+    if (titleValidation.hasError) {
+      titleValidation.clearError();
     }
   };
 
   const handleEpicChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedEpicId(e.target.value);
-    if (error) {
-      setError(null);
+    if (epicError) {
+      setEpicError(null);
     }
   };
 
@@ -129,6 +136,7 @@ export function AddStoryModal({
   }
 
   const isEpicDropdownDisabled = epics.length <= 1;
+  const displayError = titleValidation.error || epicError;
 
   return (
     <AnimatePresence>
@@ -183,8 +191,8 @@ export function AddStoryModal({
                       placeholder="Enter story title"
                       disabled={isSubmitting}
                       className="min-h-[44px]"
-                      aria-invalid={!!error}
-                      aria-describedby={error ? "story-error" : undefined}
+                      aria-invalid={titleValidation.hasError}
+                      aria-describedby={displayError ? "story-error" : undefined}
                     />
                   </div>
 
@@ -230,9 +238,9 @@ export function AddStoryModal({
                   </div>
 
                   {/* Error Display */}
-                  {error && (
+                  {displayError && (
                     <p id="story-error" className="text-sm text-red-500">
-                      {error}
+                      {displayError}
                     </p>
                   )}
 
