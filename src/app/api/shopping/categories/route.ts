@@ -57,16 +57,25 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // 4. Sanitize and prepare category data
-    const categoryData: ShoppingCategoryInsert = {
+    // 4. Check household
+    if (!auth.profile.household_id) {
+      return NextResponse.json(
+        { error: 'User must belong to a household' },
+        { status: 400 }
+      );
+    }
+
+    // 5. Sanitize and prepare category data
+    const categoryData: ShoppingCategoryInsert & { household_id: string } = {
       name: sanitizeText(body.name, 100),
       icon: sanitizeText(body.icon ?? '📦', 2),
       color: sanitizeColor(body.color ?? '#6B7280'),
       position: 100,
       is_default: false,
+      household_id: auth.profile.household_id,
     };
 
-    // 5. Insert category
+    // 6. Insert category
     const { data: category, error: categoryError } = (await supabase
       .from('shopping_categories')
       .insert(categoryData as any)
@@ -80,8 +89,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Return created category
-    return NextResponse.json(category, { status: 200 });
+    // 7. Return created category
+    return NextResponse.json(category, { status: 201 });
 
   } catch (error) {
     console.error('[API] Error creating category:', error);
