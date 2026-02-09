@@ -52,3 +52,13 @@ export function validateCreateTaskBody(
   
   return { valid: true };
 }
+
+/**
+ * Re-export password validation utilities
+ */
+export { 
+  validatePasswordStrength, 
+  validatePasswordChange,
+  checkPasswordCompromised,
+  type PasswordValidationResult
+} from './password-validation';
