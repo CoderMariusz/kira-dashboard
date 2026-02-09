@@ -12,6 +12,7 @@
 import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/utils/sanitize';
+import { validateCSRFToken, getCSRFTokenFromRequest, getCSRFTokenFromBody } from '@/lib/csrf';
 
 
 // ══════════════════════════════════════════════════════════
@@ -983,6 +984,28 @@ export async function POST(request: NextRequest) {
     // 2. Auth (body api_key OR header X-API-Key)
     if (!verifyApiKey(request, payload)) {
       return NextResponse.json({ success: false, error: 'Invalid or missing API key' }, { status: 401 });
+    }
+
+    // 2.5. CSRF Protection for state-changing operations
+    const stateChangingActions = [
+      'task_create', 'create_task',
+      'task_update', 'update_task',
+      'task_delete', 'delete_task',
+      'task_move',
+      'shopping_add', 'create_shopping_item',
+      'shopping_buy',
+      'shopping_clear',
+      'reminder_create',
+    ];
+    
+    if (stateChangingActions.includes(payload.action)) {
+      const csrfToken = getCSRFTokenFromRequest(request) || getCSRFTokenFromBody(payload);
+      if (!validateCSRFToken(csrfToken)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid or missing CSRF token' },
+          { status: 403 }
+        );
+      }
     }
 
     // 3. Normalize (support both new and legacy format)
