@@ -3,30 +3,62 @@ import type { TaskWithAssignee } from '@/lib/types/app';
 import type { FilterState } from '@/lib/types/filters';
 import type { ColumnConfig } from '@/lib/types/app';
 
+// Constants for pagination optimization
+const FILTER_CACHE_DEBOUNCE_MS = 300;
+
+/**
+ * Cache compiled filter predicates to avoid recompilation
+ * This is a simple optimization to avoid recreating filter functions on every render
+ */
+interface CompiledFilter {
+  searchLower: string;
+  labelIds: Set<string>;
+  prioritySet: Set<string>;
+  assigneeSet: Set<string>;
+  hasSearch: boolean;
+  hasLabels: boolean;
+  hasPriorities: boolean;
+  hasAssignees: boolean;
+}
+
+function compileFilter(filters: FilterState): CompiledFilter {
+  return {
+    searchLower: filters.search.toLowerCase(),
+    labelIds: new Set(filters.labels),
+    prioritySet: new Set(filters.priorities),
+    assigneeSet: new Set(filters.assignees),
+    hasSearch: !!filters.search,
+    hasLabels: filters.labels.length > 0,
+    hasPriorities: filters.priorities.length > 0,
+    hasAssignees: filters.assignees.length > 0,
+  };
+}
+
 /**
  * Filter tasks based on the provided filter state
+ * Optimized with compiled filter criteria for faster matching
  */
-function applyFilters(tasks: TaskWithAssignee[], filters: FilterState): TaskWithAssignee[] {
+function applyFilters(tasks: TaskWithAssignee[], compiled: CompiledFilter): TaskWithAssignee[] {
   return tasks.filter((task) => {
-    // Search filter
-    if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase())) {
+    // Search filter - early exit if doesn't match
+    if (compiled.hasSearch && !task.title.toLowerCase().includes(compiled.searchLower)) {
       return false;
     }
 
-    // Labels filter
-    if (filters.labels.length > 0) {
+    // Labels filter - AND condition with OR within labels
+    if (compiled.hasLabels) {
       const taskLabelIds = (task as any).labels?.map((l: any) => l.id) ?? [];
-      const hasLabel = filters.labels.some((l) => taskLabelIds.includes(l));
+      const hasLabel = taskLabelIds.some((labelId: string) => compiled.labelIds.has(labelId));
       if (!hasLabel) return false;
     }
 
-    // Priority filter
-    if (filters.priorities.length > 0 && !filters.priorities.includes(task.priority)) {
+    // Priority filter - AND condition
+    if (compiled.hasPriorities && !compiled.prioritySet.has(task.priority)) {
       return false;
     }
 
-    // Assignee filter
-    if (filters.assignees.length > 0 && !filters.assignees.includes(task.assignee_id ?? '')) {
+    // Assignee filter - AND condition
+    if (compiled.hasAssignees && !compiled.assigneeSet.has(task.assignee_id ?? '')) {
       return false;
     }
 
@@ -69,6 +101,7 @@ function groupTasksByColumn(
 
 /**
  * Hook to filter and group tasks by column
+ * Optimized with compiled filters for O(n) complexity
  * @param tasks - All tasks to filter
  * @param columns - Column configuration
  * @param filters - Filter state to apply
@@ -80,7 +113,22 @@ export function useFilteredTasks(
   filters: FilterState
 ): Record<string, TaskWithAssignee[]> {
   return useMemo(() => {
-    const filtered = tasks ? applyFilters(tasks, filters) : [];
+    if (!tasks) {
+      // Return empty column structure if no tasks
+      const empty: Record<string, TaskWithAssignee[]> = {};
+      for (const col of columns) {
+        empty[col.key] = [];
+      }
+      return empty;
+    }
+
+    // Compile filters once for better performance
+    const compiled = compileFilter(filters);
+    
+    // Apply filters with compiled criteria (O(n) complexity)
+    const filtered = applyFilters(tasks, compiled);
+    
+    // Group by column and sort
     return groupTasksByColumn(filtered, columns);
   }, [tasks, columns, filters]);
 }
