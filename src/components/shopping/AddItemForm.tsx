@@ -25,7 +25,7 @@ interface AddItemFormProps {
  * - Auto-category detection
  * - Custom category creation
  * - Unit selection
- * - Form validation
+ * - Form validation with required field indicators
  * 
  * @component
  * @example
@@ -39,6 +39,7 @@ export function AddItemForm({ listId }: AddItemFormProps) {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const { data: categories } = useCategories();
   const { mutate, isPending, isSuccess, isError } = useAddItem(listId);
@@ -49,6 +50,7 @@ export function AddItemForm({ listId }: AddItemFormProps) {
     setQuantity(1);
     setCategoryId(null);
     setError(null);
+    setNameError(null);
   }, []);
 
   // Auto-reset on success
@@ -61,7 +63,17 @@ export function AddItemForm({ listId }: AddItemFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    
+    // Validate name field
+    if (!name.trim()) {
+      setNameError('Nazwa produktu jest wymagana');
+      return;
+    }
+    
+    if (name.trim().length < 2) {
+      setNameError('Nazwa musi mieć co najmniej 2 znaki');
+      return;
+    }
 
     const selectedCategory = categories?.find(cat => cat.id === categoryId);
 
@@ -71,6 +83,14 @@ export function AddItemForm({ listId }: AddItemFormProps) {
       category_id: categoryId,
       category_name: selectedCategory?.name,
     });
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+    // Clear error when user starts typing
+    if (nameError) {
+      setNameError(null);
+    }
   };
 
   const handleCategoryChange = (value: string) => {
@@ -95,18 +115,25 @@ export function AddItemForm({ listId }: AddItemFormProps) {
           {/* Name field */}
           <div className="md:col-span-2">
             <label htmlFor="item-name" className="block text-sm font-medium mb-1">
-              Nazwa produktu
+              Nazwa produktu <span className="text-red-500" aria-label="required">*</span>
             </label>
             <input
               id="item-name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={handleNameChange}
               placeholder="np. Mleko 2%"
               maxLength={200}
               disabled={isPending}
-              className="w-full px-3 py-2 border rounded-md"
+              aria-invalid={!!nameError}
+              aria-describedby={nameError ? 'name-error' : undefined}
+              className={`w-full px-3 py-2 border rounded-md ${nameError ? 'border-red-500 bg-red-50' : ''}`}
             />
+            {nameError && (
+              <p id="name-error" className="mt-1 text-sm text-red-600">
+                {nameError}
+              </p>
+            )}
           </div>
 
           {/* Quantity field */}

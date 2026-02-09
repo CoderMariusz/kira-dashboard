@@ -335,8 +335,17 @@ async function handleTaskList(
     query = query.eq('column', column);
   }
 
+  // Support sorting on multiple fields: priority, due_date, created_at, title
+  const sortField = (params.sort_by as string) || 'created_at';
+  const sortOrder = (params.sort_order as 'asc' | 'desc') || 'desc';
+  
+  // Validate sort field to prevent SQL injection
+  const validSortFields = ['priority', 'due_date', 'created_at', 'title', 'position'];
+  const safeSortField = validSortFields.includes(sortField) ? sortField : 'created_at';
+  const isSortAscending = sortOrder === 'asc';
+  
   const { data: tasks, error } = await query
-    .order('created_at', { ascending: false })
+    .order(safeSortField, { ascending: isSortAscending })
     .limit(20);
 
   if (error) throw new Error(`Task list query failed: ${error.message}`);

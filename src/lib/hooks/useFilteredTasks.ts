@@ -67,11 +67,13 @@ function applyFilters(tasks: TaskWithAssignee[], compiled: CompiledFilter): Task
 }
 
 /**
- * Group tasks by column and sort by position
+ * Group tasks by column and optionally sort by position
+ * If tasks are already sorted, we preserve that order within columns
  */
 function groupTasksByColumn(
   filteredTasks: TaskWithAssignee[],
-  columns: ColumnConfig[]
+  columns: ColumnConfig[],
+  preserveOrder: boolean = false
 ): Record<string, TaskWithAssignee[]> {
   const grouped: Record<string, TaskWithAssignee[]> = {};
 
@@ -80,7 +82,7 @@ function groupTasksByColumn(
     grouped[col.key] = [];
   }
 
-  // Group tasks by column
+  // Group tasks by column (preserving order if already sorted)
   for (const task of filteredTasks) {
     const col = task.column as string;
     if (grouped[col]) {
@@ -91,12 +93,64 @@ function groupTasksByColumn(
     }
   }
 
-  // Sort tasks within each column by position
-  for (const col of Object.keys(grouped)) {
-    grouped[col].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  // Sort tasks within each column by position only if not preserving custom sort order
+  if (!preserveOrder) {
+    for (const col of Object.keys(grouped)) {
+      grouped[col].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    }
   }
 
   return grouped;
+}
+
+/**
+ * Enhanced task sorting - supports multiple sort fields
+ */
+interface SortConfig {
+  field?: 'position' | 'priority' | 'due_date' | 'title' | 'created_at';
+  order?: 'asc' | 'desc';
+}
+
+function applyTaskSort(tasks: TaskWithAssignee[], sort?: SortConfig): TaskWithAssignee[] {
+  if (!sort?.field) return tasks;
+
+  const priorityOrder: Record<string, number> = {
+    'urgent': 0,
+    'high': 1,
+    'medium': 2,
+    'low': 3,
+  };
+
+  return [...tasks].sort((a, b) => {
+    let aVal: any;
+    let bVal: any;
+
+    switch (sort.field) {
+      case 'priority':
+        aVal = priorityOrder[a.priority] ?? 999;
+        bVal = priorityOrder[b.priority] ?? 999;
+        break;
+      case 'due_date':
+        aVal = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+        bVal = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+        break;
+      case 'title':
+        aVal = a.title.toLowerCase();
+        bVal = b.title.toLowerCase();
+        break;
+      case 'created_at':
+        aVal = a.created_at ? new Date(a.created_at).getTime() : 0;
+        bVal = b.created_at ? new Date(b.created_at).getTime() : 0;
+        break;
+      case 'position':
+      default:
+        aVal = a.position ?? 0;
+        bVal = b.position ?? 0;
+    }
+
+    const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+    return sort.order === 'desc' ? -comparison : comparison;
+  });
 }
 
 /**
@@ -105,12 +159,14 @@ function groupTasksByColumn(
  * @param tasks - All tasks to filter
  * @param columns - Column configuration
  * @param filters - Filter state to apply
+ * @param sort - Sort configuration
  * @returns Object mapping column keys to sorted task arrays
  */
 export function useFilteredTasks(
   tasks: TaskWithAssignee[] | undefined,
   columns: ColumnConfig[],
-  filters: FilterState
+  filters: FilterState,
+  sort?: SortConfig
 ): Record<string, TaskWithAssignee[]> {
   return useMemo(() => {
     if (!tasks) {
@@ -128,7 +184,10 @@ export function useFilteredTasks(
     // Apply filters with compiled criteria (O(n) complexity)
     const filtered = applyFilters(tasks, compiled);
     
-    // Group by column and sort
-    return groupTasksByColumn(filtered, columns);
-  }, [tasks, columns, filters]);
+    // Apply custom sort if provided (otherwise uses position field)
+    const sorted = sort ? applyTaskSort(filtered, sort) : filtered;
+    
+    // Group by column and maintain sort order (preserve order if custom sort applied)
+    return groupTasksByColumn(sorted, columns, !!sort);
+  }, [tasks, columns, filters, sort]);
 }

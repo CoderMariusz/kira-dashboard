@@ -117,14 +117,21 @@ export function LabelModal({ open, onClose, onSave, label, existingLabels = [] }
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name input */}
           <div className="space-y-2">
-            <LabelUI htmlFor="label-name">Nazwa</LabelUI>
+            <LabelUI htmlFor="label-name">Nazwa <span className="text-red-500" aria-label="required">*</span></LabelUI>
             <Input
               id="label-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Np. Bug, Feature, Refactor"
               autoFocus
+              aria-invalid={!name.trim()}
+              aria-describedby={!name.trim() ? 'label-name-required' : undefined}
             />
+            {!name.trim() && (
+              <p id="label-name-required" className="text-sm text-red-600">
+                Nazwa etykiety jest wymagana
+              </p>
+            )}
           </div>
 
           {/* Color presets */}

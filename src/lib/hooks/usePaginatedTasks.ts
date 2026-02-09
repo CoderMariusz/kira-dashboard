@@ -30,13 +30,14 @@ export function usePaginatedTasks(
 
   const pagination = useMemo(() => {
     const total = tasks?.length ?? 0;
-    const totalPages = Math.ceil(total / pageSize);
-    const page = Math.min(currentPage, Math.max(0, totalPages - 1));
+    const totalPages = Math.ceil(total / pageSize) || 1; // Ensure at least 1 page
+    // Clamp page to valid range [0, totalPages - 1]
+    const clampedPage = Math.max(0, Math.min(currentPage, totalPages - 1));
 
     return {
-      currentPage: page,
+      currentPage: clampedPage,
       totalPages,
-      hasNextPage: page < totalPages - 1,
+      hasNextPage: clampedPage < totalPages - 1,
       totalItems: total,
     };
   }, [tasks, pageSize, currentPage]);
@@ -44,9 +45,12 @@ export function usePaginatedTasks(
   const paginatedTasks = useMemo(() => {
     if (!tasks || tasks.length === 0) return [];
     
-    const start = pagination.currentPage * pageSize;
-    const end = start + pageSize;
-    return tasks.slice(start, end);
+    // Calculate offset with bounds checking
+    const start = Math.max(0, pagination.currentPage * pageSize);
+    const end = Math.min(tasks.length, start + pageSize);
+    
+    // Ensure we don't return invalid slices
+    return start >= tasks.length ? [] : tasks.slice(start, end);
   }, [tasks, pagination.currentPage, pageSize]);
 
   const goToPage = useCallback((page: number) => {
