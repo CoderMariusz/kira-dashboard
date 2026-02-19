@@ -154,16 +154,14 @@ export function ActivityFeed({ householdId, filter }: ActivityFeedProps) {
         ))}
       </div>
 
-      {/* AC-11: "Załaduj więcej" — stub (hasNextPage=false in v1, button hidden) */}
-      {hasNextPage && (
-        <button
-          onClick={fetchNextPage}
-          className="mt-[12px] w-full py-[8px] text-[12px] text-[#c4b5fd] bg-[#2a2540] hover:bg-[#3b3d7a] rounded-[8px] transition-colors"
-          aria-label="Załaduj więcej aktywności"
-        >
-          Załaduj więcej
-        </button>
-      )}
+      {/* AC-11: "Załaduj więcej" — zawsze w DOM, ukryty gdy hasNextPage=false (v1 stub) */}
+      <button
+        onClick={fetchNextPage}
+        className={`mt-[12px] w-full py-[8px] text-[12px] text-[#c4b5fd] bg-[#2a2540] hover:bg-[#3b3d7a] rounded-[8px] transition-colors${hasNextPage ? '' : ' hidden'}`}
+        aria-label="Załaduj więcej aktywności"
+      >
+        Załaduj więcej
+      </button>
     </div>
   );
 }
