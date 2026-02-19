@@ -209,47 +209,6 @@ export function TaskModal({
               />
             </div>
           </div>
-
-          {/* Data ukończenia — AC-8: pokaż jeśli task jest ukończony */}
-          {task.completed_at && (
-            <div className="flex items-center gap-[8px] px-[10px] py-[8px] rounded-[7px]"
-              style={{ background: '#1a3a1a', border: '1px solid #2a5a2a' }}>
-              <span className="text-[12px]">✅</span>
-              <div>
-                <span className="text-[10px] text-[#4ade80] font-semibold block">Ukończono</span>
-                <span className="text-[11px] text-[#6b7280]">
-                  {new Date(task.completed_at).toLocaleDateString('pl-PL', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Podzadania — AC-8 */}
-          {task.subtasks && task.subtasks.length > 0 && (
-            <div>
-              <label className="text-[11px] text-[#6b7280] mb-[6px] block">
-                Podzadania ({task.subtasks.length})
-              </label>
-              <ul className="flex flex-col gap-[4px]">
-                {task.subtasks.map((subtask, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-[8px] px-[10px] py-[6px] rounded-[6px] text-[12px] text-[#c4b5fd]"
-                    style={{ background: '#1a1535', border: '1px solid #2a2060' }}
-                  >
-                    <span className="text-[10px] text-[#4b4569]">#{i + 1}</span>
-                    {subtask}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
 
         {/* Przyciski akcji */}

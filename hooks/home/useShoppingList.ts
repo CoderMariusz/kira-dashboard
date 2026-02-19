@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/realtime-js'
 import { createClient } from '@/lib/supabase/client'
 import type { ShoppingItem, ShoppingItemCreate, ShoppingItemUpdate } from '@/types/home'
@@ -10,10 +10,13 @@ import type { ShoppingItem, ShoppingItemCreate, ShoppingItemUpdate } from '@/typ
 // ──────────────────────────────────────────────────
 interface UseShoppingListReturn {
   items:        ShoppingItem[]
+  categories:   string[]
   addItem:      (dto: Omit<ShoppingItemCreate, 'household_id'>) => Promise<void>
+  addCategory:  (name: string) => Promise<void>
   toggleBought: (itemId: string, currentValue: boolean) => Promise<void>
   updateItem:   (itemId: string, updates: ShoppingItemUpdate) => Promise<void>
   deleteItem:   (itemId: string) => Promise<void>
+  refetch:      () => void
   loading:      boolean
   error:        string | null
 }
@@ -29,15 +32,61 @@ function sortItems(items: ShoppingItem[]): ShoppingItem[] {
 }
 
 // ──────────────────────────────────────────────────
+// Helper: determine log level from error
+// ──────────────────────────────────────────────────
+function logError(tag: string, err: unknown): void {
+  const is4xx = err instanceof Error && /HTTP 4\d\d/.test(err.message)
+  if (is4xx) console.warn(tag, err)
+  else console.error(tag, err)
+}
+
+// ──────────────────────────────────────────────────
 // Hook
 // ──────────────────────────────────────────────────
 export function useShoppingList(householdId: string | undefined): UseShoppingListReturn {
   const [items, setItems] = useState<ShoppingItem[]>([])
+  const [customCategories, setCustomCategories] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // ────────────────────────────────────────────────
-  // 1. INITIAL FETCH + window focus refetch
+  // Derived: unique categories from items + custom
+  // ────────────────────────────────────────────────
+  const categories = useMemo(() => {
+    const fromItems = items.map(i => i.category).filter(Boolean) as string[]
+    const all = new Set([...fromItems, ...customCategories])
+    return Array.from(all).sort()
+  }, [items, customCategories])
+
+  // ────────────────────────────────────────────────
+  // 1. FETCH FUNCTION (reusable)
+  // ────────────────────────────────────────────────
+  const fetchItems = useCallback(async () => {
+    if (!householdId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/home/shopping?household_id=${householdId}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const { data } = (await res.json()) as { data: ShoppingItem[] }
+      setItems(sortItems(data ?? []))
+    } catch (err) {
+      setError('Nie udało się załadować listy zakupów')
+      logError('[useShoppingList] fetchItems error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [householdId])
+
+  // ────────────────────────────────────────────────
+  // Public refetch
+  // ────────────────────────────────────────────────
+  const refetch = useCallback(() => {
+    void fetchItems()
+  }, [fetchItems])
+
+  // ────────────────────────────────────────────────
+  // 2. INITIAL FETCH + window focus refetch
   // ────────────────────────────────────────────────
   useEffect(() => {
     if (!householdId) {
@@ -45,32 +94,16 @@ export function useShoppingList(householdId: string | undefined): UseShoppingLis
       return
     }
 
-    async function fetchItems() {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(`/api/home/shopping?household_id=${householdId}`)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const { data } = (await res.json()) as { data: ShoppingItem[] }
-        setItems(sortItems(data ?? []))
-      } catch (err) {
-        setError('Nie udało się załadować listy zakupów')
-        console.error('[useShoppingList] fetchItems error:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchItems()
+    void fetchItems()
 
     // EC-2: refetch on window focus (catches missed real-time events)
     const onFocus = () => { void fetchItems() }
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
-  }, [householdId])
+  }, [householdId, fetchItems])
 
   // ────────────────────────────────────────────────
-  // 2. REALTIME SUBSCRIPTION
+  // 3. REALTIME SUBSCRIPTION
   // ────────────────────────────────────────────────
   useEffect(() => {
     if (!householdId) return
@@ -122,7 +155,7 @@ export function useShoppingList(householdId: string | undefined): UseShoppingLis
   }, [householdId])
 
   // ────────────────────────────────────────────────
-  // 3. MUTATIONS with OPTIMISTIC UPDATES
+  // 4. MUTATIONS with OPTIMISTIC UPDATES
   // ────────────────────────────────────────────────
 
   // addItem — AC-2: optimistic INSERT → API → rollback on error
@@ -162,9 +195,19 @@ export function useShoppingList(householdId: string | undefined): UseShoppingLis
       // Rollback: remove temp item
       setItems(prev => prev.filter(i => i.id !== tempId))
       setError('Nie udało się dodać produktu')
-      console.error('[useShoppingList] addItem error:', err)
+      logError('[useShoppingList] addItem error:', err)
     }
   }, [householdId])
+
+  // addCategory — adds a new category to local custom categories
+  const addCategory = useCallback(async (name: string) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setCustomCategories(prev => {
+      if (prev.includes(trimmed)) return prev
+      return [...prev, trimmed]
+    })
+  }, [])
 
   // toggleBought — optimistic UPDATE
   const toggleBought = useCallback(async (itemId: string, currentValue: boolean) => {
@@ -199,7 +242,7 @@ export function useShoppingList(householdId: string | undefined): UseShoppingLis
         setItems(prev => sortItems(prev.map(i => i.id === itemId ? snapshot : i)))
       }
       setError('Nie udało się zaktualizować produktu')
-      console.error('[useShoppingList] toggleBought error:', err)
+      logError('[useShoppingList] toggleBought error:', err)
     }
   }, [])
 
@@ -227,7 +270,7 @@ export function useShoppingList(householdId: string | undefined): UseShoppingLis
         setItems(items => items.map(i => i.id === itemId ? prev : i))
       }
       setError('Nie udało się zaktualizować produktu')
-      console.error('[useShoppingList] updateItem error:', err)
+      logError('[useShoppingList] updateItem error:', err)
     }
   }, [])
 
@@ -250,9 +293,20 @@ export function useShoppingList(householdId: string | undefined): UseShoppingLis
         setItems(prev => sortItems([...prev, item]))
       }
       setError('Nie udało się usunąć produktu')
-      console.error('[useShoppingList] deleteItem error:', err)
+      logError('[useShoppingList] deleteItem error:', err)
     }
   }, [])
 
-  return { items, addItem, toggleBought, updateItem, deleteItem, loading, error }
+  return {
+    items,
+    categories,
+    addItem,
+    addCategory,
+    toggleBought,
+    updateItem,
+    deleteItem,
+    refetch,
+    loading,
+    error,
+  }
 }

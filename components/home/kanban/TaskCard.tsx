@@ -111,22 +111,14 @@ export function TaskCard({ task, onClick, isDragging, isGhost, isDone }: TaskCar
         .filter(Boolean)
         .join(' ')}
     >
-      {/* Wiersz 1: Priorytet + Label (AC-3) */}
-      <div className="flex items-center gap-[6px] mb-[6px] flex-wrap">
+      {/* Wiersz 1: Priorytet */}
+      <div className="flex items-center gap-[6px] mb-[6px]">
         <span
           className="text-[10px] font-semibold px-[6px] py-[2px] rounded-[4px]"
           style={{ background: priority.bg, color: priority.color }}
         >
           {priority.emoji} {priority.label}
         </span>
-        {task.label && (
-          <span
-            className="text-[10px] font-medium px-[6px] py-[2px] rounded-[4px]"
-            style={{ background: '#1e2a3a', color: '#60a5fa', border: '1px solid #2a3a5a' }}
-          >
-            🏷️ {task.label}
-          </span>
-        )}
       </div>
 
       {/* Wiersz 2: Tytuł */}

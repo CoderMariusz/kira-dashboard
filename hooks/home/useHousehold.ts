@@ -96,7 +96,9 @@ export function useHousehold(): UseHouseholdReturn {
         setHousehold(householdData as Household)
         setMembers((membersData ?? []) as HouseholdMember[])
       } catch (err) {
-        console.error('[useHousehold] error:', err)
+        const is4xx = err instanceof Error && /HTTP 4\d\d/.test(err.message)
+        if (is4xx) console.warn('[useHousehold] error:', err)
+        else console.error('[useHousehold] error:', err)
         setError('Nie udało się załadować danych household')
       } finally {
         setLoading(false)

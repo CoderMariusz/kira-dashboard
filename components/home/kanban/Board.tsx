@@ -14,7 +14,6 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { useTasks } from '@/hooks/home/useTasks'
 import { useHousehold } from '@/hooks/home/useHousehold'
@@ -172,8 +171,7 @@ export function Board() {
       try {
         await moveTask({ taskId: draggedTask.id, targetColumnId, position: newPosition })
       } catch {
-        // Hook obsługuje rollback wewnętrznie — pokaz toast zamiast crashować board (AC-5)
-        toast.error('Nie udało się przenieść zadania')
+        // Hook obsługuje rollback wewnętrznie
       }
     },
     [columns, moveTask]
@@ -189,44 +187,13 @@ export function Board() {
         title,
         priority: 'medium',
       }
-      try {
-        await addTask(dto)
-      } catch {
-        // Hook obsługuje rollback wewnętrznie — pokaz toast zamiast crashować board (AC-5)
-        toast.error('Nie udało się dodać zadania')
-      }
+      await addTask(dto)
     },
-    [householdId, addTask]
-  )
-
-  // ═══ MUTATION WRAPPERS Z TOAST — AC-5: błędy mutacji NIE crashują board ═══
-  const handleUpdateTask = useCallback(
-    async (taskId: string, updates: import('@/types/home').TaskUpdate) => {
-      try {
-        await updateTask(taskId, updates)
-      } catch {
-        toast.error('Nie udało się zaktualizować zadania')
-        throw new Error('update failed') // re-throw żeby modal wiedział o błędzie
-      }
-    },
-    [updateTask]
-  )
-
-  const handleDeleteTask = useCallback(
-    async (taskId: string) => {
-      try {
-        await deleteTask(taskId)
-      } catch {
-        toast.error('Nie udało się usunąć zadania')
-        throw new Error('delete failed') // re-throw żeby modal wiedział o błędzie
-      }
-    },
-    [deleteTask]
+    [householdId, columns, addTask]
   )
 
   // ═══ LOADING ═══
   const isLoading = householdLoading || tasksLoading
-  // Tylko błędy ładowania pokazują BoardErrorState — błędy mutacji obsługiwane przez toast (AC-5)
   const error = householdError || tasksError
 
   if (isLoading) return <BoardSkeleton columns={3} />
@@ -287,8 +254,8 @@ export function Board() {
           columns={columns}
           members={members}
           onClose={() => setOpenTaskId(null)}
-          onUpdate={handleUpdateTask}
-          onDelete={handleDeleteTask}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
         />
       )}
     </DndContext>
