@@ -41,6 +41,14 @@ function getRedirectForRole(pathname: string, role: UserRole | null): string | n
     return null; // ADMIN, HELPER_PLUS — przepuść
   }
 
+  // /home/household — ADMIN lub HELPER_PLUS (STORY-4.7)
+  if (pathname === '/home/household' || pathname.startsWith('/home/household/')) {
+    if (role === 'HELPER') {
+      return '/home';
+    }
+    return null; // ADMIN, HELPER_PLUS — przepuść
+  }
+
   // /home/* — wszyscy zalogowani
   if (pathname.startsWith('/home')) {
     return null; // przepuść
@@ -85,14 +93,14 @@ async function getRoleFromDBOrCache(
     .single();
 
   if (error || !data) {
-    console.error('[RBAC] Failed to fetch role from DB:', error);
+    console.warn('[RBAC] Failed to fetch role from DB:', error);
     return null; // brak roli
   }
 
   const rawRole = (data as { role: string }).role;
 
   if (!isValidRole(rawRole)) {
-    console.error('[RBAC] Unknown role value from DB:', rawRole);
+    console.warn('[RBAC] Unknown role value from DB:', rawRole);
     return null;
   }
 
