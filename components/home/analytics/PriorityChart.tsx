@@ -38,10 +38,12 @@ function PriorityTooltip({ active, payload }: TooltipContentProps<number, string
   const entry = payload[0];
   if (!entry) return null;
   const item = entry.payload as PriorityDataPoint;
+  const total = payload.reduce((sum, p) => sum + ((p.payload as PriorityDataPoint).value ?? 0), 0);
+  const percent = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
   return (
     <div style={TOOLTIP_STYLE} className="px-2 py-1">
       <p className="font-semibold">{item.name}</p>
-      <p>{item.value} zadań</p>
+      <p>{item.value} zadań ({percent}%)</p>
     </div>
   );
 }
