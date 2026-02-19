@@ -173,13 +173,13 @@ export function RecentActivity({ events, isLoading }: RecentActivityProps) {
           onClick={() => router.push('/home/activity')}
           style={{
             fontSize:   '11px',
-            color:      '#c4b5fd',
+            color:      '#818cf8',
             background: 'none',
             border:     'none',
             cursor:     'pointer',
             fontWeight: 500,
           }}
-          className="focus:outline-none focus:ring-2 focus:ring-[#7c3aed] rounded"
+          className="focus:outline-none focus:ring-2 focus:ring-[#818cf8] rounded"
         >
           Pełny feed →
         </button>

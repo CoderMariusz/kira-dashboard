@@ -48,7 +48,7 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
       .then((body: { data: ColumnWithTasks[] }) => setColumns(body.data ?? []))
       .catch((err: unknown) => {
         setError('Nie udało się załadować zadań')
-        console.error('[useTasks] fetchColumns error:', err)
+        console.warn('[useTasks] fetchColumns error:', err)
       })
       .finally(() => setLoading(false))
   }, [householdId])
@@ -190,7 +190,7 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
         ...col,
         tasks: col.tasks.filter(t => t.id !== tempId),
       })))
-      console.error('[useTasks] addTask error:', err)
+      console.warn('[useTasks] addTask error:', err)
       // Re-throw — caller handles toast/display (AC-5: nie crashuj całego board)
       throw err
     }
@@ -238,7 +238,7 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
     } catch (err) {
       // Rollback
       setColumns(previousColumns)
-      console.error('[useTasks] moveTask error:', err)
+      console.warn('[useTasks] moveTask error:', err)
       // Re-throw — caller handles toast/display (AC-5: nie crashuj całego board)
       throw err
     }
@@ -264,7 +264,7 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
     } catch (err) {
       setColumns(previousColumns)
-      console.error('[useTasks] updateTask error:', err)
+      console.warn('[useTasks] updateTask error:', err)
       // Re-throw — caller handles toast/display (AC-5: nie crashuj całego board)
       throw err
     }
@@ -286,7 +286,7 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
     } catch (err) {
       setColumns(previousColumns)
-      console.error('[useTasks] deleteTask error:', err)
+      console.warn('[useTasks] deleteTask error:', err)
       // Re-throw — caller handles toast/display (AC-5: nie crashuj całego board)
       throw err
     }

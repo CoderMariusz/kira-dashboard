@@ -37,7 +37,7 @@ function sortItems(items: ShoppingItem[]): ShoppingItem[] {
 function logError(tag: string, err: unknown): void {
   const is4xx = err instanceof Error && /HTTP 4\d\d/.test(err.message)
   if (is4xx) console.warn(tag, err)
-  else console.error(tag, err)
+  else console.warn(tag, err)
 }
 
 // ──────────────────────────────────────────────────
