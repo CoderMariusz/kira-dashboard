@@ -70,7 +70,7 @@ export const BoughtSection = memo(function BoughtSection({
           disabled={isClearing}
           className="text-[11px] text-[#f87171] hover:text-[#fca5a5] disabled:opacity-50 px-2 py-1 rounded bg-[#3a1a1a] hover:bg-[#4a2020]"
         >
-          {isClearing ? 'Czyszczenie...' : 'Wyczyść'}
+          {isClearing ? 'Czyszczenie...' : 'Wyczyść kupione'}
         </button>
         <span
           className={`text-[10px] text-[#4b4569] transition-transform ${

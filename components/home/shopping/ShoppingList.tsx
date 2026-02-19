@@ -116,8 +116,10 @@ export function ShoppingList() {
   const {
     items,
     addItem,
+    addCategory,
     toggleBought,
     deleteItem,
+    refetch,
     loading: itemsLoading,
     error,
   } = useShoppingList(household?.id)
@@ -189,105 +191,113 @@ export function ShoppingList() {
     [addItem]
   )
 
-  // Loading skeleton
-  if (isLoading) {
-    return (
-      <div>
-        <ShoppingListSkeleton />
-      </div>
-    )
-  }
-
-  // Error state
-  if (error) {
-    return <ErrorState onRetry={() => window.location.reload()} />
-  }
-
-  // Empty state
-  if (!items || items.length === 0) {
-    return (
-      <div>
-        <button
-          onClick={() => setIsFormOpen(true)}
-          className="w-full p-4 bg-[#1a1730] border border-dashed border-[#2a2540] rounded-[10px] text-[#4b4569] hover:border-[#7c3aed] hover:text-[#e6edf3] transition-colors"
-        >
-          ➕ Dodaj pierwszy produkt
-        </button>
-        <EmptyState />
-        <AddItemForm
-          isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
-          onSubmit={handleAddItem}
-          isSubmitting={isSubmitting}
-          existingItems={items || []}
-        />
-      </div>
-    )
-  }
-
-  // Get ordered categories (sort by item count)
-  const orderedCategories = Object.keys(groupedItems).sort((a, b) => {
-    // 'Inne' always last
-    if (a === 'Inne') return 1
-    if (b === 'Inne') return -1
-    return (groupedItems[b]?.length ?? 0) - (groupedItems[a]?.length ?? 0)
-  })
+  // Get ordered categories (sort by item count, 'Inne' always last)
+  const orderedCategories = useMemo(
+    () =>
+      Object.keys(groupedItems).sort((a, b) => {
+        if (a === 'Inne') return 1
+        if (b === 'Inne') return -1
+        return (groupedItems[b]?.length ?? 0) - (groupedItems[a]?.length ?? 0)
+      }),
+    [groupedItems]
+  )
 
   return (
     <div>
-      {/* Header with add button */}
+      {/* ── Header — always visible in all states (AC-2) ── */}
       <div className="flex items-center gap-3 mb-4">
         <h2 className="text-[18px] font-extrabold text-[#e6edf3] flex-1">
           🛒 Lista zakupów
         </h2>
-        <span className="text-[12px] text-[#4b4569]">
-          {activeItems.length} produktów do kupienia
-        </span>
-        <button
-          onClick={() => setIsFormOpen(true)}
-          className="px-3 py-1.5 bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] text-white text-[12px] rounded-lg hover:opacity-90 transition-opacity"
-        >
-          ➕ Dodaj
-        </button>
+        {!isLoading && !error && (
+          <>
+            <span className="text-[12px] text-[#4b4569]">
+              {activeItems.length} produktów do kupienia
+            </span>
+            <button
+              onClick={() => setIsFormOpen(true)}
+              className="px-3 py-1.5 bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] text-white text-[12px] rounded-lg hover:opacity-90 transition-opacity"
+            >
+              ➕ Dodaj
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Progress bar */}
-      {items.length > 0 && (
-        <ProgressBar
-          boughtCount={boughtItems.length}
-          totalCount={items.length}
-          progressPercent={progressPercent}
-        />
+      {/* ── Loading state — disabled AddItemForm trigger + skeleton (AC-2) ── */}
+      {isLoading && (
+        <>
+          <div style={{ opacity: 0.5, pointerEvents: 'none' }}>
+            <button
+              disabled
+              className="w-full p-4 bg-[#1a1730] border border-dashed border-[#2a2540] rounded-[10px] text-[#4b4569] mb-4"
+            >
+              ➕ Dodaj produkt
+            </button>
+          </div>
+          <ShoppingListSkeleton />
+        </>
       )}
 
-      {/* Category groups */}
-      <div>
-        {orderedCategories.map(categoryName => (
-          <CategoryGroup
-            key={categoryName}
-            categoryName={categoryName}
-            items={groupedItems[categoryName] ?? []}
+      {/* ── Error state ── */}
+      {!isLoading && error && (
+        <ErrorState onRetry={() => refetch()} />
+      )}
+
+      {/* ── Empty state ── */}
+      {!isLoading && !error && (!items || items.length === 0) && (
+        <>
+          <button
+            onClick={() => setIsFormOpen(true)}
+            className="w-full p-4 bg-[#1a1730] border border-dashed border-[#2a2540] rounded-[10px] text-[#4b4569] hover:border-[#7c3aed] hover:text-[#e6edf3] transition-colors"
+          >
+            ➕ Dodaj pierwszy produkt
+          </button>
+          <EmptyState />
+        </>
+      )}
+
+      {/* ── Filled state ── */}
+      {!isLoading && !error && items && items.length > 0 && (
+        <>
+          {/* Progress bar */}
+          <ProgressBar
+            boughtCount={boughtItems.length}
+            totalCount={items.length}
+            progressPercent={progressPercent}
+          />
+
+          {/* Category groups */}
+          <div>
+            {orderedCategories.map(categoryName => (
+              <CategoryGroup
+                key={categoryName}
+                categoryName={categoryName}
+                items={groupedItems[categoryName] ?? []}
+                onToggle={handleToggle}
+                isToggling={togglingId}
+              />
+            ))}
+          </div>
+
+          {/* Bought section */}
+          <BoughtSection
+            items={items}
             onToggle={handleToggle}
+            onDelete={handleDelete}
             isToggling={togglingId}
           />
-        ))}
-      </div>
+        </>
+      )}
 
-      {/* Bought section */}
-      <BoughtSection
-        items={items}
-        onToggle={handleToggle}
-        onDelete={handleDelete}
-        isToggling={togglingId}
-      />
-
-      {/* Add item modal */}
+      {/* ── Add item modal — rendered outside state blocks ── */}
       <AddItemForm
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSubmit={handleAddItem}
         isSubmitting={isSubmitting}
         existingItems={items ?? []}
+        onAddCategory={addCategory}
       />
     </div>
   )
