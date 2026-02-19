@@ -70,6 +70,7 @@ export function useActivity(householdId: string | undefined, limit = 20): UseAct
   useEffect(() => {
     if (!householdId) return
     const supabase = createClient()
+    let mounted = true
 
     const channel = supabase
       .channel(`activity:${householdId}`)
@@ -82,6 +83,7 @@ export function useActivity(householdId: string | undefined, limit = 20): UseAct
           filter: `household_id=eq.${householdId}`,
         },
         (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+          if (!mounted) return
           const newEvent = payload.new as unknown as ActivityEvent
           setEvents(prev => {
             // Prepend newest event, trim to limit — AC-5
@@ -93,7 +95,10 @@ export function useActivity(householdId: string | undefined, limit = 20): UseAct
       .subscribe()
 
     // AC-7: cleanup on unmount
-    return () => { void supabase.removeChannel(channel) }
+    return () => {
+      mounted = false
+      void supabase.removeChannel(channel)
+    }
   }, [householdId, limit])
 
   return { events, loading, error }
