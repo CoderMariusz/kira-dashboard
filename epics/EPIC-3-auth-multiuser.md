@@ -1,5 +1,5 @@
 ---
-epic_id: EPIC-16
+epic_id: EPIC-3
 title: "Auth + Multi-User (Rodzina Krawczyków)"
 module: auth
 status: draft

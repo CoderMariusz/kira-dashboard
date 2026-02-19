@@ -1,5 +1,5 @@
 ---
-epic_id: EPIC-14
+epic_id: EPIC-1
 title: "Kira Dashboard — Next.js Monitoring & Intelligence UI"
 module: dashboard
 status: draft

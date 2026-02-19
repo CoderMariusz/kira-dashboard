@@ -1,5 +1,5 @@
 ---
-epic_id: EPIC-15
+epic_id: EPIC-2
 title: "Dashboard v2: Real-time + Write Operations"
 module: dashboard
 status: draft
