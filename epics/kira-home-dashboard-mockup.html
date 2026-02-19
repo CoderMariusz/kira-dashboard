@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kira Home Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',-apple-system,sans-serif; background:#13111c; color:#e6edf3; display:flex; height:100vh; overflow:hidden; }
+
+/* ─── ICON RAIL ─── */
+.icon-rail { width:54px; min-width:54px; background:#1a1730; border-right:1px solid #2a2540; display:flex; flex-direction:column; align-items:center; padding:12px 0; gap:4px; }
+.rail-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer; color:#6b7280; transition:.15s; }
+.rail-icon:hover { background:#2a2540; color:#e6edf3; }
+.rail-icon.active { background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; box-shadow:0 2px 12px rgba(124,58,237,.4); }
+.rail-spacer { flex:1; }
+.rail-avatar { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#ec4899,#f97316); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; cursor:pointer; color:#fff; }
+
+/* ─── SIDE NAV ─── */
+.side-nav { width:198px; min-width:198px; background:#1a1730; border-right:1px solid #2a2540; display:flex; flex-direction:column; }
+.side-nav-header { padding:14px 12px 10px; border-bottom:1px solid #2a2540; }
+.proj-switcher { display:flex; align-items:center; gap:8px; background:#13111c; border:1px solid #2a2540; border-radius:8px; padding:7px 10px; cursor:pointer; transition:.15s; margin-bottom:10px; }
+.proj-switcher:hover { border-color:#7c3aed; }
+.ps-icon { width:26px; height:26px; background:linear-gradient(135deg,#ec4899,#f97316); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.ps-name { font-size:13px; font-weight:700; color:#e6edf3; flex:1; }
+.ps-arrow { font-size:10px; color:#6b7280; }
+.kira-version-tag { display:flex; align-items:center; gap:6px; }
+.kv-dot { width:6px; height:6px; background:#3fb950; border-radius:50%; }
+.kv-text { font-size:11px; color:#6b7280; }
+.kv-badge { font-size:10px; color:#f9a8d4; background:#4a1942; padding:1px 6px; border-radius:4px; font-weight:600; margin-left:auto; }
+
+.side-nav-items { flex:1; padding:6px; overflow-y:auto; }
+.nav-lbl { font-size:10px; font-weight:700; color:#3d3757; text-transform:uppercase; letter-spacing:.08em; padding:10px 8px 3px; }
+.nav-item { display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:7px; cursor:pointer; font-size:13px; color:#6b7280; transition:.15s; margin-bottom:1px; }
+.nav-item:hover { background:#2a2540; color:#e6edf3; }
+.nav-item.active { background:#2d1b4a; color:#c4b5fd; font-weight:600; }
+.ni-icon { font-size:13px; width:16px; text-align:center; }
+.ni-badge { margin-left:auto; font-size:10px; font-weight:600; background:#2a2540; color:#818cf8; padding:1px 6px; border-radius:8px; }
+.ni-badge.warn { background:#3a2a00; color:#e3b341; }
+.ni-badge.pink { background:#4a1942; color:#f9a8d4; }
+
+.side-nav-footer { padding:10px; border-top:1px solid #2a2540; }
+.user-pill { display:flex; align-items:center; gap:8px; background:#13111c; border:1px solid #2a2540; border-radius:8px; padding:8px 10px; }
+.up-avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#ec4899,#f97316); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; flex-shrink:0; }
+.up-name { font-size:12px; font-weight:600; color:#e6edf3; }
+.up-role { font-size:10px; color:#f9a8d4; margin-top:1px; }
+
+/* ─── MAIN ─── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+.topbar { height:50px; border-bottom:1px solid #2a2540; display:flex; align-items:center; padding:0 20px; gap:10px; background:#1a1730; }
+.topbar h1 { font-size:16px; font-weight:700; color:#e6edf3; flex:1; }
+.topbar-search { display:flex; align-items:center; gap:7px; background:#13111c; border:1px solid #2a2540; border-radius:8px; padding:6px 12px; color:#4b4569; font-size:12px; width:230px; }
+.topbar-actions { display:flex; gap:7px; }
+.icon-action { width:32px; height:32px; background:#13111c; border:1px solid #2a2540; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#6b7280; font-size:12px; position:relative; }
+.icon-action .dot { position:absolute; top:5px; right:5px; width:6px; height:6px; background:#f85149; border-radius:50%; }
+.btn-new { padding:6px 14px; background:linear-gradient(135deg,#ec4899,#f97316); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 10px rgba(236,72,153,.3); }
+
+/* ─── TABS ─── */
+.tabs-bar { display:flex; gap:2px; padding:10px 20px 0; border-bottom:1px solid #2a2540; background:#1a1730; }
+.tab { padding:7px 14px; font-size:12px; color:#6b7280; cursor:pointer; border-radius:7px 7px 0 0; transition:.15s; border-bottom:2px solid transparent; margin-bottom:-1px; }
+.tab:hover { color:#e6edf3; }
+.tab.active { color:#c4b5fd; border-bottom-color:#c4b5fd; font-weight:600; background:#13111c; }
+
+/* ─── CONTENT ─── */
+.content { flex:1; overflow-y:auto; padding:18px 20px; }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+
+/* ─── GREETING BANNER ─── */
+.greeting-banner { background:linear-gradient(135deg,#2d1b4a 0%,#1a2744 60%,#1a1a2e 100%); border:1px solid #4b3d7a; border-radius:12px; padding:18px 22px; margin-bottom:18px; display:flex; align-items:center; gap:14px; }
+.gb-icon { width:48px; height:48px; background:linear-gradient(135deg,#ec4899,#f97316); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; box-shadow:0 2px 14px rgba(236,72,153,.4); }
+.gb-title { font-size:20px; font-weight:800; background:linear-gradient(135deg,#f9a8d4,#fed7aa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.gb-sub { font-size:12px; color:#6b7280; margin-top:3px; }
+.gb-date { margin-left:auto; text-align:right; }
+.gb-date-main { font-size:15px; font-weight:700; color:#e6edf3; }
+.gb-date-sub { font-size:11px; color:#4b4569; margin-top:2px; }
+
+/* ─── STAT CARDS ─── */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+.stat-card { background:#1a1730; border:1px solid #2a2540; border-radius:10px; padding:14px 16px; transition:.15s; cursor:pointer; }
+.stat-card:hover { border-color:#4b3d7a; transform:translateY(-1px); }
+.s-lbl { font-size:10px; color:#4b4569; text-transform:uppercase; letter-spacing:.07em; margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.s-icon { font-size:14px; }
+.s-val { font-size:26px; font-weight:800; color:#e6edf3; line-height:1; }
+.s-sub { font-size:10px; color:#4b4569; margin-top:4px; }
+.s-trend { font-size:11px; margin-top:3px; display:flex; align-items:center; gap:3px; }
+.s-trend.up { color:#4ade80; }
+.s-trend.dn { color:#f87171; }
+.s-trend.pink { color:#f9a8d4; }
+
+/* ─── OVERVIEW GRID ─── */
+.overview-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+.overview-grid-3 { display:grid; grid-template-columns:2fr 1fr 1fr; gap:14px; margin-bottom:18px; }
+
+/* ─── CARD ─── */
+.card { background:#1a1730; border:1px solid #2a2540; border-radius:10px; padding:15px; }
+.card-hdr { display:flex; align-items:center; margin-bottom:12px; }
+.card-hdr h3 { font-size:13px; font-weight:700; color:#e6edf3; flex:1; }
+.card-hdr .sub { font-size:11px; color:#4b4569; margin-left:6px; }
+.see-all { font-size:11px; color:#c4b5fd; cursor:pointer; margin-left:auto; }
+.see-all:hover { color:#f9a8d4; }
+
+/* ─── QUICK ACTIONS ─── */
+.quick-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.qa-btn { padding:7px 14px; background:#2a2540; border:1px solid #3b3d7a; border-radius:8px; color:#e6edf3; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:.15s; font-weight:500; }
+.qa-btn:hover { background:#3b3d7a; border-color:#7c3aed; }
+.qa-btn.primary { background:linear-gradient(135deg,#7c3aed,#3b82f6); border-color:transparent; box-shadow:0 2px 10px rgba(124,58,237,.3); }
+.qa-btn.primary:hover { opacity:.9; }
+
+/* ─── SHOPPING MINI LIST ─── */
+.shopping-item { display:flex; align-items:center; gap:9px; padding:7px 0; border-bottom:1px solid #1f1c2e; }
+.shopping-item:last-child { border-bottom:none; }
+.s-check { width:16px; height:16px; border-radius:4px; border:1.5px solid #3b3d7a; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:.15s; }
+.s-check:hover { border-color:#c4b5fd; }
+.s-check.checked { background:linear-gradient(135deg,#7c3aed,#3b82f6); border-color:transparent; }
+.s-check.checked::after { content:'✓'; font-size:10px; color:#fff; }
+.s-item-name { font-size:12px; color:#e6edf3; flex:1; }
+.s-item-name.done { text-decoration:line-through; color:#4b4569; }
+.s-cat-tag { font-size:9px; color:#4b4569; background:#13111c; padding:2px 6px; border-radius:5px; }
+
+/* ─── MINI KANBAN ─── */
+.mini-kanban { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.mk-col { background:#13111c; border-radius:8px; padding:8px; }
+.mk-col-hdr { font-size:10px; font-weight:700; color:#4b4569; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; display:flex; align-items:center; gap:5px; }
+.mk-col-dot { width:6px; height:6px; border-radius:50%; }
+.mk-card { background:#1a1730; border:1px solid #2a2540; border-radius:6px; padding:8px 10px; margin-bottom:5px; cursor:pointer; transition:.15s; }
+.mk-card:hover { border-color:#4b3d7a; }
+.mk-card-title { font-size:11px; color:#e6edf3; margin-bottom:4px; }
+.mk-card-meta { display:flex; align-items:center; gap:5px; }
+.mk-prio { font-size:9px; }
+.mk-avatar { width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff; margin-left:auto; }
+
+/* ─── ACTIVITY MINI ─── */
+.act-list { display:flex; flex-direction:column; }
+.act-item { display:flex; gap:10px; padding:7px 0; border-bottom:1px solid #1f1c2e; position:relative; }
+.act-item:last-child { border-bottom:none; }
+.act-timeline { display:flex; flex-direction:column; align-items:center; flex-shrink:0; padding-top:3px; }
+.act-dot-outer { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; flex-shrink:0; }
+.act-line { width:1px; background:#2a2540; flex:1; margin-top:3px; min-height:12px; }
+.act-item:last-child .act-line { display:none; }
+.act-body { flex:1; padding-top:2px; }
+.act-event { font-size:12px; color:#c9d1d9; line-height:1.4; }
+.act-event strong { color:#c4b5fd; }
+.act-time { font-size:10px; color:#4b4569; margin-top:2px; }
+.act-tag { font-size:9px; padding:1px 6px; border-radius:5px; margin-left:5px; font-weight:600; }
+.act-tag.shop { background:#1a3a1a; color:#4ade80; }
+.act-tag.task { background:#1a2744; color:#60a5fa; }
+.act-tag.hh { background:#3a2a00; color:#fbbf24; }
+
+/* ─── SHOPPING TAB ─── */
+.shop-header { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.shop-header h2 { font-size:18px; font-weight:800; color:#e6edf3; flex:1; }
+.btn-add { padding:7px 16px; background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.btn-add:hover { opacity:.9; }
+
+.shop-category { margin-bottom:10px; background:#1a1730; border:1px solid #2a2540; border-radius:10px; overflow:hidden; }
+.cat-header { display:flex; align-items:center; gap:10px; padding:11px 14px; cursor:pointer; transition:.15s; }
+.cat-header:hover { background:#2a2540; }
+.cat-emoji { font-size:16px; }
+.cat-name { font-size:13px; font-weight:600; color:#e6edf3; flex:1; }
+.cat-count { font-size:11px; color:#4b4569; background:#13111c; padding:2px 8px; border-radius:8px; }
+.cat-chevron { font-size:10px; color:#4b4569; transition:.2s; }
+.cat-chevron.open { transform:rotate(90deg); }
+.cat-items { padding:0 14px 10px; border-top:1px solid #2a2540; }
+.shop-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #1f1c2e; }
+.shop-row:last-child { border-bottom:none; }
+.shop-item-name { font-size:12px; color:#e6edf3; flex:1; }
+.shop-item-name.bought { text-decoration:line-through; color:#4b4569; }
+.shop-qty { font-size:11px; color:#4b4569; }
+.shop-actions { display:flex; gap:4px; opacity:0; transition:.15s; }
+.shop-row:hover .shop-actions { opacity:1; }
+.shop-action-btn { width:22px; height:22px; background:#2a2540; border:none; border-radius:5px; color:#6b7280; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+.bought-section { margin-top:10px; background:#1a1730; border:1px solid #2a2540; border-radius:10px; overflow:hidden; }
+.bought-header { display:flex; align-items:center; gap:10px; padding:11px 14px; cursor:pointer; color:#4b4569; }
+.bought-header:hover { background:#2a2540; }
+.bought-title { font-size:12px; font-weight:600; flex:1; }
+.bought-items { padding:0 14px 10px; border-top:1px solid #2a2540; }
+
+/* ─── KANBAN TAB ─── */
+.kanban-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.kanban-toolbar h2 { font-size:18px; font-weight:800; color:#e6edf3; flex:1; }
+.filter-bar { display:flex; gap:5px; }
+.filter-btn { padding:5px 12px; background:#2a2540; border:1px solid #3b3d7a; border-radius:20px; color:#6b7280; font-size:11px; cursor:pointer; transition:.15s; }
+.filter-btn:hover { color:#e6edf3; }
+.filter-btn.active { background:#2d1b4a; border-color:#7c3aed; color:#c4b5fd; font-weight:600; }
+
+.kanban-board { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.k-col { background:#1a1730; border:1px solid #2a2540; border-radius:10px; padding:12px; }
+.k-col-hdr { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.k-col-title { font-size:12px; font-weight:700; color:#e6edf3; flex:1; }
+.k-col-count { font-size:10px; font-weight:600; background:#2a2540; color:#6b7280; padding:1px 7px; border-radius:8px; }
+.k-col-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+.quick-add { display:flex; gap:6px; margin-bottom:10px; }
+.quick-add-input { flex:1; background:#13111c; border:1px solid #2a2540; border-radius:7px; padding:6px 10px; color:#e6edf3; font-size:12px; outline:none; }
+.quick-add-input:focus { border-color:#7c3aed; }
+.quick-add-input::placeholder { color:#3d3757; }
+.quick-add-btn { width:28px; height:28px; background:linear-gradient(135deg,#7c3aed,#3b82f6); border:none; border-radius:7px; color:#fff; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+.task-card { background:#13111c; border:1px solid #2a2540; border-radius:8px; padding:10px 11px; margin-bottom:7px; cursor:pointer; transition:.15s; }
+.task-card:hover { border-color:#4b3d7a; transform:translateY(-1px); box-shadow:0 3px 12px rgba(0,0,0,.3); }
+.tc-title { font-size:12px; color:#e6edf3; margin-bottom:6px; font-weight:500; line-height:1.4; }
+.tc-meta { display:flex; align-items:center; gap:6px; }
+.tc-prio { font-size:10px; display:flex; align-items:center; gap:3px; }
+.tc-avatar { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:#fff; margin-left:auto; flex-shrink:0; }
+.tc-tag { font-size:9px; padding:1px 6px; border-radius:5px; }
+.tc-tag.shopping { background:#1a3a1a; color:#4ade80; }
+.tc-tag.home { background:#1a2744; color:#60a5fa; }
+
+/* ─── ACTIVITY FEED TAB ─── */
+.activity-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.activity-toolbar h2 { font-size:18px; font-weight:800; color:#e6edf3; flex:1; }
+.activity-feed { background:#1a1730; border:1px solid #2a2540; border-radius:10px; padding:16px; }
+.feed-item { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid #1f1c2e; }
+.feed-item:last-child { border-bottom:none; }
+.feed-timeline { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+.feed-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; flex-shrink:0; }
+.feed-line { width:1px; background:#2a2540; flex:1; margin-top:5px; min-height:16px; }
+.feed-item:last-child .feed-line { display:none; }
+.feed-body { flex:1; padding-top:4px; }
+.feed-text { font-size:12px; color:#c9d1d9; line-height:1.5; }
+.feed-text strong { color:#c4b5fd; }
+.feed-meta { display:flex; align-items:center; gap:6px; margin-top:4px; }
+.feed-time { font-size:10px; color:#4b4569; }
+.feed-badge { font-size:9px; padding:2px 7px; border-radius:5px; font-weight:600; }
+.fb-shop { background:#1a3a1a; color:#4ade80; }
+.fb-task { background:#1a2744; color:#60a5fa; }
+.fb-hh { background:#3a2a00; color:#fbbf24; }
+
+/* ─── ANALYTICS TAB ─── */
+.analytics-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.analytics-toolbar h2 { font-size:18px; font-weight:800; color:#e6edf3; flex:1; }
+.role-badge { font-size:11px; padding:3px 10px; background:#2d1b4a; border:1px solid #5b21b6; color:#c4b5fd; border-radius:20px; font-weight:600; }
+.analytics-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px; }
+.analytics-charts { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.chart-card { background:#1a1730; border:1px solid #2a2540; border-radius:10px; padding:16px; }
+.chart-title { font-size:13px; font-weight:700; color:#e6edf3; margin-bottom:4px; }
+.chart-sub { font-size:11px; color:#4b4569; margin-bottom:14px; }
+.chart-wrap { height:180px; }
+
+/* ─── MODAL ─── */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); z-index:100; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:#1a1730; border:1px solid #3b3d7a; border-radius:14px; width:480px; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.6); animation:fadeUp .2s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.modal-header { padding:18px 20px 12px; border-bottom:1px solid #2a2540; display:flex; align-items:flex-start; gap:12px; }
+.modal-icon { width:40px; height:40px; border-radius:10px; background:#1a3a1a; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.modal-title { font-size:16px; font-weight:700; color:#e6edf3; }
+.modal-sub { font-size:12px; color:#6b7280; margin-top:2px; }
+.modal-close { margin-left:auto; width:28px; height:28px; background:#2a2540; border:none; border-radius:7px; color:#6b7280; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.modal-close:hover { background:#3b3d7a; color:#e6edf3; }
+.modal-body { padding:16px 20px; }
+.form-group { margin-bottom:14px; }
+.form-label { font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; display:block; }
+.form-input { width:100%; background:#13111c; border:1px solid #2a2540; border-radius:8px; padding:9px 12px; color:#e6edf3; font-size:13px; outline:none; font-family:inherit; }
+.form-input:focus { border-color:#7c3aed; }
+.form-input::placeholder { color:#3d3757; }
+.form-select { width:100%; background:#13111c; border:1px solid #2a2540; border-radius:8px; padding:9px 12px; color:#e6edf3; font-size:13px; outline:none; font-family:inherit; cursor:pointer; }
+.form-select:focus { border-color:#7c3aed; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.modal-footer { padding:12px 20px 16px; border-top:1px solid #2a2540; display:flex; gap:9px; justify-content:flex-end; }
+.mf-btn-p { padding:8px 20px; background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
+.mf-btn-p:hover { opacity:.9; }
+.mf-btn-s { padding:8px 20px; background:#2a2540; color:#6b7280; border:none; border-radius:8px; font-size:12px; cursor:pointer; }
+.mf-btn-s:hover { background:#3b3d7a; color:#e6edf3; }
+
+/* scrollbar */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:#13111c; }
+::-webkit-scrollbar-thumb { background:#2a2540; border-radius:4px; }
+</style>
+</head>
+<body>
+
+<!-- MODAL: Dodaj produkt -->
+<div class="modal-overlay" id="addProductModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon">🛒</div>
+      <div>
+        <div class="modal-title">Dodaj produkt</div>
+        <div class="modal-sub">Dodaj nowy produkt do listy zakupów</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nazwa produktu</label>
+        <input class="form-input" type="text" placeholder="np. Mleko 3.2%, Chleb żytni...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Kategoria</label>
+          <select class="form-select">
+            <option>🥩 Mięso & Ryby</option>
+            <option>🥬 Warzywa</option>
+            <option>🥛 Nabiał</option>
+            <option>🧴 Chemia</option>
+            <option>🍞 Piekarnia</option>
+            <option>🧃 Napoje</option>
+            <option>🍎 Owoce</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ilość</label>
+          <input class="form-input" type="text" placeholder="np. 2 szt, 1 kg">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notatka (opcjonalnie)</label>
+        <input class="form-input" type="text" placeholder="Dodatkowe informacje...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="mf-btn-s" onclick="closeModal()">Anuluj</button>
+      <button class="mf-btn-p">➕ Dodaj do listy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ICON RAIL -->
+<div class="icon-rail">
+  <div class="rail-icon active" title="Home">🏠</div>
+  <div class="rail-icon" title="Pipeline">⚙️</div>
+  <div class="rail-icon" title="Analytics">📊</div>
+  <div class="rail-icon" title="Notifications">🔔</div>
+  <div class="rail-spacer"></div>
+  <div class="rail-avatar" title="Angelika">A</div>
+</div>
+
+<!-- SIDE NAV -->
+<div class="side-nav">
+  <div class="side-nav-header">
+    <div class="proj-switcher">
+      <div class="ps-icon">🏡</div>
+      <div class="ps-name">kira-dashboard</div>
+      <div class="ps-arrow">⌄</div>
+    </div>
+    <div class="kira-version-tag">
+      <div class="kv-dot"></div>
+      <div class="kv-text">kira v1.0</div>
+      <div class="kv-badge">HOME</div>
+    </div>
+  </div>
+
+  <div class="side-nav-items">
+    <div class="nav-lbl">Home</div>
+    <div class="nav-item active" onclick="switchTab('overview'); setActiveNav(this)">
+      <span class="ni-icon">🏠</span> Overview
+    </div>
+    <div class="nav-item" onclick="switchTab('shopping'); setActiveNav(this)">
+      <span class="ni-icon">🛒</span> Shopping List
+      <span class="ni-badge warn">12</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('tasks'); setActiveNav(this)">
+      <span class="ni-icon">✅</span> Tasks
+      <span class="ni-badge">3</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('activity'); setActiveNav(this)">
+      <span class="ni-icon">📡</span> Activity
+      <span class="ni-badge pink">5</span>
+    </div>
+
+    <div class="nav-lbl">Family</div>
+    <div class="nav-item" onclick="setActiveNav(this)">
+      <span class="ni-icon">👥</span> Household
+    </div>
+    <div class="nav-item" onclick="setActiveNav(this)">
+      <span class="ni-icon">⚙️</span> Settings
+    </div>
+
+    <div class="nav-lbl">Analytics</div>
+    <div class="nav-item" onclick="switchTab('analytics'); setActiveNav(this)">
+      <span class="ni-icon">📊</span> Analytics
+      <span class="ni-badge" style="color:#f9a8d4;background:#4a1942">HELPER+</span>
+    </div>
+  </div>
+
+  <div class="side-nav-footer">
+    <div class="user-pill">
+      <div class="up-avatar">A</div>
+      <div>
+        <div class="up-name">Angelika</div>
+        <div class="up-role">HELPER+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <h1>🏠 Home Dashboard</h1>
+    <div class="topbar-search">🔍 &nbsp;Szukaj zadań, produktów...</div>
+    <div class="topbar-actions">
+      <div class="icon-action"><div class="dot"></div>🔔</div>
+      <div class="icon-action">👤</div>
+      <button class="btn-new" onclick="openModal()">➕ Dodaj</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-bar">
+    <div class="tab active" data-tab="overview" onclick="switchTab('overview'); switchTabStyle(this)">🏠 Overview</div>
+    <div class="tab" data-tab="shopping" onclick="switchTab('shopping'); switchTabStyle(this)">🛒 Shopping</div>
+    <div class="tab" data-tab="tasks" onclick="switchTab('tasks'); switchTabStyle(this)">✅ Tasks</div>
+    <div class="tab" data-tab="activity" onclick="switchTab('activity'); switchTabStyle(this)">📡 Activity</div>
+    <div class="tab" data-tab="analytics" onclick="switchTab('analytics'); switchTabStyle(this)">📊 Analytics</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ═══ OVERVIEW TAB ═══ -->
+    <div class="tab-pane active" id="pane-overview">
+
+      <div class="greeting-banner">
+        <div class="gb-icon">👋</div>
+        <div>
+          <div class="gb-title">Cześć Angelika! 👋</div>
+          <div class="gb-sub">Dobry wieczór — masz 3 zadania na dziś i 12 produktów do kupienia.</div>
+        </div>
+        <div class="gb-date">
+          <div class="gb-date-main">Wtorek, 19 lut</div>
+          <div class="gb-date-sub">2026 · tydzień 8</div>
+        </div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="s-lbl"><span class="s-icon">✅</span> Zadania dziś</div>
+          <div class="s-val">3</div>
+          <div class="s-sub">2 nierozpoczęte · 1 w trakcie</div>
+          <div class="s-trend up">↑ +1 od wczoraj</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-lbl"><span class="s-icon">🛒</span> Do kupienia</div>
+          <div class="s-val">12</div>
+          <div class="s-sub">w 4 kategoriach</div>
+          <div class="s-trend dn">↑ +3 od rana</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-lbl"><span class="s-icon">📡</span> Aktywność dziś</div>
+          <div class="s-val">5</div>
+          <div class="s-sub">zdarzeń w tym dniu</div>
+          <div class="s-trend pink">🔥 aktywny dzień</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-lbl"><span class="s-icon">👥</span> Członkowie rodziny</div>
+          <div class="s-val">4</div>
+          <div class="s-sub">Angelika, Mariusz, Zuza, Iza</div>
+          <div class="s-trend" style="color:#4b4569;">wszyscy online</div>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-hdr"><h3>⚡ Quick Actions</h3></div>
+        <div class="quick-actions">
+          <button class="qa-btn primary" onclick="switchTab('tasks'); switchTabByName('tasks')">➕ Dodaj zadanie</button>
+          <button class="qa-btn" onclick="openModal()">🛒 Dodaj do listy</button>
+          <button class="qa-btn">👥 Zaproś osobę</button>
+          <button class="qa-btn" onclick="switchTab('activity'); switchTabByName('activity')">📡 Zobacz aktywność</button>
+        </div>
+      </div>
+
+      <!-- BOTTOM GRID: mini-shopping + mini-kanban + recent activity -->
+      <div class="overview-grid">
+        <!-- Mini Shopping List -->
+        <div class="card">
+          <div class="card-hdr">
+            <h3>🛒 Lista zakupów</h3>
+            <span class="card-hdr sub">top 5</span>
+            <span class="see-all" onclick="switchTab('shopping'); switchTabByName('shopping')">Zobacz wszystko →</span>
+          </div>
+          <div class="shopping-item">
+            <div class="s-check"></div>
+            <span class="s-item-name">Mleko 3.2%</span>
+            <span class="s-cat-tag">🥛 Nabiał</span>
+          </div>
+          <div class="shopping-item">
+            <div class="s-check"></div>
+            <span class="s-item-name">Chleb żytni</span>
+            <span class="s-cat-tag">🍞 Piekarnia</span>
+          </div>
+          <div class="shopping-item">
+            <div class="s-check checked"></div>
+            <span class="s-item-name done">Masło</span>
+            <span class="s-cat-tag">🥛 Nabiał</span>
+          </div>
+          <div class="shopping-item">
+            <div class="s-check"></div>
+            <span class="s-item-name">Pomidory</span>
+            <span class="s-cat-tag">🥬 Warzywa</span>
+          </div>
+          <div class="shopping-item">
+            <div class="s-check"></div>
+            <span class="s-item-name">Kurczak 1kg</span>
+            <span class="s-cat-tag">🥩 Mięso</span>
+          </div>
+        </div>
+
+        <!-- Recent Activity mini -->
+        <div class="card">
+          <div class="card-hdr">
+            <h3>📡 Ostatnia aktywność</h3>
+            <span class="see-all" onclick="switchTab('activity'); switchTabByName('activity')">Więcej →</span>
+          </div>
+          <div class="act-list">
+            <div class="act-item">
+              <div class="act-timeline">
+                <div class="act-dot-outer" style="background:linear-gradient(135deg,#ec4899,#f97316)">A</div>
+                <div class="act-line"></div>
+              </div>
+              <div class="act-body">
+                <div class="act-event"><strong>Angelika</strong> dodała "Mleko" do listy <span class="act-tag shop">zakupy</span></div>
+                <div class="act-time">10 min temu</div>
+              </div>
+            </div>
+            <div class="act-item">
+              <div class="act-timeline">
+                <div class="act-dot-outer" style="background:linear-gradient(135deg,#a78bfa,#60a5fa)">Z</div>
+                <div class="act-line"></div>
+              </div>
+              <div class="act-body">
+                <div class="act-event"><strong>Zuza</strong> ukończyła "Posprzątaj pokój" <span class="act-tag task">zadanie</span></div>
+                <div class="act-time">1h temu</div>
+              </div>
+            </div>
+            <div class="act-item">
+              <div class="act-timeline">
+                <div class="act-dot-outer" style="background:linear-gradient(135deg,#3b82f6,#06b6d4)">M</div>
+                <div class="act-line"></div>
+              </div>
+              <div class="act-body">
+                <div class="act-event"><strong>Mariusz</strong> dodał "Zapłać rachunki" <span class="act-tag task">zadanie</span></div>
+                <div class="act-time">3h temu</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MINI KANBAN -->
+      <div class="card">
+        <div class="card-hdr">
+          <h3>📋 Zadania — podgląd</h3>
+          <span class="see-all" onclick="switchTab('tasks'); switchTabByName('tasks')">Otwórz Kanban →</span>
+        </div>
+        <div class="mini-kanban">
+          <div class="mk-col">
+            <div class="mk-col-hdr"><div class="mk-col-dot" style="background:#6b7280"></div>Do zrobienia</div>
+            <div class="mk-card">
+              <div class="mk-card-title">Zapłać rachunki za luty</div>
+              <div class="mk-card-meta"><span class="mk-prio">🔴</span><div class="mk-avatar" style="background:linear-gradient(135deg,#3b82f6,#06b6d4)">M</div></div>
+            </div>
+            <div class="mk-card">
+              <div class="mk-card-title">Zamów obiad na sobotę</div>
+              <div class="mk-card-meta"><span class="mk-prio">🟡</span><div class="mk-avatar" style="background:linear-gradient(135deg,#ec4899,#f97316)">A</div></div>
+            </div>
+          </div>
+          <div class="mk-col">
+            <div class="mk-col-hdr"><div class="mk-col-dot" style="background:#f97316"></div>W trakcie</div>
+            <div class="mk-card">
+              <div class="mk-card-title">Wymień żarówkę w salonie</div>
+              <div class="mk-card-meta"><span class="mk-prio">🟡</span><div class="mk-avatar" style="background:linear-gradient(135deg,#ec4899,#f97316)">A</div></div>
+            </div>
+            <div class="mk-card">
+              <div class="mk-card-title">Posprzątaj garaż</div>
+              <div class="mk-card-meta"><span class="mk-prio">🟢</span><div class="mk-avatar" style="background:linear-gradient(135deg,#3b82f6,#06b6d4)">M</div></div>
+            </div>
+          </div>
+          <div class="mk-col">
+            <div class="mk-col-hdr"><div class="mk-col-dot" style="background:#4ade80"></div>Gotowe</div>
+            <div class="mk-card">
+              <div class="mk-card-title">Posprzątaj pokój</div>
+              <div class="mk-card-meta"><span class="mk-prio">🟢</span><div class="mk-avatar" style="background:linear-gradient(135deg,#a78bfa,#60a5fa)">Z</div></div>
+            </div>
+            <div class="mk-card">
+              <div class="mk-card-title">Oddaj książki do biblioteki</div>
+              <div class="mk-card-meta"><span class="mk-prio">🟢</span><div class="mk-avatar" style="background:linear-gradient(135deg,#34d399,#06b6d4)">I</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SHOPPING TAB ═══ -->
+    <div class="tab-pane" id="pane-shopping">
+      <div class="shop-header">
+        <h2>🛒 Lista zakupów</h2>
+        <span style="font-size:12px;color:#4b4569">12 produktów do kupienia</span>
+        <button class="btn-add" onclick="openModal()">➕ Dodaj item</button>
+      </div>
+
+      <!-- Mięso & Ryby -->
+      <div class="shop-category">
+        <div class="cat-header" onclick="toggleCat(this)">
+          <span class="cat-emoji">🥩</span>
+          <span class="cat-name">Mięso & Ryby</span>
+          <span class="cat-count">3 items</span>
+          <span class="cat-chevron open">›</span>
+        </div>
+        <div class="cat-items">
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Kurczak filet 1kg</span>
+            <span class="shop-qty">1 szt</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Łosoś świeży 500g</span>
+            <span class="shop-qty">500g</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Mielone wieprzowe</span>
+            <span class="shop-qty">400g</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warzywa -->
+      <div class="shop-category">
+        <div class="cat-header" onclick="toggleCat(this)">
+          <span class="cat-emoji">🥬</span>
+          <span class="cat-name">Warzywa</span>
+          <span class="cat-count">5 items</span>
+          <span class="cat-chevron open">›</span>
+        </div>
+        <div class="cat-items">
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Pomidory</span>
+            <span class="shop-qty">1 kg</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Ogórki</span>
+            <span class="shop-qty">4 szt</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Papryka czerwona</span>
+            <span class="shop-qty">3 szt</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Marchew</span>
+            <span class="shop-qty">1 kg</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Sałata lodowa</span>
+            <span class="shop-qty">2 szt</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chemia -->
+      <div class="shop-category">
+        <div class="cat-header" onclick="toggleCat(this)">
+          <span class="cat-emoji">🧴</span>
+          <span class="cat-name">Chemia</span>
+          <span class="cat-count">2 items</span>
+          <span class="cat-chevron open">›</span>
+        </div>
+        <div class="cat-items">
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Płyn do mycia naczyń</span>
+            <span class="shop-qty">2 szt</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Proszek do prania</span>
+            <span class="shop-qty">1 szt</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nabiał -->
+      <div class="shop-category">
+        <div class="cat-header" onclick="toggleCat(this)">
+          <span class="cat-emoji">🥛</span>
+          <span class="cat-name">Nabiał</span>
+          <span class="cat-count">4 items</span>
+          <span class="cat-chevron open">›</span>
+        </div>
+        <div class="cat-items">
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Mleko 3.2% 2L</span>
+            <span class="shop-qty">2 szt</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Jogurt naturalny</span>
+            <span class="shop-qty">3 szt</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Twaróg półtłusty</span>
+            <span class="shop-qty">250g</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+          <div class="shop-row">
+            <div class="s-check"></div>
+            <span class="shop-item-name">Ser żółty</span>
+            <span class="shop-qty">200g</span>
+            <div class="shop-actions"><button class="shop-action-btn">✎</button><button class="shop-action-btn">✕</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kupione -->
+      <div class="bought-section">
+        <div class="bought-header" onclick="toggleBought(this)">
+          <span>✅</span>
+          <span class="bought-title">Kupione (3)</span>
+          <span class="cat-chevron">›</span>
+        </div>
+        <div class="bought-items" style="display:none">
+          <div class="shop-row">
+            <div class="s-check checked"></div>
+            <span class="shop-item-name bought">Masło 200g</span>
+            <span class="shop-qty">1 szt</span>
+          </div>
+          <div class="shop-row">
+            <div class="s-check checked"></div>
+            <span class="shop-item-name bought">Chleb żytni</span>
+            <span class="shop-qty">1 szt</span>
+          </div>
+          <div class="shop-row">
+            <div class="s-check checked"></div>
+            <span class="shop-item-name bought">Jajka</span>
+            <span class="shop-qty">10 szt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TASKS TAB ═══ -->
+    <div class="tab-pane" id="pane-tasks">
+      <div class="kanban-toolbar">
+        <h2>✅ Tablica zadań</h2>
+        <div class="filter-bar">
+          <button class="filter-btn active">Wszystkie</button>
+          <button class="filter-btn">Moje</button>
+          <button class="filter-btn">Angelika</button>
+          <button class="filter-btn">Zuza</button>
+        </div>
+        <button class="btn-add" style="margin-left:auto">➕ Nowe zadanie</button>
+      </div>
+
+      <div class="kanban-board">
+        <!-- DO ZROBIENIA -->
+        <div class="k-col">
+          <div class="k-col-hdr">
+            <div class="k-col-dot" style="background:#6b7280"></div>
+            <span class="k-col-title">Do zrobienia</span>
+            <span class="k-col-count">3</span>
+          </div>
+          <div class="quick-add">
+            <input class="quick-add-input" type="text" placeholder="Szybkie zadanie...">
+            <button class="quick-add-btn">+</button>
+          </div>
+          <div class="task-card">
+            <div class="tc-title">Zapłać rachunki za luty</div>
+            <div class="tc-meta">
+              <span class="tc-prio">🔴 Pilne</span>
+              <span class="tc-tag home">dom</span>
+              <div class="tc-avatar" style="background:linear-gradient(135deg,#3b82f6,#06b6d4)">M</div>
+            </div>
+          </div>
+          <div class="task-card">
+            <div class="tc-title">Zamów obiad na sobotę</div>
+            <div class="tc-meta">
+              <span class="tc-prio">🟡 Normalne</span>
+              <span class="tc-tag home">dom</span>
+              <div class="tc-avatar" style="background:linear-gradient(135deg,#ec4899,#f97316)">A</div>
+            </div>
+          </div>
+          <div class="task-card">
+            <div class="tc-title">Umówić wizytę u dentysty</div>
+            <div class="tc-meta">
+              <span class="tc-prio">🟢 Niski</span>
+              <span class="tc-tag shopping">zdrow.</span>
+              <div class="tc-avatar" style="background:linear-gradient(135deg,#a78bfa,#60a5fa)">Z</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- W TRAKCIE -->
+        <div class="k-col">
+          <div class="k-col-hdr">
+            <div class="k-col-dot" style="background:#f97316"></div>
+            <span class="k-col-title">W trakcie</span>
+            <span class="k-col-count">2</span>
+          </div>
+          <div class="quick-add">
+            <input class="quick-add-input" type="text" placeholder="Szybkie zadanie...">
+            <button class="quick-add-btn">+</button>
+          </div>
+          <div class="task-card">
+            <div class="tc-title">Wymień żarówkę w salonie</div>
+            <div class="tc-meta">
+              <span class="tc-prio">🟡 Normalne</span>
+              <span class="tc-tag home">dom</span>
+              <div class="tc-avatar" style="background:linear-gradient(135deg,#ec4899,#f97316)">A</div>
+            </div>
+          </div>
+          <div class="task-card">
+            <div class="tc-title">Posprzątaj garaż</div>
+            <div class="tc-meta">
+              <span class="tc-prio">🟢 Niski</span>
+              <span class="tc-tag home">dom</span>
+              <div class="tc-avatar" style="background:linear-gradient(135deg,#3b82f6,#06b6d4)">M</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GOTOWE -->
+        <div class="k-col">
+          <div class="k-col-hdr">
+            <div class="k-col-dot" style="background:#4ade80"></div>
+            <span class="k-col-title">Gotowe</span>
+            <span class="k-col-count">4</span>
+          </div>
+          <div class="quick-add">
+            <input class="quick-add-input" type="text" placeholder="Szybkie zadanie...">
+            <button class="quick-add-btn">+</button>
+          </div>
+          <div class="task-card" style="opacity:.7">
+            <div class="tc-title" style="text-decoration:line-through;color:#4b4569">Posprzątaj pokój</div>
+            <div class="tc-meta">
+              <span class="tc-prio">🟢 Niski</span>
+              <div class="tc-avatar" style="background:linear-gradient(135deg,#a78bfa,#60a5fa)">Z</div>
+            </div>
+          </div>
+          <div class="task-card" style="opacity:.7">
+            <div class="tc-title" style="text-decoration:line-through;color:#4b4569">Oddaj książki do biblioteki</div>
+            <div class="tc-meta">
+              <span class="tc-prio">🟢 Niski</span>
+              <div class="tc-avatar" style="background:linear-gradient(135deg,#34d399,#06b6d4)">I</div>
+            </div>
+          </div>
+          <div class="task-card" style="opacity:.7">
+            <div class="tc-title" style="text-decoration:line-through;color:#4b4569">Zrób pranie</div>
+            <div class="tc-meta">
+              <span class="tc-prio">🟡 Normalne</span>
+              <div class="tc-avatar" style="background:linear-gradient(135deg,#ec4899,#f97316)">A</div>
+            </div>
+          </div>
+          <div class="task-card" style="opacity:.7">
+            <div class="tc-title" style="text-decoration:line-through;color:#4b4569">Odkurzyć salon</div>
+            <div class="tc-meta">
+              <span class="tc-prio">🟡 Normalne</span>
+              <div class="tc-avatar" style="background:linear-gradient(135deg,#ec4899,#f97316)">A</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ACTIVITY TAB ═══ -->
+    <div class="tab-pane" id="pane-activity">
+      <div class="activity-toolbar">
+        <h2>📡 Feed aktywności</h2>
+        <div class="filter-bar">
+          <button class="filter-btn active">Wszystkie</button>
+          <button class="filter-btn">Zakupy</button>
+          <button class="filter-btn">Zadania</button>
+          <button class="filter-btn">Household</button>
+        </div>
+      </div>
+
+      <div class="activity-feed">
+        <div class="feed-item">
+          <div class="feed-timeline">
+            <div class="feed-avatar" style="background:linear-gradient(135deg,#ec4899,#f97316)">A</div>
+            <div class="feed-line"></div>
+          </div>
+          <div class="feed-body">
+            <div class="feed-text"><strong>Angelika</strong> dodała "Mleko" do listy zakupów</div>
+            <div class="feed-meta">
+              <span class="feed-time">10 min temu</span>
+              <span class="feed-badge fb-shop">🛒 zakupy</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-timeline">
+            <div class="feed-avatar" style="background:linear-gradient(135deg,#a78bfa,#60a5fa)">Z</div>
+            <div class="feed-line"></div>
+          </div>
+          <div class="feed-body">
+            <div class="feed-text"><strong>Zuza</strong> oznaczyła zadanie <strong>"Posprzątaj pokój"</strong> jako gotowe ✅</div>
+            <div class="feed-meta">
+              <span class="feed-time">1h temu</span>
+              <span class="feed-badge fb-task">✅ zadanie</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-timeline">
+            <div class="feed-avatar" style="background:linear-gradient(135deg,#ec4899,#f97316)">A</div>
+            <div class="feed-line"></div>
+          </div>
+          <div class="feed-body">
+            <div class="feed-text"><strong>Angelika</strong> przeniosła <strong>"Wymień żarówkę"</strong> do <em>W trakcie</em></div>
+            <div class="feed-meta">
+              <span class="feed-time">2h temu</span>
+              <span class="feed-badge fb-task">✅ zadanie</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-timeline">
+            <div class="feed-avatar" style="background:linear-gradient(135deg,#3b82f6,#06b6d4)">M</div>
+            <div class="feed-line"></div>
+          </div>
+          <div class="feed-body">
+            <div class="feed-text"><strong>Mariusz</strong> dodał zadanie <strong>"Zapłać rachunki"</strong> 📋</div>
+            <div class="feed-meta">
+              <span class="feed-time">3h temu</span>
+              <span class="feed-badge fb-task">✅ zadanie</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-timeline">
+            <div class="feed-avatar" style="background:linear-gradient(135deg,#34d399,#06b6d4)">I</div>
+            <div class="feed-line"></div>
+          </div>
+          <div class="feed-body">
+            <div class="feed-text"><strong>Iza</strong> dodała "Chleb" do listy zakupów 🛒</div>
+            <div class="feed-meta">
+              <span class="feed-time">wczoraj 19:42</span>
+              <span class="feed-badge fb-shop">🛒 zakupy</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ANALYTICS TAB ═══ -->
+    <div class="tab-pane" id="pane-analytics">
+      <div class="analytics-toolbar">
+        <h2>📊 Analytics</h2>
+        <span class="role-badge">👑 HELPER+ only</span>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="analytics-stats">
+        <div class="stat-card">
+          <div class="s-lbl"><span class="s-icon">✅</span> Ukończone zadania</div>
+          <div class="s-val">28</div>
+          <div class="s-sub">w tym miesiącu</div>
+          <div class="s-trend up">↑ +8 vs poprzedni miesiąc</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-lbl"><span class="s-icon">🛒</span> Zakupione produkty</div>
+          <div class="s-val">45</div>
+          <div class="s-sub">w tym miesiącu</div>
+          <div class="s-trend up">↑ +12 vs poprzedni miesiąc</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-lbl"><span class="s-icon">🏆</span> Najaktywniejszy</div>
+          <div class="s-val" style="font-size:20px;padding-top:4px">Angelika</div>
+          <div class="s-sub">32 akcje w tym miesiącu</div>
+          <div class="s-trend pink">🔥 +15% vs poprzedni</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="analytics-charts">
+        <div class="chart-card">
+          <div class="chart-title">🛒 Zakupy — częstotliwość</div>
+          <div class="chart-sub">Liczba zakupionych produktów per dzień · ostatnie 7 dni</div>
+          <div class="chart-wrap">
+            <canvas id="shoppingChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">✅ Task completion rate</div>
+          <div class="chart-sub">% ukończonych zadań · ostatnie 14 dni</div>
+          <div class="chart-wrap">
+            <canvas id="taskChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ─── TAB SWITCHING ───
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('pane-' + tabName).classList.add('active');
+}
+
+function switchTabStyle(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function switchTabByName(name) {
+  const tab = document.querySelector('.tab[data-tab="' + name + '"]');
+  if (tab) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); }
+}
+
+function setActiveNav(el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ─── MODAL ───
+function openModal() {
+  document.getElementById('addProductModal').classList.add('open');
+  switchTab('shopping');
+  switchTabByName('shopping');
+}
+function closeModal() {
+  document.getElementById('addProductModal').classList.remove('open');
+}
+document.getElementById('addProductModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ─── SHOPPING TOGGLE ───
+function toggleCat(header) {
+  const items = header.nextElementSibling;
+  const chevron = header.querySelector('.cat-chevron');
+  if (items.style.display === 'none' || !items.offsetParent) {
+    items.style.display = 'block';
+    chevron.classList.add('open');
+  } else {
+    items.style.display = 'none';
+    chevron.classList.remove('open');
+  }
+}
+
+function toggleBought(header) {
+  const items = header.nextElementSibling;
+  const chevron = header.querySelector('.cat-chevron');
+  if (items.style.display === 'none') {
+    items.style.display = 'block';
+    chevron.classList.add('open');
+  } else {
+    items.style.display = 'none';
+    chevron.classList.remove('open');
+  }
+}
+
+// ─── FILTER BUTTONS ───
+document.querySelectorAll('.filter-bar').forEach(bar => {
+  bar.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+});
+
+// ─── CHECKBOX TOGGLE ───
+document.querySelectorAll('.s-check').forEach(ch => {
+  ch.addEventListener('click', function() {
+    this.classList.toggle('checked');
+    const nameEl = this.nextElementSibling;
+    if (nameEl) nameEl.classList.toggle('done');
+  });
+});
+
+// ─── CHARTS (Analytics) ───
+const chartDefaults = {
+  plugins: { legend: { display:false } },
+  scales: {
+    x: { grid: { color:'#2a2540' }, ticks: { color:'#4b4569', font:{size:10} } },
+    y: { grid: { color:'#2a2540' }, ticks: { color:'#4b4569', font:{size:10} }, beginAtZero:true }
+  }
+};
+
+const shoppingCtx = document.getElementById('shoppingChart').getContext('2d');
+new Chart(shoppingCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd'],
+    datasets: [{
+      data: [4, 7, 3, 8, 5, 11, 6],
+      backgroundColor: 'rgba(124,58,237,0.6)',
+      borderColor: '#7c3aed',
+      borderWidth: 1,
+      borderRadius: 5
+    }]
+  },
+  options: {
+    ...chartDefaults,
+    responsive: true,
+    maintainAspectRatio: false,
+  }
+});
+
+const taskCtx = document.getElementById('taskChart').getContext('2d');
+new Chart(taskCtx, {
+  type: 'line',
+  data: {
+    labels: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14'],
+    datasets: [{
+      data: [60, 55, 70, 65, 80, 75, 90, 85, 78, 88, 92, 85, 95, 88],
+      borderColor: '#c4b5fd',
+      backgroundColor: 'rgba(196,181,253,0.1)',
+      borderWidth: 2,
+      pointBackgroundColor: '#c4b5fd',
+      pointRadius: 3,
+      tension: 0.4,
+      fill: true
+    }]
+  },
+  options: {
+    ...chartDefaults,
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      ...chartDefaults.scales,
+      y: { ...chartDefaults.scales.y, max: 100 }
+    }
+  }
+});
+</script>
+</body>
+</html>
