@@ -93,14 +93,14 @@ async function getRoleFromDBOrCache(
     .single();
 
   if (error || !data) {
-    console.error('[RBAC] Failed to fetch role from DB:', error);
+    console.warn('[RBAC] Failed to fetch role from DB:', error);
     return null; // brak roli
   }
 
   const rawRole = (data as { role: string }).role;
 
   if (!isValidRole(rawRole)) {
-    console.error('[RBAC] Unknown role value from DB:', rawRole);
+    console.warn('[RBAC] Unknown role value from DB:', rawRole);
     return null;
   }
 
