@@ -32,10 +32,10 @@ export async function GET(
     let total: number | undefined
 
     const scoreMatch = output.match(/Overall score:\s*([\d.]+)/)
-    if (scoreMatch) score_percent = Math.round(parseFloat(scoreMatch[1]) * 100)
+    if (scoreMatch?.[1]) score_percent = Math.round(parseFloat(scoreMatch[1]) * 100)
 
     const passMatch = output.match(/Passed\/Failed:\s*(\d+)\/(\d+)/)
-    if (passMatch) {
+    if (passMatch?.[1] && passMatch?.[2]) {
       passed = parseInt(passMatch[1], 10)
       const failed = parseInt(passMatch[2], 10)
       total = passed + failed
