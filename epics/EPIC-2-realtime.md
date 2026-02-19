@@ -60,14 +60,14 @@ Mariusz zarządza pipeline'm (start/advance story, trigger eval) bezpośrednio z
 
 | Story ID | Domena | Tytuł | Opis jednym zdaniem |
 |----------|--------|-------|---------------------|
-| STORY-15.1 | backend | SSE endpoint w Next.js — Bridge event stream proxy | Endpoint `/api/events` jako SSE proxy do Bridge event stream z reconnect logic i heartbeat co 15s |
-| STORY-15.2 | backend | Write operations API — start/advance story endpoints | Endpointy `POST /api/stories/[id]/start` i `POST /api/stories/[id]/advance` wywołujące Bridge CLI z walidacją stanu |
-| STORY-15.3 | backend | Eval trigger endpoint — run eval z UI | Endpoint `POST /api/eval/run` triggerujący `bridge eval run` z progress tracking i zwracający wynik |
-| STORY-15.4 | wiring | SSE client hook + write operation services | Hook `useSSE()` z auto-reconnect, `useStoryActions()` z optimistic updates i rollback, typy eventów SSE |
-| STORY-15.5 | frontend | Toast notification system — Sonner integration | Globalny system notyfikacji z Sonner: toast dla story state changes, eval results, errors; konfiguracja severity levels |
-| STORY-15.6 | frontend | Story Detail page — pełna strona `/story/[id]` | Strona z metadata, DoD, timeline runów, wyekstrahowane lekcje, action buttons (Start/Advance/Retry), breadcrumb navigation |
-| STORY-15.7 | frontend | Pipeline view v2 — filtrowanie, search, live updates | Rozbudowa pipeline view: filter bar (status/model/project), search input, live SSE updates, optimistic UI dla akcji |
-| STORY-15.8 | frontend | Eval panel v2 — trigger run + progress indicator | Rozbudowa eval panel: przycisk "Run Eval Now" z loading state, progress bar, wynik inline + toast notification |
+| STORY-2.1 | backend | SSE endpoint w Next.js — Bridge event stream proxy | Endpoint `/api/events` jako SSE proxy do Bridge event stream z reconnect logic i heartbeat co 15s |
+| STORY-2.2 | backend | Write operations API — start/advance story endpoints | Endpointy `POST /api/stories/[id]/start` i `POST /api/stories/[id]/advance` wywołujące Bridge CLI z walidacją stanu |
+| STORY-2.3 | backend | Eval trigger endpoint — run eval z UI | Endpoint `POST /api/eval/run` triggerujący `bridge eval run` z progress tracking i zwracający wynik |
+| STORY-2.4 | wiring | SSE client hook + write operation services | Hook `useSSE()` z auto-reconnect, `useStoryActions()` z optimistic updates i rollback, typy eventów SSE |
+| STORY-2.5 | frontend | Toast notification system — Sonner integration | Globalny system notyfikacji z Sonner: toast dla story state changes, eval results, errors; konfiguracja severity levels |
+| STORY-2.6 | frontend | Story Detail page — pełna strona `/story/[id]` | Strona z metadata, DoD, timeline runów, wyekstrahowane lekcje, action buttons (Start/Advance/Retry), breadcrumb navigation |
+| STORY-2.7 | frontend | Pipeline view v2 — filtrowanie, search, live updates | Rozbudowa pipeline view: filter bar (status/model/project), search input, live SSE updates, optimistic UI dla akcji |
+| STORY-2.8 | frontend | Eval panel v2 — trigger run + progress indicator | Rozbudowa eval panel: przycisk "Run Eval Now" z loading state, progress bar, wynik inline + toast notification |
 
 ## 🏷️ METADANE
 

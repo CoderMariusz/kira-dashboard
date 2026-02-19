@@ -75,14 +75,14 @@ Mariusz widzi stan całego pipeline'u, kosztów i wydajności modeli w < 5 sekun
 
 | Story ID | Domena | Tytuł | Opis jednym zdaniem |
 |----------|--------|-------|---------------------|
-| STORY-14.1 | database | Next.js projekt setup + Bridge API client | Inicjalizacja projektu Next.js 16 z shadcn/ui, Tailwind, konfiguracja klienta HTTP do Bridge API z obsługą offline |
-| STORY-14.2 | backend | Bridge API data layer — hooks i typy | Zestaw React hooks (`useStats`, `usePipeline`, `useRuns`, `useEval`) z TypeScript typami mapującymi Bridge API responses |
-| STORY-14.3 | frontend | Overview page — stat cards, velocity chart, Kira banner | Strona główna z 4 stat cards, velocity chart (Chart.js), Kira v1.0 banner z unlocked capabilities tags |
-| STORY-14.4 | frontend | Model Agent cards — sparklines, metrics, modal | 4 karty modeli (Kimi/GLM/Sonnet/Codex) ze sparkline charts i Story Detail Modal po kliknięciu |
-| STORY-14.5 | frontend | Pipeline view + Activity Feed | Sekcja aktywnego pipeline'u z listą stories, merge queue i live activity feed z ostatnimi eventami |
-| STORY-14.6 | frontend | Eval panel + Cost Tracker | Panel eval framework z score bars i run history oraz Cost Tracker z szacowanym kosztem per model |
-| STORY-14.7 | frontend | NightClaw Digest + Patterns + System Health | Karty: NightClaw digest z clickable raportem, top patterns, system health z alertami |
-| STORY-14.8 | wiring | Multi-project switcher + sidebar navigation | Dwupoziomowy sidebar (icon rail + text nav), project switcher dropdown, tabs bar, routing między widokami |
+| STORY-1.1 | database | Next.js projekt setup + Bridge API client | Inicjalizacja projektu Next.js 16 z shadcn/ui, Tailwind, konfiguracja klienta HTTP do Bridge API z obsługą offline |
+| STORY-1.2 | backend | Bridge API data layer — hooks i typy | Zestaw React hooks (`useStats`, `usePipeline`, `useRuns`, `useEval`) z TypeScript typami mapującymi Bridge API responses |
+| STORY-1.3 | frontend | Overview page — stat cards, velocity chart, Kira banner | Strona główna z 4 stat cards, velocity chart (Chart.js), Kira v1.0 banner z unlocked capabilities tags |
+| STORY-1.4 | frontend | Model Agent cards — sparklines, metrics, modal | 4 karty modeli (Kimi/GLM/Sonnet/Codex) ze sparkline charts i Story Detail Modal po kliknięciu |
+| STORY-1.5 | frontend | Pipeline view + Activity Feed | Sekcja aktywnego pipeline'u z listą stories, merge queue i live activity feed z ostatnimi eventami |
+| STORY-1.6 | frontend | Eval panel + Cost Tracker | Panel eval framework z score bars i run history oraz Cost Tracker z szacowanym kosztem per model |
+| STORY-1.7 | frontend | NightClaw Digest + Patterns + System Health | Karty: NightClaw digest z clickable raportem, top patterns, system health z alertami |
+| STORY-1.8 | wiring | Multi-project switcher + sidebar navigation | Dwupoziomowy sidebar (icon rail + text nav), project switcher dropdown, tabs bar, routing między widokami |
 
 ## 🏷️ METADANE
 

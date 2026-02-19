@@ -63,14 +63,14 @@ Każdy członek rodziny po zalogowaniu widzi swój dedykowany widok w < 2 sekund
 
 | Story ID | Domena | Tytuł | Opis jednym zdaniem |
 |----------|--------|-------|---------------------|
-| STORY-16.1 | database | User roles table + Supabase schema | Tabela `user_roles` (user_id, role, created_at) w Supabase z RLS policy — tylko ADMIN może modyfikować role |
-| STORY-16.2 | auth | Supabase Auth setup — login page + middleware migration | Migracja login page, Supabase client, middleware z archive/ do nowego projektu; konfiguracja session refresh i protected routes |
-| STORY-16.3 | auth | RBAC middleware — role-based route protection | Next.js middleware czyta rolę z JWT/user_metadata i blokuje dostęp: `/dashboard/*` → ADMIN only, `/home/*` → HELPER+ i HELPER |
-| STORY-16.4 | backend | User management API — invite, role assignment, deactivation | Endpointy `POST /api/users/invite`, `PATCH /api/users/[id]/role`, `DELETE /api/users/[id]` z walidacją że caller = ADMIN |
-| STORY-16.5 | wiring | Auth hooks + role context provider | Hook `useUser()` z rolą, `usePermissions()` sprawdzający dostęp, `RoleProvider` context; typy Role, Permission |
-| STORY-16.6 | frontend | Login page — Supabase auth UI | Strona `/login` z email/password form, error handling, redirect po zalogowaniu per rola; dark theme consistent z dashboardem |
-| STORY-16.7 | frontend | Conditional sidebar — nawigacja per rola | Sidebar adaptuje sekcje nawigacji do roli: ADMIN widzi Pipeline+Home, HELPER+ widzi Home+Analytics, HELPER widzi Tasks+Shopping |
-| STORY-16.8 | frontend | User management page — invite i role management | Strona `/settings/users` (ADMIN only): lista użytkowników, formularz invite (email + rola), zmiana roli, dezaktywacja konta |
+| STORY-3.1 | database | User roles table + Supabase schema | Tabela `user_roles` (user_id, role, created_at) w Supabase z RLS policy — tylko ADMIN może modyfikować role |
+| STORY-3.2 | auth | Supabase Auth setup — login page + middleware migration | Migracja login page, Supabase client, middleware z archive/ do nowego projektu; konfiguracja session refresh i protected routes |
+| STORY-3.3 | auth | RBAC middleware — role-based route protection | Next.js middleware czyta rolę z JWT/user_metadata i blokuje dostęp: `/dashboard/*` → ADMIN only, `/home/*` → HELPER+ i HELPER |
+| STORY-3.4 | backend | User management API — invite, role assignment, deactivation | Endpointy `POST /api/users/invite`, `PATCH /api/users/[id]/role`, `DELETE /api/users/[id]` z walidacją że caller = ADMIN |
+| STORY-3.5 | wiring | Auth hooks + role context provider | Hook `useUser()` z rolą, `usePermissions()` sprawdzający dostęp, `RoleProvider` context; typy Role, Permission |
+| STORY-3.6 | frontend | Login page — Supabase auth UI | Strona `/login` z email/password form, error handling, redirect po zalogowaniu per rola; dark theme consistent z dashboardem |
+| STORY-3.7 | frontend | Conditional sidebar — nawigacja per rola | Sidebar adaptuje sekcje nawigacji do roli: ADMIN widzi Pipeline+Home, HELPER+ widzi Home+Analytics, HELPER widzi Tasks+Shopping |
+| STORY-3.8 | frontend | User management page — invite i role management | Strona `/settings/users` (ADMIN only): lista użytkowników, formularz invite (email + rola), zmiana roli, dezaktywacja konta |
 
 ## 🏷️ METADANE
 
@@ -83,4 +83,4 @@ Każdy członek rodziny po zalogowaniu widzi swój dedykowany widok w < 2 sekund
 | Domeny | database, auth, backend, wiring, frontend |
 | Stack | Next.js 16, Supabase Auth, shadcn/ui, Tailwind CSS, TypeScript |
 | DB | Supabase (user_roles table + Supabase Auth built-in) |
-| Uwagi | Login page i middleware z archive/ to sprawdzony kod — reuse zamiast pisania od zera. Role w user_metadata Supabase lub custom table — do decyzji w STORY-16.1. |
+| Uwagi | Login page i middleware z archive/ to sprawdzony kod — reuse zamiast pisania od zera. Role w user_metadata Supabase lub custom table — do decyzji w STORY-3.1. |
