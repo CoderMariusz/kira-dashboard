@@ -17,9 +17,9 @@ export interface ActivityItemProps {
 // ══════════════════════════════════════════════════════════
 
 const BADGE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  shopping:  { bg: '#1a3a1a', color: '#4ade80',  label: '🛒 zakupy' },
-  task:      { bg: '#1a2744', color: '#60a5fa',  label: '✅ zadanie' },
-  household: { bg: '#3a2a00', color: '#fbbf24',  label: '👥 household' },
+  shopping_item: { bg: '#1a3a1a', color: '#4ade80',  label: '🛒 zakupy' },
+  task:          { bg: '#1a2744', color: '#60a5fa',  label: '✅ zadanie' },
+  household:     { bg: '#3a2a00', color: '#fbbf24',  label: '👥 household' },
 };
 
 // ══════════════════════════════════════════════════════════
@@ -64,17 +64,16 @@ function getActionText(activity: ActivityEvent): string {
   const inviteeName = (meta?.invitee_name as string) || '';
 
   switch (`${entity_type}:${action}`) {
-    case 'shopping:created':   return `dodała/dodał '${itemName}' do listy zakupów`;
-    case 'shopping:completed': return `kupił/a '${itemName}'`;
-    case 'shopping:deleted':   return `usunął/ęła '${itemName}' z listy zakupów`;
-    case 'task:created':       return `dodał/a zadanie '${itemName}'`;
-    case 'task:updated':       return `zaktualizował/a zadanie '${itemName}'`;
-    case 'task:completed':     return `ukończył/a zadanie '${itemName}' ✅`;
-    case 'task:moved':         return `przeniósł/a '${itemName}' do ${columnName}`;
-    case 'task:deleted':       return `usunął/ęła zadanie '${itemName}'`;
-    case 'household:member_joined':  return `dołączył/a do household`;
-    case 'household:member_invited': return `zaprosił/a ${inviteeName}`;
-    default: return `${action} ${entity_type}`;
+    case 'shopping_item:shopping_added':   return `dodała/dodał '${itemName}' do listy zakupów`;
+    case 'shopping_item:shopping_removed': return `usunęła/usunął '${itemName}' z listy`;
+    case 'shopping_item:shopping_bought':  return `oznaczyła/oznaczył '${itemName}' jako kupione`;
+    case 'task:task_created':              return `dodała/dodał zadanie '${itemName}'`;
+    case 'task:task_moved':                return `przeniosła/przeniósł '${itemName}' do ${columnName}`;
+    case 'task:task_updated':              return `zaktualizowała/zaktualizował zadanie '${itemName}'`;
+    case 'task:task_deleted':              return `usunęła/usunął zadanie '${itemName}'`;
+    case 'household:member_joined':        return `dołączył/a do household`;
+    case 'household:member_invited':       return `zaprosił/a ${inviteeName}`;
+    default: return `${action.replace(/_/g, ' ')} (${entity_type})`;
   }
 }
 

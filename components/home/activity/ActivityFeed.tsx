@@ -98,13 +98,24 @@ export function ActivityFeed({ householdId, filter }: ActivityFeedProps) {
     events,
     loading,
     error,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
   } = useActivity(householdId, 20);
 
+  // Map UI filter keys to DB entity_type values (AC-8)
+  const FILTER_MAP: Record<string, string> = {
+    shopping: 'shopping_item',
+    task:     'task',
+    household: 'household',
+  };
+
   // Client-side filtering (AC-8)
-  // The hook doesn't support server-side filtering, so we filter here
   const filteredEvents = useMemo(() => {
     if (filter === 'all') return events;
-    return events.filter((event: ActivityEvent) => event.entity_type === filter);
+    const mapped = FILTER_MAP[filter] ?? filter;
+    return events.filter((event: ActivityEvent) => event.entity_type === mapped);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, filter]);
 
   // Loading state (AC-2)
@@ -117,7 +128,7 @@ export function ActivityFeed({ householdId, filter }: ActivityFeedProps) {
     return (
       <ErrorState 
         error={error} 
-        onRetry={() => window.location.reload()} 
+        onRetry={refetch} 
       />
     );
   }
@@ -143,8 +154,16 @@ export function ActivityFeed({ householdId, filter }: ActivityFeedProps) {
         ))}
       </div>
 
-      {/* Note: Pagination not implemented in existing hook */}
-      {/* AC-11: "Załaduj więcej" would require hook modification */}
+      {/* AC-11: "Załaduj więcej" — stub (hasNextPage=false in v1, button hidden) */}
+      {hasNextPage && (
+        <button
+          onClick={fetchNextPage}
+          className="mt-[12px] w-full py-[8px] text-[12px] text-[#c4b5fd] bg-[#2a2540] hover:bg-[#3b3d7a] rounded-[8px] transition-colors"
+          aria-label="Załaduj więcej aktywności"
+        >
+          Załaduj więcej
+        </button>
+      )}
     </div>
   );
 }

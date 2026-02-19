@@ -9,9 +9,12 @@ import type { ActivityEvent } from '@/types/home'
 // Return type
 // ──────────────────────────────────────────────────
 interface UseActivityReturn {
-  events:  ActivityEvent[]
-  loading: boolean
-  error:   string | null
+  events:       ActivityEvent[]
+  loading:      boolean
+  error:        string | null
+  hasNextPage:  boolean
+  fetchNextPage: () => Promise<void>
+  refetch:      () => void
 }
 
 // ──────────────────────────────────────────────────
@@ -22,46 +25,54 @@ export function useActivity(householdId: string | undefined, limit = 20): UseAct
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState<string | null>(null)
 
+  // v1 stub — pagination not present in Supabase realtime (AC-11)
+  const hasNextPage = false
+  const fetchNextPage = async (): Promise<void> => {}
+
   // ────────────────────────────────────────────────
   // 1. INITIAL FETCH — direct Supabase client (read-only, no API route needed)
   // ────────────────────────────────────────────────
-  useEffect(() => {
-    let mounted = true
-
-    async function fetchEvents() {
-      if (!householdId) {
-        if (mounted) setLoading(false)
-        return
-      }
-
-      const supabase = createClient()
-
-      if (mounted) {
-        setLoading(true)
-        setError(null)
-      }
-
-      const { data, error: fetchError } = await supabase
-        .from('activity_log')
-        .select('*')
-        .eq('household_id', householdId)
-        .order('created_at', { ascending: false })
-        .limit(limit)
-
-      if (!mounted) return
-
-      if (fetchError) {
-        setError('Nie udało się załadować aktywności')
-        console.error('[useActivity] fetch error:', fetchError)
-      } else {
-        setEvents((data ?? []) as ActivityEvent[])
-      }
-      setLoading(false)
+  const fetchItems = async (mounted: { current: boolean }) => {
+    if (!householdId) {
+      if (mounted.current) setLoading(false)
+      return
     }
 
-    void fetchEvents()
+    const supabase = createClient()
 
-    return () => { mounted = false }
+    if (mounted.current) {
+      setLoading(true)
+      setError(null)
+    }
+
+    const { data, error: fetchError } = await supabase
+      .from('activity_log')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (!mounted.current) return
+
+    if (fetchError) {
+      setError('Nie udało się załadować aktywności')
+      console.warn('[useActivity] fetch error:', fetchError)
+    } else {
+      setEvents((data ?? []) as ActivityEvent[])
+    }
+    setLoading(false)
+  }
+
+  const refetch = () => {
+    const mounted = { current: true }
+    void fetchItems(mounted)
+  }
+
+  useEffect(() => {
+    const mounted = { current: true }
+    void fetchItems(mounted)
+    return () => { mounted.current = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [householdId, limit])
 
   // ────────────────────────────────────────────────
@@ -86,7 +97,8 @@ export function useActivity(householdId: string | undefined, limit = 20): UseAct
           if (!mounted) return
           const newEvent = payload.new as unknown as ActivityEvent
           setEvents(prev => {
-            // Prepend newest event, trim to limit — AC-5
+            // Deduplicate by id, prepend newest event, trim to limit — AC-5
+            if (prev.some(e => e.id === newEvent.id)) return prev
             const updated = [newEvent, ...prev]
             return updated.slice(0, limit)
           })
@@ -101,5 +113,5 @@ export function useActivity(householdId: string | undefined, limit = 20): UseAct
     }
   }, [householdId, limit])
 
-  return { events, loading, error }
+  return { events, loading, error, hasNextPage, fetchNextPage, refetch }
 }

@@ -38,6 +38,7 @@ export function ActivityFilterChips({ activeFilter, onFilterChange }: ActivityFi
         scrollbarWidth: 'none', 
         WebkitOverflowScrolling: 'touch',
         msOverflowStyle: 'none',
+        scrollSnapType: 'x mandatory',
       }}
       role="group"
       aria-label="Filtry aktywności"
