@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ROLE_PERMISSIONS, NO_PERMISSIONS } from '@/lib/auth/permissions';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import type { Role, User, RoleContextValue, Permission } from '@/types/auth.types';
 
 // Tworzymy context z wartością domyślną undefined (celowo — wykrywamy użycie poza Provider)
@@ -90,7 +91,7 @@ export function RoleProvider({ children }: RoleProviderProps) {
 
     // Subskrybuj zmiany sesji (login / logout / token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         if (event === 'SIGNED_OUT' || !session) {
           currentRequestId++; // unieważnij wszystkie w toku
           setUser(null);
