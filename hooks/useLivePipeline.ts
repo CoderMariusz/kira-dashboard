@@ -68,10 +68,18 @@ export function useLivePipeline(): UseLivePipelineReturn {
   // Ref do śledzenia czy są aktywne optymistyczne updates (zapobiega nadpisaniu przez SWR)
   const optimisticIdsRef = useRef<Set<string>>(new Set())
 
+  // Guard: przechowuje JSON poprzednich baseStories żeby uniknąć infinite loop
+  // gdy mapper tworzy nową referencję tablicy przy każdym renderze
+  const prevBaseStoriesJsonRef = useRef<string>('')
+
   // Synchronizuj lokalny state z SWR data przy pierwszym załadowaniu i po refresh
   // Nie nadpisuj stories które mają aktywny optimistic update
   useEffect(() => {
     if (baseStories) {
+      const json = JSON.stringify(baseStories)
+      if (json === prevBaseStoriesJsonRef.current) return
+      prevBaseStoriesJsonRef.current = json
+
       setLocalStories((prev) => {
         if (!prev) {
           // Pierwsze ładowanie — użyj danych z SWR bezpośrednio
