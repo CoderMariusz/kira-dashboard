@@ -41,6 +41,14 @@ function getRedirectForRole(pathname: string, role: UserRole | null): string | n
     return null; // ADMIN, HELPER_PLUS — przepuść
   }
 
+  // /home/household — ADMIN lub HELPER_PLUS (STORY-4.7)
+  if (pathname === '/home/household' || pathname.startsWith('/home/household/')) {
+    if (role === 'HELPER') {
+      return '/home';
+    }
+    return null; // ADMIN, HELPER_PLUS — przepuść
+  }
+
   // /home/* — wszyscy zalogowani
   if (pathname.startsWith('/home')) {
     return null; // przepuść
