@@ -26,7 +26,9 @@ export function HomeOverview({ initialUserName, userRole }: HomeOverviewProps) {
   const {
     household,
     members,
-    loading: householdLoading,
+    loading:       householdLoading,
+    isCreating:    householdCreating,
+    creationError: householdCreationError,
   } = useHousehold()
 
   const householdId = household?.id
@@ -64,14 +66,15 @@ export function HomeOverview({ initialUserName, userRole }: HomeOverviewProps) {
   const activityToday   = events.filter(e => new Date(e.created_at).toDateString() === todayStr)
   const activityCount   = activityToday.length
 
-  // Brak household
-  const noHousehold = !householdLoading && !household
+  // Brak household — EC-1: pokazuj baner tylko gdy tworzenie się nie powiodło
+  // (nie gdy hook auto-tworzy household lub gdy trwa loading)
+  const noHousehold = !householdLoading && !householdCreating && householdCreationError !== null
 
   // Loading do GreetingBanner subtext
   const greetingTasksCount    = tasksLoading    ? null : columns.flatMap(c => c.tasks).filter(t => t.due_date && new Date(t.due_date).toDateString() === todayStr).length
   const greetingShoppingCount = shoppingLoading ? null : shoppingPending.length
 
-  const anyLoading = householdLoading || shoppingLoading || tasksLoading || activityLoading
+  const anyLoading = householdLoading || householdCreating || shoppingLoading || tasksLoading || activityLoading
 
   return (
     <main
@@ -173,7 +176,7 @@ function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
           style={{
             background:   '#2a2540',
             border:       '1px solid #4b3d7a',
-            color:        '#c4b5fd',
+            color:        '#818cf8',
             borderRadius: '6px',
             padding:      '4px 10px',
             fontSize:     '11px',

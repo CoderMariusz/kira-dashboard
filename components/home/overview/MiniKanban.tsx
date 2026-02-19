@@ -19,13 +19,13 @@ interface MiniKanbanProps {
 
 // Kolor assignee avatara (deterministyczny z user_id)
 function avatarColor(seed: string | null): string {
-  if (!seed) return '#7c3aed'
+  if (!seed) return '#818cf8'
   let hash = 0
   for (let i = 0; i < seed.length; i++) {
     hash = seed.charCodeAt(i) + ((hash << 5) - hash)
   }
-  const colors: string[] = ['#7c3aed', '#2563eb', '#059669', '#d97706', '#dc2626', '#db2777']
-  return colors[Math.abs(hash) % colors.length] ?? '#7c3aed'
+  const colors: string[] = ['#818cf8', '#2563eb', '#059669', '#d97706', '#dc2626', '#db2777']
+  return colors[Math.abs(hash) % colors.length] ?? '#818cf8'
 }
 
 // Inicjały assignee (max 2 znaki)
@@ -164,13 +164,13 @@ export function MiniKanban({ columns, isLoading }: MiniKanbanProps) {
           onClick={goToTasks}
           style={{
             fontSize:   '11px',
-            color:      '#c4b5fd',
+            color:      '#818cf8',
             background: 'none',
             border:     'none',
             cursor:     'pointer',
             fontWeight: 500,
           }}
-          className="focus:outline-none focus:ring-2 focus:ring-[#7c3aed] rounded"
+          className="focus:outline-none focus:ring-2 focus:ring-[#818cf8] rounded"
         >
           Otwórz tablicę →
         </button>
@@ -185,7 +185,7 @@ export function MiniKanban({ columns, isLoading }: MiniKanbanProps) {
         // EC-2: brak danych columns
         <button
           onClick={goToTasks}
-          style={{ color: '#c4b5fd', fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer' }}
+          style={{ color: '#818cf8', fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer' }}
         >
           Otwórz tablicę, aby zobaczyć zadania →
         </button>

@@ -22,7 +22,7 @@ function ActionButton({ label, onClick, primary = false }: ActionButtonProps) {
       style={
         primary
           ? {
-              background: 'linear-gradient(135deg, #7c3aed, #3b82f6)',
+              background: 'linear-gradient(135deg, #818cf8, #3b82f6)',
               color:      '#fff',
               boxShadow:  '0 2px 10px rgba(124,58,237,.3)',
               border:     'none',
@@ -45,7 +45,7 @@ function ActionButton({ label, onClick, primary = false }: ActionButtonProps) {
               whiteSpace:   'nowrap',
             }
       }
-      className="focus:outline-none focus:ring-2 focus:ring-[#7c3aed] transition-opacity hover:opacity-90"
+      className="focus:outline-none focus:ring-2 focus:ring-[#818cf8] transition-opacity hover:opacity-90"
     >
       {label}
     </button>

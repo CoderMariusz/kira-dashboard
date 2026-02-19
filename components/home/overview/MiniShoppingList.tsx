@@ -65,7 +65,7 @@ function ShoppingRow({ item, onToggle }: CheckboxProps) {
           flexShrink:   0,
           borderRadius: '4px',
           border:       checked ? 'none' : '1.5px solid #3b3d7a',
-          background:   checked ? 'linear-gradient(135deg, #7c3aed, #3b82f6)' : 'transparent',
+          background:   checked ? 'linear-gradient(135deg, #818cf8, #3b82f6)' : 'transparent',
           display:      'flex',
           alignItems:   'center',
           justifyContent: 'center',
@@ -74,7 +74,7 @@ function ShoppingRow({ item, onToggle }: CheckboxProps) {
           color:        '#fff',
           transition:   'background 0.15s',
         }}
-        className="focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
+        className="focus:outline-none focus:ring-2 focus:ring-[#818cf8]"
       >
         {checked ? '✓' : ''}
       </button>
@@ -137,13 +137,13 @@ export function MiniShoppingList({ items, isLoading, onToggle }: MiniShoppingLis
           onClick={() => router.push('/home/shopping')}
           style={{
             fontSize:    '11px',
-            color:       '#c4b5fd',
+            color:       '#818cf8',
             background:  'none',
             border:      'none',
             cursor:      'pointer',
             fontWeight:  500,
           }}
-          className="focus:outline-none focus:ring-2 focus:ring-[#7c3aed] rounded"
+          className="focus:outline-none focus:ring-2 focus:ring-[#818cf8] rounded"
         >
           Pokaż wszystkie →
         </button>

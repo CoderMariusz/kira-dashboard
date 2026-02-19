@@ -8,21 +8,25 @@ import type { Household, HouseholdMember } from '@/types/home'
 // Return type
 // ──────────────────────────────────────────────────
 interface UseHouseholdReturn {
-  household: Household | null
-  members:   HouseholdMember[]
-  loading:   boolean
-  error:     string | null
-  refetch:   () => void
+  household:     Household | null
+  members:       HouseholdMember[]
+  loading:       boolean
+  error:         string | null
+  isCreating:    boolean
+  creationError: string | null
+  refetch:       () => void
 }
 
 // ──────────────────────────────────────────────────
 // Hook — AC-6: load or create household for the current user
 // ──────────────────────────────────────────────────
 export function useHousehold(): UseHouseholdReturn {
-  const [household, setHousehold] = useState<Household | null>(null)
-  const [members, setMembers]     = useState<HouseholdMember[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState<string | null>(null)
+  const [household, setHousehold]       = useState<Household | null>(null)
+  const [members, setMembers]           = useState<HouseholdMember[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState<string | null>(null)
+  const [isCreating, setIsCreating]     = useState(false)
+  const [creationError, setCreationError] = useState<string | null>(null)
   const [refetchTrigger, setRefetchTrigger] = useState(0)
 
   const refetch = useCallback(() => setRefetchTrigger(n => n + 1), [])
@@ -61,17 +65,26 @@ export function useHousehold(): UseHouseholdReturn {
           // 3. User has no household → create one via API route (server-side, service role)
           // NOTE: POST /api/home/household is implemented in STORY-4.7.
           // Fallback: create directly via Supabase client (anon key, subject to RLS).
-          const res = await fetch('/api/home/household', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ name: 'Moja Rodzina' }),
-          })
-          if (!res.ok) {
-            const body = (await res.json()) as { error?: string }
-            throw new Error(body.error ?? `HTTP ${res.status}`)
+          setIsCreating(true)
+          setCreationError(null)
+          try {
+            const res = await fetch('/api/home/household', {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body:    JSON.stringify({ name: 'Moja Rodzina' }),
+            })
+            if (!res.ok) {
+              const body = (await res.json()) as { error?: string }
+              throw new Error(body.error ?? `HTTP ${res.status}`)
+            }
+            const { data: newHousehold } = (await res.json()) as { data: Household }
+            householdId = newHousehold.id
+          } catch (createErr) {
+            setCreationError(createErr instanceof Error ? createErr.message : 'Nie udało się utworzyć household')
+            throw createErr
+          } finally {
+            setIsCreating(false)
           }
-          const { data: newHousehold } = (await res.json()) as { data: Household }
-          householdId = newHousehold.id
         } else {
           householdId = memberRow.household_id as string
         }
@@ -108,5 +121,5 @@ export function useHousehold(): UseHouseholdReturn {
     void init()
   }, [refetchTrigger])
 
-  return { household, members, loading, error, refetch }
+  return { household, members, loading, error, isCreating, creationError, refetch }
 }
