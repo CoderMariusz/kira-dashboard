@@ -13,6 +13,8 @@ export interface ActivityFilters {
   entityType?: 'task' | 'shopping' | 'reminder' | 'board';
   actorId?: string;
   dateRange?: { from: Date; to: Date };
+  sortBy?: 'created_at' | 'action' | 'entity_type';
+  sortOrder?: 'asc' | 'desc';
 }
 
 const PAGE_SIZE = 20;
@@ -32,11 +34,18 @@ async function fetchActivities({
 }): Promise<ActivityLog[]> {
   const supabase = createClient();
 
+  // Support sorting on multiple fields with validation
+  const sortBy = filters?.sortBy || 'created_at';
+  const sortOrder = filters?.sortOrder || 'desc';
+  const validSortFields = ['created_at', 'action', 'entity_type'];
+  const safeSortBy = validSortFields.includes(sortBy) ? sortBy : 'created_at';
+  const isSortAscending = sortOrder === 'asc';
+
   let query = supabase
     .from('activity_log')
     .select('*')
     .eq('household_id', householdId)
-    .order('created_at', { ascending: false })
+    .order(safeSortBy, { ascending: isSortAscending })
     .limit(PAGE_SIZE);
 
   // Cursor-based pagination: get items before this timestamp

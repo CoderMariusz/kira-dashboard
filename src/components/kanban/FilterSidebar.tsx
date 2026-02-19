@@ -23,6 +23,7 @@ interface FilterSidebarProps {
   onFiltersChange: (filters: FilterState) => void;
   labels: LabelType[];
   assignees: (Pick<Profile, 'id' | 'display_name'>)[];
+  isDeferredMode?: boolean;
 }
 
 interface SavedPreset {
@@ -47,11 +48,13 @@ export function FilterSidebar({
   onFiltersChange,
   labels,
   assignees,
+  isDeferredMode = false,
 }: FilterSidebarProps) {
   const [presetName, setPresetName] = useState('');
   const [presets, setPresets] = useState<SavedPreset[]>([]);
   const [deletePresetOpen, setDeletePresetOpen] = useState(false);
   const [presetToDelete, setPresetToDelete] = useState<SavedPreset | null>(null);
+  const [pendingFilters, setPendingFilters] = useState<FilterState>(filters);
 
   // Load presets from localStorage on client side only
   useEffect(() => {
@@ -65,29 +68,53 @@ export function FilterSidebar({
     }
   }, []);
 
+  // Sync pending filters when sidebar opens or filters change
+  useEffect(() => {
+    setPendingFilters(filters);
+  }, [filters, open]);
+
   const updateFilter = (key: keyof FilterState, value: FilterState[typeof key]) => {
-    onFiltersChange({ ...filters, [key]: value });
+    if (isDeferredMode) {
+      setPendingFilters({ ...pendingFilters, [key]: value });
+    } else {
+      onFiltersChange({ ...filters, [key]: value });
+    }
   };
 
   const toggleLabelFilter = (labelId: string) => {
-    updateFilter('labels', toggleInArray(filters.labels, labelId));
+    const currentFilters = isDeferredMode ? pendingFilters : filters;
+    const newLabels = toggleInArray(currentFilters.labels, labelId);
+    updateFilter('labels', newLabels);
   };
 
   const togglePriorityFilter = (priority: string) => {
-    updateFilter('priorities', toggleInArray(filters.priorities, priority));
+    const currentFilters = isDeferredMode ? pendingFilters : filters;
+    const newPriorities = toggleInArray(currentFilters.priorities, priority);
+    updateFilter('priorities', newPriorities);
   };
 
   const toggleAssigneeFilter = (assigneeId: string) => {
-    updateFilter('assignees', toggleInArray(filters.assignees, assigneeId));
+    const currentFilters = isDeferredMode ? pendingFilters : filters;
+    const newAssignees = toggleInArray(currentFilters.assignees, assigneeId);
+    updateFilter('assignees', newAssignees);
   };
 
   const clearAllFilters = () => {
-    onFiltersChange({
+    const cleared = {
       labels: [],
       priorities: [],
       assignees: [],
       search: '',
-    });
+    };
+    if (isDeferredMode) {
+      setPendingFilters(cleared);
+    } else {
+      onFiltersChange(cleared);
+    }
+  };
+
+  const applyFilters = () => {
+    onFiltersChange(pendingFilters);
   };
 
   const savePreset = () => {
@@ -129,6 +156,9 @@ export function FilterSidebar({
 
   if (!open) return null;
 
+  // Use pending filters in deferred mode, actual filters otherwise
+  const displayFilters = isDeferredMode ? pendingFilters : filters;
+
   return (
     <div
       role="dialog"
@@ -140,7 +170,7 @@ export function FilterSidebar({
 
       {/* Sidebar */}
       <div
-        className="relative ml-auto w-80 max-w-full bg-white shadow-lg overflow-y-auto"
+        className="relative ml-auto w-80 max-w-full bg-white shadow-lg overflow-y-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -156,14 +186,14 @@ export function FilterSidebar({
           </Button>
         </div>
 
-        <div className="space-y-4 p-4">
+        <div className="flex-1 space-y-4 p-4 overflow-y-auto">
           {/* Search */}
           <div className="space-y-2">
             <Label>Szukaj</Label>
             <Input
               type="search"
               placeholder="Szukaj w tytułach..."
-              value={filters.search}
+              value={displayFilters.search}
               onChange={(e) => updateFilter('search', e.target.value)}
               aria-label="Szukaj"
             />
@@ -177,7 +207,7 @@ export function FilterSidebar({
                 <label key={label.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={filters.labels.includes(label.id)}
+                    checked={displayFilters.labels.includes(label.id)}
                     onChange={() => toggleLabelFilter(label.id)}
                     className="rounded"
                   />
@@ -195,7 +225,7 @@ export function FilterSidebar({
                 <label key={priority.value} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={filters.priorities.includes(priority.value)}
+                    checked={displayFilters.priorities.includes(priority.value)}
                     onChange={() => togglePriorityFilter(priority.value)}
                     className="rounded"
                   />
@@ -213,7 +243,7 @@ export function FilterSidebar({
                 <label key={assignee.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={filters.assignees.includes(assignee.id)}
+                    checked={displayFilters.assignees.includes(assignee.id)}
                     onChange={() => toggleAssigneeFilter(assignee.id)}
                     className="rounded"
                   />
@@ -228,6 +258,7 @@ export function FilterSidebar({
             variant="ghost"
             className="w-full"
             onClick={clearAllFilters}
+            aria-label="Wyczyść wszystko"
           >
             Wyczyść wszystko
           </Button>
@@ -274,6 +305,27 @@ export function FilterSidebar({
             </div>
           </div>
         </div>
+
+        {/* Action Buttons - Sticky Footer */}
+        {isDeferredMode && (
+          <div className="sticky bottom-0 border-t bg-white p-4 flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={clearAllFilters}
+              aria-label="Resetuj"
+            >
+              Resetuj
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={applyFilters}
+              aria-label="Zastosuj filtry"
+            >
+              Zastosuj
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Delete preset confirmation */}

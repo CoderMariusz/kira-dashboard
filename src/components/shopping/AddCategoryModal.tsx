@@ -3,6 +3,16 @@
 import { useState, useCallback } from 'react';
 import { useAddCategory } from '@/lib/hooks/useAddCategory';
 import { useFormReset } from '@/lib/hooks/useFormReset';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 // ═══════════════════════════════════════════
 // TYPES
@@ -20,6 +30,10 @@ interface AddCategoryModalProps {
 
 /**
  * Modal for creating custom shopping categories.
+ * Uses Radix UI Dialog with:
+ * - Close button (X) in top-right
+ * - ESC key support for closing
+ * - Form validation with required field indicators
  * 
  * @component
  * @example
@@ -35,6 +49,7 @@ export function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCategoryModa
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('📦');
   const [color, setColor] = useState('#6B7280');
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const { mutate, isPending, isSuccess, isError, data } = useAddCategory();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -45,6 +60,7 @@ export function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCategoryModa
     setIcon('📦');
     setColor('#6B7280');
     setErrorMsg(null);
+    setNameError(null);
   }, []);
 
   // Auto-reset on success
@@ -61,12 +77,19 @@ export function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCategoryModa
     setErrorMsg('Nie udało się utworzyć kategorii. Spróbuj ponownie.');
   });
 
-  // Don't render if not open
-  if (!isOpen) return null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    
+    // Validate name field
+    if (!name.trim()) {
+      setNameError('Nazwa kategorii jest wymagana');
+      return;
+    }
+    
+    if (name.trim().length < 2) {
+      setNameError('Nazwa musi mieć co najmniej 2 znaki');
+      return;
+    }
 
     mutate({
       name: name.trim(),
@@ -75,77 +98,96 @@ export function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCategoryModa
     });
   };
 
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+    // Clear error when user starts typing
+    if (nameError) {
+      setNameError(null);
+    }
+  };
+
   const handleCancel = () => {
     resetForm();
     onClose();
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="add-category-title"
-      onKeyDown={(e) => { if (e.key === 'Escape') handleCancel(); }}
-    >
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 id="add-category-title" className="text-xl font-semibold mb-4">Dodaj kategorię</h2>
-        
-        <form onSubmit={handleSubmit}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-category-title"
+        showCloseButton={true}
+        className="sm:max-w-md"
+      >
+        <DialogHeader>
+          <DialogTitle id="add-category-title">Dodaj kategorię</DialogTitle>
+          <DialogDescription>
+            Utwórz nową kategorię dla swoich produktów
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name field */}
-          <div className="mb-4">
-            <label htmlFor="category-name" className="block text-sm font-medium mb-1">
-              Nazwa kategorii
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="category-name">
+              Nazwa kategorii <span className="text-red-500" aria-label="required">*</span>
+            </Label>
+            <Input
               id="category-name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={handleNameChange}
               placeholder="np. Przekąski"
               maxLength={100}
               disabled={isPending}
               autoFocus
-              className="w-full px-3 py-2 border rounded-md"
+              aria-invalid={!!nameError}
+              aria-describedby={nameError ? 'name-error' : undefined}
+              className={nameError ? 'border-red-500 bg-red-50' : ''}
             />
+            {nameError && (
+              <p id="name-error" className="text-sm text-red-600">
+                {nameError}
+              </p>
+            )}
           </div>
 
           {/* Icon field */}
-          <div className="mb-4">
-            <label htmlFor="category-icon" className="block text-sm font-medium mb-1">
+          <div className="space-y-2">
+            <Label htmlFor="category-icon">
               Ikona (max 2 znaki)
-            </label>
-            <input
+            </Label>
+            <Input
               id="category-icon"
               type="text"
               value={icon}
               onChange={(e) => setIcon(e.target.value.slice(0, 2))}
               maxLength={2}
               disabled={isPending}
-              className="w-full px-3 py-2 border rounded-md"
+              placeholder="📦"
             />
           </div>
 
           {/* Color field */}
-          <div className="mb-4">
-            <label htmlFor="category-color" className="block text-sm font-medium mb-1">
+          <div className="space-y-2">
+            <Label htmlFor="category-color">
               Kolor
-            </label>
+            </Label>
             <div className="flex gap-2">
-              <input
+              <Input
                 id="category-color"
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 disabled={isPending}
-                className="h-10 w-16 rounded border"
+                className="h-10 w-16 rounded border p-1 cursor-pointer"
               />
-              <input
+              <Input
                 type="text"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 disabled={isPending}
-                className="flex-1 px-3 py-2 border rounded-md"
                 placeholder="#6B7280"
               />
             </div>
@@ -153,31 +195,30 @@ export function AddCategoryModal({ isOpen, onClose, onSuccess }: AddCategoryModa
 
           {/* Error message */}
           {errorMsg && (
-            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm" role="alert">
+            <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm" role="alert">
               {errorMsg}
             </div>
           )}
 
           {/* Buttons */}
-          <div className="flex gap-2 justify-end">
-            <button
+          <div className="flex gap-2 justify-end pt-4">
+            <Button
               type="button"
+              variant="outline"
               onClick={handleCancel}
               disabled={isPending}
-              className="px-4 py-2 border rounded-md hover:bg-gray-100"
             >
               Anuluj
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={!name.trim() || isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPending ? 'Tworzenie...' : 'Zapisz'}
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

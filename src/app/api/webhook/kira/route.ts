@@ -12,6 +12,7 @@
 import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeText } from '@/lib/utils/sanitize';
+import { validateCSRFToken, getCSRFTokenFromRequest, getCSRFTokenFromBody } from '@/lib/csrf';
 
 
 // ══════════════════════════════════════════════════════════
@@ -334,8 +335,17 @@ async function handleTaskList(
     query = query.eq('column', column);
   }
 
+  // Support sorting on multiple fields: priority, due_date, created_at, title
+  const sortField = (params.sort_by as string) || 'created_at';
+  const sortOrder = (params.sort_order as 'asc' | 'desc') || 'desc';
+  
+  // Validate sort field to prevent SQL injection
+  const validSortFields = ['priority', 'due_date', 'created_at', 'title', 'position'];
+  const safeSortField = validSortFields.includes(sortField) ? sortField : 'created_at';
+  const isSortAscending = sortOrder === 'asc';
+  
   const { data: tasks, error } = await query
-    .order('created_at', { ascending: false })
+    .order(safeSortField, { ascending: isSortAscending })
     .limit(20);
 
   if (error) throw new Error(`Task list query failed: ${error.message}`);
@@ -983,6 +993,28 @@ export async function POST(request: NextRequest) {
     // 2. Auth (body api_key OR header X-API-Key)
     if (!verifyApiKey(request, payload)) {
       return NextResponse.json({ success: false, error: 'Invalid or missing API key' }, { status: 401 });
+    }
+
+    // 2.5. CSRF Protection for state-changing operations
+    const stateChangingActions = [
+      'task_create', 'create_task',
+      'task_update', 'update_task',
+      'task_delete', 'delete_task',
+      'task_move',
+      'shopping_add', 'create_shopping_item',
+      'shopping_buy',
+      'shopping_clear',
+      'reminder_create',
+    ];
+    
+    if (stateChangingActions.includes(payload.action)) {
+      const csrfToken = getCSRFTokenFromRequest(request) || getCSRFTokenFromBody(payload);
+      if (!validateCSRFToken(csrfToken)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid or missing CSRF token' },
+          { status: 403 }
+        );
+      }
     }
 
     // 3. Normalize (support both new and legacy format)
