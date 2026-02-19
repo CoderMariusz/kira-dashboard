@@ -321,6 +321,38 @@ export default function PipelineStoryModal({
                         >
                           {run.model}
                         </div>
+                        {/* Tokens */}
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            color: '#9ca3af',
+                            width: '72px',
+                            textAlign: 'right',
+                            flexShrink: 0,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {run.input_tokens != null
+                            ? `${Math.round((run.input_tokens + (run.output_tokens ?? 0)) / 1000)}k`
+                            : '—'}
+                        </div>
+                        {/* Cost */}
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            color: run.cost_estimate != null ? '#34d399' : '#6b7280',
+                            width: '56px',
+                            textAlign: 'right',
+                            flexShrink: 0,
+                            fontVariantNumeric: 'tabular-nums',
+                          }}
+                        >
+                          {run.cost_estimate != null
+                            ? `$${run.cost_estimate < 0.01
+                                ? run.cost_estimate.toFixed(4)
+                                : run.cost_estimate.toFixed(3)}`
+                            : '—'}
+                        </div>
                         {/* Duration */}
                         <div
                           style={{

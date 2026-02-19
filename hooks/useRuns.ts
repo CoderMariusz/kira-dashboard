@@ -39,12 +39,13 @@ function mapBridgeRun(raw: BridgeRunRaw): Run {
   return {
     id: raw.run_id,
     story_id: raw.story_id,
-    // story_title nie jest zwracane przez Bridge — pole opcjonalne
     model: raw.model,
     status: raw.status,
     step: raw.step,
     duration_seconds: raw.duration_ms !== null ? raw.duration_ms / 1000 : null,
-    cost_estimate: null,
+    cost_estimate: raw.cost_usd ?? null,
+    input_tokens: raw.tokens_in ?? undefined,
+    output_tokens: raw.tokens_out ?? undefined,
     created_at: raw.started_at,
     finished_at: raw.ended_at ?? null,
   }

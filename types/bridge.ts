@@ -103,6 +103,9 @@ export interface BridgeRunRaw {
   ended_at: string | null
   duration_ms: number | null
   retry_count: number
+  tokens_in: number | null
+  tokens_out: number | null
+  cost_usd: number | null
   artifacts: unknown[]
 }
 
