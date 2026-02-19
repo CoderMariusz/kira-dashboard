@@ -41,12 +41,17 @@ export async function GET(
       total = passed + failed
     }
 
+    const durationSeconds = state.startedAt && state.completedAt
+      ? Math.round((state.completedAt - state.startedAt) / 1000)
+      : 0
+
     return Response.json({
       status: 'done',
       result: {
         score_percent: score_percent ?? 0,
         passed: passed ?? 0,
         total: total ?? 0,
+        duration_seconds: durationSeconds,
         output,
         completedAt: new Date(state.completedAt ?? Date.now()).toISOString(),
       },

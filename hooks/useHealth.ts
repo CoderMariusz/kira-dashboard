@@ -68,7 +68,7 @@ export function useHealth(): UseHealthReturn {
   const fetchHealth = useCallback(async () => {
     // Używamy Promise.allSettled żeby jeden niedostępny endpoint nie blokował pozostałych (EC-1)
     const [healthResult, memuResult, dbResult] = await Promise.allSettled([
-      safeFetch<RawHealthResponse>(`${BRIDGE_URL}/api/health`),
+      safeFetch<RawHealthResponse>(`${BRIDGE_URL}/api/status/health`),
       safeFetch<RawMemuResponse>(`${BRIDGE_URL}/api/health/memu`),
       safeFetch<RawDbResponse>(`${BRIDGE_URL}/api/health/db`),
     ])
