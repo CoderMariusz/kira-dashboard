@@ -1,0 +1,403 @@
+'use client'
+
+// components/pipeline/PipelinePanel.tsx
+// Left/top card: Active Stories, Review Queue, Blocked, Done Today sections.
+// v2 (STORY-2.7): FilterBar + search/filter + live SSE updates + optimistic UI.
+
+import React, { useMemo } from 'react'
+import type { Story } from '@/types/bridge'
+import type { LiveStory } from '@/hooks/useLivePipeline'
+import type { PipelineFilters } from '@/hooks/usePipelineFilters'
+import type { Project } from '@/types/bridge'
+import PipelineRow from './PipelineRow'
+import { FilterBar } from './FilterBar'
+import { PipelineEmptyState } from './PipelineEmptyState'
+
+interface PipelinePanelProps {
+  stories: Story[] | null
+  isLoading: boolean
+  isOffline: boolean
+  onStoryClick: (story: Story) => void
+  // STORY-2.7 additions
+  filters: PipelineFilters
+  onFilterChange: (filters: Partial<PipelineFilters>) => void
+  onResetFilters: () => void
+  projects: Project[]
+  onStartStory?: (storyId: string) => Promise<void>
+  sseConnected?: boolean
+  sseError?: string | null
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontSize: '10px',
+        fontWeight: 700,
+        color: '#3d3757',
+        textTransform: 'uppercase',
+        letterSpacing: '0.07em',
+        marginBottom: '7px',
+        marginTop: '10px',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+/** Sprawdza czy story pasuje do aktywnych filtrów (addytywne AND) */
+function matchesFilters(story: Story, filters: PipelineFilters): boolean {
+  // Status filter
+  if (filters.status && story.status !== filters.status) return false
+
+  // Model filter (używa assigned_model z Story type)
+  if (filters.model && story.assigned_model !== filters.model) return false
+
+  // Project filter (używa opcjonalnego pola project które Bridge może zwracać)
+  if (filters.project) {
+    const storyProject = (story as Story & { project?: string }).project
+    if (!storyProject || storyProject !== filters.project) return false
+  }
+
+  // Search filter (po id i title, case-insensitive) - AC-2
+  if (filters.search) {
+    const q = filters.search.toLowerCase()
+    const matchesId = story.id.toLowerCase().includes(q)
+    const matchesTitle = story.title.toLowerCase().includes(q)
+    if (!matchesId && !matchesTitle) return false
+  }
+
+  return true
+}
+
+export default function PipelinePanel({
+  stories,
+  isLoading,
+  isOffline,
+  onStoryClick,
+  filters,
+  onFilterChange,
+  onResetFilters,
+  projects,
+  onStartStory,
+  sseConnected = true,
+  sseError,
+}: PipelinePanelProps) {
+  // Filtruj stories addytywnie na podstawie aktywnych filtrów (AC-2, AC-3, AC-4)
+  const filteredStories = useMemo<Story[]>(() => {
+    if (!stories) return []
+    return stories.filter((story) => matchesFilters(story, filters))
+  }, [stories, filters])
+
+  // Klasyfikuj stories na sekcje (po filtrowaniu)
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  const activeStories = filteredStories.filter((s) => s.status === 'IN_PROGRESS')
+  const reviewStories = filteredStories.filter((s) => s.status === 'REVIEW')
+  const refactorStories = filteredStories.filter((s) => s.status === 'REFACTOR')
+  const blockedStories = filteredStories.filter((s) => s.status === 'BLOCKED')
+  const mergeStories = filteredStories.filter((s) => s.status === 'MERGE')
+  const doneTodayStories = filteredStories.filter(
+    (s) => s.status === 'DONE' && s.updated_at.slice(0, 10) === todayStr
+  )
+
+  // Całkowita liczba stories po filtrze
+  const hasAnyFiltered = filteredStories.length > 0
+  const hasAnyFilter =
+    Boolean(filters.status) ||
+    Boolean(filters.model) ||
+    Boolean(filters.project) ||
+    Boolean(filters.search)
+
+  return (
+    <div
+      style={{
+        background: '#1a1730',
+        border: '1px solid #2a2540',
+        borderRadius: '10px',
+        padding: '15px',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          marginBottom: '12px',
+          gap: '6px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <h3
+          style={{ fontSize: '13px', fontWeight: 700, color: '#e6edf3', margin: 0 }}
+        >
+          Pipeline
+        </h3>
+        <span style={{ fontSize: '11px', color: '#4b4569' }}>
+          — active + merge queue
+        </span>
+
+        {/* SSE status indicator — EC-1 */}
+        {!sseConnected && (
+          <span
+            style={{
+              fontSize: '10px',
+              color: '#f87171',
+              marginLeft: 'auto',
+            }}
+            title={sseError ?? 'SSE offline'}
+          >
+            🔴 Live updates offline — odświeżanie co 5s
+          </span>
+        )}
+        {sseConnected && (
+          <span
+            style={{
+              fontSize: '10px',
+              color: '#4ade80',
+              marginLeft: 'auto',
+            }}
+          >
+            🟢 Live
+          </span>
+        )}
+      </div>
+
+      {/* SSE offline banner (EC-1) */}
+      {isOffline && (
+        <div
+          style={{
+            background: '#3a2a00',
+            color: '#fbbf24',
+            borderRadius: '8px',
+            padding: '10px 14px',
+            marginBottom: '12px',
+            fontSize: '12px',
+          }}
+        >
+          Bridge API niedostępny — dane mogą być nieaktualne
+        </div>
+      )}
+
+      {/* FilterBar — AC-1: Renderuje się nad listą stories */}
+      <FilterBar
+        filters={filters}
+        onFilterChange={onFilterChange}
+        projects={projects}
+      />
+
+      {/* Licznik wyników dla screen readerów — ARIA */}
+      <span
+        aria-live="polite"
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+        }}
+      >
+        {filteredStories.length} stories
+      </span>
+
+      {/* Loading state */}
+      {!isOffline && isLoading && (
+        <>
+          <div
+            style={{
+              height: '60px',
+              background: '#2a2540',
+              borderRadius: '8px',
+              marginBottom: '8px',
+              opacity: 0.5,
+            }}
+          />
+          <div
+            style={{
+              height: '40px',
+              background: '#2a2540',
+              borderRadius: '8px',
+              opacity: 0.3,
+            }}
+          />
+        </>
+      )}
+
+      {/* Loaded state */}
+      {!isLoading && (() => {
+        const safeStories = stories ?? []
+
+        // Nie ma żadnych danych w ogóle (nie offline, ale brak stories)
+        if (safeStories.length === 0 && !isOffline) {
+          return (
+            <div
+              style={{
+                background: '#13111c',
+                borderRadius: '8px',
+                padding: '10px',
+                textAlign: 'center',
+                color: '#3d3757',
+                fontSize: '12px',
+                marginBottom: '10px',
+              }}
+            >
+              🎉 Pipeline idle — all stories done
+            </div>
+          )
+        }
+
+        // Empty state — filtry aktywne ale 0 wyników (AC-8)
+        if (hasAnyFilter && !hasAnyFiltered && safeStories.length > 0) {
+          return <PipelineEmptyState onReset={onResetFilters} />
+        }
+
+        return (
+          <>
+            {/* Summary counts — aktualizują się po filtrowaniu (AC-9) */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                Active:{' '}
+                <b style={{ color: '#60a5fa' }}>{activeStories.length}</b>
+              </span>
+              <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                Review:{' '}
+                <b style={{ color: '#a78bfa' }}>{reviewStories.length}</b>
+              </span>
+              {blockedStories.length > 0 && (
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                  Blocked:{' '}
+                  <b style={{ color: '#f87171' }}>{blockedStories.length}</b>
+                </span>
+              )}
+              {doneTodayStories.length > 0 && (
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                  Done today:{' '}
+                  <b style={{ color: '#4ade80' }}>{doneTodayStories.length}</b>
+                </span>
+              )}
+            </div>
+
+            {/* Active stories (IN_PROGRESS) — AC-9: nagłówek z licznikiem */}
+            {activeStories.length === 0 && !hasAnyFilter ? (
+              <div
+                style={{
+                  background: '#13111c',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  textAlign: 'center',
+                  color: '#3d3757',
+                  fontSize: '12px',
+                  marginBottom: '10px',
+                }}
+              >
+                🎉 Pipeline idle — all stories done
+              </div>
+            ) : activeStories.length > 0 ? (
+              <>
+                <SectionLabel>ACTIVE ({activeStories.length})</SectionLabel>
+                {activeStories.map((story) => (
+                  <PipelineRow
+                    key={story.id}
+                    story={story}
+                    onClick={() => onStoryClick(story)}
+                    justUpdated={(story as LiveStory)._justUpdated}
+                    isOptimistic={(story as LiveStory)._isOptimistic}
+                    onStart={
+                      onStartStory
+                        ? () => onStartStory(story.id)
+                        : undefined
+                    }
+                  />
+                ))}
+              </>
+            ) : null}
+
+            {/* Review queue — AC-9 */}
+            {reviewStories.length > 0 && (
+              <>
+                <SectionLabel>REVIEW QUEUE ({reviewStories.length})</SectionLabel>
+                {reviewStories.map((story) => (
+                  <PipelineRow
+                    key={story.id}
+                    story={story}
+                    onClick={() => onStoryClick(story)}
+                    justUpdated={(story as LiveStory)._justUpdated}
+                    isOptimistic={(story as LiveStory)._isOptimistic}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Refactor queue */}
+            {refactorStories.length > 0 && (
+              <>
+                <SectionLabel>REFACTOR ({refactorStories.length})</SectionLabel>
+                {refactorStories.map((story) => (
+                  <PipelineRow
+                    key={story.id}
+                    story={story}
+                    onClick={() => onStoryClick(story)}
+                    justUpdated={(story as LiveStory)._justUpdated}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Blocked stories */}
+            {blockedStories.length > 0 && (
+              <>
+                <SectionLabel>BLOCKED ({blockedStories.length})</SectionLabel>
+                {blockedStories.map((story) => (
+                  <PipelineRow
+                    key={story.id}
+                    story={story}
+                    onClick={() => onStoryClick(story)}
+                    justUpdated={(story as LiveStory)._justUpdated}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Merge queue */}
+            {mergeStories.length > 0 && (
+              <>
+                <SectionLabel>MERGE QUEUE ({mergeStories.length})</SectionLabel>
+                {mergeStories.map((story) => (
+                  <PipelineRow
+                    key={story.id}
+                    story={story}
+                    onClick={() => onStoryClick(story)}
+                    justUpdated={(story as LiveStory)._justUpdated}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Done today — AC-9 */}
+            {doneTodayStories.length > 0 && (
+              <>
+                <SectionLabel>DONE TODAY ({doneTodayStories.length})</SectionLabel>
+                {doneTodayStories.map((story) => (
+                  <PipelineRow
+                    key={story.id}
+                    story={story}
+                    onClick={() => onStoryClick(story)}
+                    justUpdated={(story as LiveStory)._justUpdated}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Empty state gdy filtry aktywne i sekcje są puste (AC-9) */}
+            {hasAnyFilter && filteredStories.length === 0 && (
+              <PipelineEmptyState onReset={onResetFilters} />
+            )}
+          </>
+        )
+      })()}
+    </div>
+  )
+}
