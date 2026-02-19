@@ -75,7 +75,15 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
             const newTask = payload.new as unknown as Task
             setColumns(prev => prev.map(col =>
               col.id === newTask.column_id
-                ? { ...col, tasks: sortTasks([...col.tasks.filter(t => !t.id.startsWith('temp-')), newTask]) }
+                ? {
+                    ...col,
+                    // Remove only the temp task matching this record by title,
+                    // leaving other concurrent optimistic tasks intact
+                    tasks: sortTasks([
+                      ...col.tasks.filter(t => !(t.id.startsWith('temp-') && t.title === newTask.title)),
+                      newTask,
+                    ]),
+                  }
                 : col
             ))
           }

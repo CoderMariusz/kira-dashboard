@@ -91,9 +91,9 @@ export function useShoppingList(householdId: string | undefined): UseShoppingLis
           if (payload.eventType === 'INSERT') {
             const newItem = payload.new as unknown as ShoppingItem
             setItems(prev => {
-              // Remove any optimistic temp items (same-name optimistic item)
-              // and add the real record
-              const withoutTemp = prev.filter(i => !i.id.startsWith('temp-'))
+              // Remove only the optimistic temp item matching this record by name,
+              // leaving other temp items (concurrent adds) intact
+              const withoutTemp = prev.filter(i => !(i.id.startsWith('temp-') && i.name === newItem.name))
               // Avoid duplicate if already present
               if (withoutTemp.some(i => i.id === newItem.id)) return sortItems(withoutTemp)
               return sortItems([...withoutTemp, newItem])
@@ -170,12 +170,19 @@ export function useShoppingList(householdId: string | undefined): UseShoppingLis
   const toggleBought = useCallback(async (itemId: string, currentValue: boolean) => {
     const newValue = !currentValue
 
-    setItems(prev => sortItems(
-      prev.map(i => i.id === itemId
-        ? { ...i, is_bought: newValue, bought_at: newValue ? new Date().toISOString() : null }
-        : i
+    // Snapshot the full previous item before optimistic update for accurate rollback
+    let previousItem: ShoppingItem | undefined
+
+    setItems(prev => {
+      const found = prev.find(i => i.id === itemId)
+      previousItem = found ? { ...found } : undefined
+      return sortItems(
+        prev.map(i => i.id === itemId
+          ? { ...i, is_bought: newValue, bought_at: newValue ? new Date().toISOString() : null }
+          : i
+        )
       )
-    ))
+    })
 
     try {
       const res = await fetch(`/api/home/shopping/${itemId}`, {
@@ -186,13 +193,11 @@ export function useShoppingList(householdId: string | undefined): UseShoppingLis
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       // Real-time UPDATE event will sync bought_at from DB trigger
     } catch (err) {
-      // Rollback
-      setItems(prev => sortItems(
-        prev.map(i => i.id === itemId
-          ? { ...i, is_bought: currentValue, bought_at: currentValue ? i.bought_at : null }
-          : i
-        )
-      ))
+      // Rollback: restore the full original item (including bought_at)
+      if (previousItem) {
+        const snapshot = previousItem
+        setItems(prev => sortItems(prev.map(i => i.id === itemId ? snapshot : i)))
+      }
       setError('Nie udało się zaktualizować produktu')
       console.error('[useShoppingList] toggleBought error:', err)
     }

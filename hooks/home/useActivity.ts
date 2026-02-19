@@ -26,16 +26,20 @@ export function useActivity(householdId: string | undefined, limit = 20): UseAct
   // 1. INITIAL FETCH — direct Supabase client (read-only, no API route needed)
   // ────────────────────────────────────────────────
   useEffect(() => {
-    if (!householdId) {
-      setLoading(false)
-      return
-    }
-
-    const supabase = createClient()
+    let mounted = true
 
     async function fetchEvents() {
-      setLoading(true)
-      setError(null)
+      if (!householdId) {
+        if (mounted) setLoading(false)
+        return
+      }
+
+      const supabase = createClient()
+
+      if (mounted) {
+        setLoading(true)
+        setError(null)
+      }
 
       const { data, error: fetchError } = await supabase
         .from('activity_log')
@@ -43,6 +47,8 @@ export function useActivity(householdId: string | undefined, limit = 20): UseAct
         .eq('household_id', householdId)
         .order('created_at', { ascending: false })
         .limit(limit)
+
+      if (!mounted) return
 
       if (fetchError) {
         setError('Nie udało się załadować aktywności')
@@ -54,6 +60,8 @@ export function useActivity(householdId: string | undefined, limit = 20): UseAct
     }
 
     void fetchEvents()
+
+    return () => { mounted = false }
   }, [householdId, limit])
 
   // ────────────────────────────────────────────────
