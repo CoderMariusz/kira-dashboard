@@ -9,6 +9,7 @@ export interface Task {
   column_id:    string              // UUID — FK do columns
   title:        string              // Tytuł zadania
   description:  string | null       // Opcjonalny opis
+  label?:       string | null       // Opcjonalna etykieta/tag zadania (AC-3)
   priority:     TaskPriority        // Priorytet
   position:     number              // Pozycja w kolumnie (integer, krok 1000)
   assigned_to:  string | null       // UUID usera, null jeśli nieprzypisany
@@ -17,6 +18,7 @@ export interface Task {
   created_by:   string | null       // UUID usera który stworzył
   created_at:   string              // ISO 8601
   updated_at:   string              // ISO 8601
+  subtasks?:    string[]            // Opcjonalna lista podzadań (AC-8)
 }
 
 export interface Column {
