@@ -41,3 +41,17 @@ export function NavSection({ section }: NavSectionProps) {
     </div>
   );
 }
+
+/** Tymczasowa wersja bez RBAC — do debugowania sidebar */
+export function NavSectionNoAuth({ section }: NavSectionProps) {
+  return (
+    <div className="mb-2">
+      <div className="text-[10px] font-bold text-[#3d3757] uppercase tracking-[0.08em] px-2 py-2.5 pb-0.5">
+        {section.label}
+      </div>
+      {section.items.map(item => (
+        <NavItem key={item.id} item={item} />
+      ))}
+    </div>
+  );
+}

@@ -7,7 +7,7 @@
 
 import { useUser } from '@/contexts/RoleContext';
 import { NAV_CONFIG } from './NavConfig';
-import { NavSection } from './NavSection';
+import { NavSection, NavSectionNoAuth } from './NavSection';
 import { UserPill } from './UserPill';
 import { SidebarSkeleton, UserPillSkeleton } from './SidebarSkeleton';
 import { ProjectSwitcher } from './ProjectSwitcher';
@@ -27,7 +27,8 @@ import { ProjectSwitcher } from './ProjectSwitcher';
  * - Error/no role: pusty sidebar (middleware powinien przekierować na /login)
  */
 export function Sidebar() {
-  const { isLoading } = useUser();
+  // TODO: przywrócić role-based filtering po naprawieniu auth
+  // const { isLoading } = useUser();
 
   return (
     <div className="w-[198px] min-w-[198px] bg-[#1a1730] border-r border-[#2a2540] flex flex-col h-screen">
@@ -37,24 +38,16 @@ export function Sidebar() {
         <ProjectSwitcher />
       </div>
 
-      {/* ─── NAV: Role-based sections ─── */}
+      {/* ─── NAV: All sections (role check tymczasowo wyłączony) ─── */}
       <div className="flex-1 p-1.5 overflow-y-auto">
-        {isLoading ? (
-          <SidebarSkeleton />
-        ) : (
-          NAV_CONFIG.map(section => (
-            <NavSection key={section.id} section={section} />
-          ))
-        )}
+        {NAV_CONFIG.map(section => (
+          <NavSectionNoAuth key={section.id} section={section} />
+        ))}
       </div>
 
       {/* ─── FOOTER: User Pill ─── */}
       <div className="border-t border-[#2a2540]">
-        {isLoading ? (
-          <UserPillSkeleton />
-        ) : (
-          <UserPill />
-        )}
+        <UserPill />
       </div>
 
     </div>
