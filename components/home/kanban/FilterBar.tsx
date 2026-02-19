@@ -32,10 +32,8 @@ export function FilterBar({
   const filters = [
     { key: 'all', label: 'Wszystkie' },
     { key: 'mine', label: 'Moje' },
-    ...members
-      // Nie pokazuj siebie jako osobnego filtra — jest "Moje"
-      .filter(m => m.user_id !== currentUserId)
-      .map(m => ({ key: m.user_id, label: getMemberLabel(m) })),
+    // AC-7: WSZYSCY memberowie włącznie z current userem (usunięto filtr wykluczający)
+    ...members.map(m => ({ key: m.user_id, label: getMemberLabel(m) })),
   ]
 
   return (

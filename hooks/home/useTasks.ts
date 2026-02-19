@@ -190,8 +190,9 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
         ...col,
         tasks: col.tasks.filter(t => t.id !== tempId),
       })))
-      setError('Nie udało się dodać zadania')
       console.error('[useTasks] addTask error:', err)
+      // Re-throw — caller handles toast/display (AC-5: nie crashuj całego board)
+      throw err
     }
   }, [householdId])
 
@@ -237,8 +238,9 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
     } catch (err) {
       // Rollback
       setColumns(previousColumns)
-      setError('Nie udało się przenieść zadania')
       console.error('[useTasks] moveTask error:', err)
+      // Re-throw — caller handles toast/display (AC-5: nie crashuj całego board)
+      throw err
     }
   }, [columns])
 
@@ -262,8 +264,9 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
     } catch (err) {
       setColumns(previousColumns)
-      setError('Nie udało się zaktualizować zadania')
       console.error('[useTasks] updateTask error:', err)
+      // Re-throw — caller handles toast/display (AC-5: nie crashuj całego board)
+      throw err
     }
   }, [columns])
 
@@ -283,8 +286,9 @@ export function useTasks(householdId: string | undefined): UseTasksReturn {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
     } catch (err) {
       setColumns(previousColumns)
-      setError('Nie udało się usunąć zadania')
       console.error('[useTasks] deleteTask error:', err)
+      // Re-throw — caller handles toast/display (AC-5: nie crashuj całego board)
+      throw err
     }
   }, [columns])
 
