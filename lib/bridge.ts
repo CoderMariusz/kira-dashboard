@@ -68,8 +68,13 @@ export async function fetchBridge<T>(path: string): Promise<T | null> {
       const response = await fetchWithTimeout(url)
 
       if (!response.ok) {
-        // HTTP error (4xx, 5xx) — nie retry, logujemy i zwracamy null
-        console.error(`[Bridge] HTTP ${response.status} for ${path}`)
+        // 404 = endpoint nie istnieje (np. Bridge offline/restart) — cichy warn
+        // 5xx = błąd serwera — logujemy jako error
+        if (response.status >= 500) {
+          console.error(`[Bridge] HTTP ${response.status} for ${path}`)
+        } else {
+          console.warn(`[Bridge] HTTP ${response.status} for ${path}`)
+        }
         return null
       }
 

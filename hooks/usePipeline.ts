@@ -5,6 +5,7 @@
 // Mapuje surowe pola Bridge (story_id, epic_id, model) na typy aplikacyjne (id, epic, assigned_model).
 
 import useSWR from 'swr'
+import { useMemo } from 'react'
 import { fetchBridge } from '@/lib/bridge'
 import type { PipelineResponse, BridgeStoryRaw, Story } from '@/types/bridge'
 
@@ -74,7 +75,15 @@ export function usePipeline(options: UsePipelineOptions = {}): UsePipelineReturn
   )
 
   const offline = error !== undefined || (data === null && !isLoading)
-  const stories = data?.stories?.map(mapBridgeStory) ?? null
+
+  // useMemo: tworzy nową referencję tablicy TYLKO gdy data.stories się zmienia.
+  // Bez tego .map() zwraca nową tablicę przy każdym renderze, co powoduje
+  // infinite loop w useLivePipeline (useEffect([baseStories]) odpala się non-stop).
+  const stories = useMemo(
+    () => data?.stories?.map(mapBridgeStory) ?? null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data?.stories]
+  )
 
   return {
     stories,

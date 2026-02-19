@@ -5,7 +5,7 @@
 // Implementuje STORY-2.7.
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** Dozwolone wartości statusów (pusta string = "wszystkie") */
 const VALID_STATUSES = ['', 'IN_PROGRESS', 'REVIEW', 'REFACTOR', 'DONE', 'MERGE', 'BLOCKED'] as const
@@ -64,49 +64,39 @@ export function usePipelineFilters(): UsePipelineFiltersReturn {
    * Aktualizuje podane filtry i synchronizuje URL.
    * Niezdefiniowane klucze w newFilters są zachowane bez zmian.
    */
+  // Ref do śledzenia czy zmiana filtrów pochodzi od usera (nie z URL init)
+  const isUserChange = useRef(false)
+
+  // Synchronizuj URL gdy filtry się zmieniają — useEffect zamiast router.push
+  // wewnątrz setState (które powoduje "Cannot update while rendering" błąd React)
+  useEffect(() => {
+    if (!isUserChange.current) return
+    isUserChange.current = false
+
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', 'pipeline')
+
+    if (filters.status) params.set('status', filters.status)
+    else params.delete('status')
+
+    if (filters.model) params.set('model', filters.model)
+    else params.delete('model')
+
+    if (filters.project) params.set('project', filters.project)
+    else params.delete('project')
+
+    if (filters.search) params.set('search', filters.search)
+    else params.delete('search')
+
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [filters, searchParams, router, pathname])
+
   const setFilters = useCallback(
     (newFilters: Partial<PipelineFilters>) => {
-      setFiltersState((prev) => {
-        const updated: PipelineFilters = { ...prev, ...newFilters }
-
-        // Buduj nowe URL params zachowując istniejące (np. ?tab=pipeline)
-        const params = new URLSearchParams(searchParams.toString())
-
-        // Upewnij się, że tab=pipeline jest zachowane
-        params.set('tab', 'pipeline')
-
-        // Ustaw lub usuń każdy filtr
-        if (updated.status) {
-          params.set('status', updated.status)
-        } else {
-          params.delete('status')
-        }
-
-        if (updated.model) {
-          params.set('model', updated.model)
-        } else {
-          params.delete('model')
-        }
-
-        if (updated.project) {
-          params.set('project', updated.project)
-        } else {
-          params.delete('project')
-        }
-
-        if (updated.search) {
-          params.set('search', updated.search)
-        } else {
-          params.delete('search')
-        }
-
-        // Aktualizuj URL bez przeładowania strony (AC-3)
-        router.push(`${pathname}?${params.toString()}`, { scroll: false })
-
-        return updated
-      })
+      isUserChange.current = true
+      setFiltersState((prev) => ({ ...prev, ...newFilters }))
     },
-    [searchParams, router, pathname]
+    []
   )
 
   /**
