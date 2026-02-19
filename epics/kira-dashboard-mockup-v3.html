@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kira Dashboard v3</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',-apple-system,sans-serif; background:#13111c; color:#e6edf3; display:flex; height:100vh; overflow:hidden; }
+
+/* ─── ICON RAIL ─── */
+.icon-rail { width:54px; min-width:54px; background:#1a1730; border-right:1px solid #2a2540; display:flex; flex-direction:column; align-items:center; padding:12px 0; gap:4px; }
+.rail-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer; color:#6b7280; transition:.15s; }
+.rail-icon:hover { background:#2a2540; color:#e6edf3; }
+.rail-icon.active { background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; box-shadow:0 2px 12px rgba(124,58,237,.4); }
+.rail-spacer { flex:1; }
+.rail-avatar { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#3b82f6); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; cursor:pointer; }
+
+/* ─── SIDE NAV ─── */
+.side-nav { width:198px; min-width:198px; background:#1a1730; border-right:1px solid #2a2540; display:flex; flex-direction:column; }
+.side-nav-header { padding:14px 12px 10px; border-bottom:1px solid #2a2540; }
+.proj-switcher { display:flex; align-items:center; gap:8px; background:#13111c; border:1px solid #2a2540; border-radius:8px; padding:7px 10px; cursor:pointer; transition:.15s; margin-bottom:10px; }
+.proj-switcher:hover { border-color:#7c3aed; }
+.ps-icon { width:26px; height:26px; background:linear-gradient(135deg,#7c3aed,#3b82f6); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+.ps-name { font-size:13px; font-weight:700; color:#e6edf3; flex:1; }
+.ps-arrow { font-size:10px; color:#6b7280; }
+.kira-version-tag { display:flex; align-items:center; gap:6px; }
+.kv-dot { width:6px; height:6px; background:#3fb950; border-radius:50%; }
+.kv-text { font-size:11px; color:#6b7280; }
+.kv-badge { font-size:10px; color:#a78bfa; background:#2d1b4a; padding:1px 6px; border-radius:4px; font-weight:600; margin-left:auto; }
+
+.side-nav-items { flex:1; padding:6px; overflow-y:auto; }
+.nav-lbl { font-size:10px; font-weight:700; color:#3d3757; text-transform:uppercase; letter-spacing:.08em; padding:10px 8px 3px; }
+.nav-item { display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:7px; cursor:pointer; font-size:13px; color:#6b7280; transition:.15s; margin-bottom:1px; }
+.nav-item:hover { background:#2a2540; color:#e6edf3; }
+.nav-item.active { background:#1e1b4b; color:#818cf8; font-weight:600; }
+.ni-icon { font-size:13px; width:16px; text-align:center; }
+.ni-badge { margin-left:auto; font-size:10px; font-weight:600; background:#2a2540; color:#818cf8; padding:1px 6px; border-radius:8px; }
+.ni-badge.warn { background:#3a2a00; color:#e3b341; }
+.ni-badge.ok { background:#1a3a1a; color:#3fb950; }
+
+.side-nav-footer { padding:10px; border-top:1px solid #2a2540; }
+.bridge-pill { display:flex; align-items:center; gap:7px; background:#13111c; border:1px solid #2a2540; border-radius:8px; padding:7px 10px; }
+.bridge-dot { width:6px; height:6px; background:#3fb950; border-radius:50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.bridge-lbl { font-size:11px; color:#6b7280; flex:1; }
+.bridge-val { font-size:11px; color:#3fb950; font-weight:600; }
+
+/* ─── MAIN ─── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+.topbar { height:50px; border-bottom:1px solid #2a2540; display:flex; align-items:center; padding:0 20px; gap:10px; background:#1a1730; }
+.topbar h1 { font-size:16px; font-weight:700; color:#e6edf3; flex:1; }
+.topbar-search { display:flex; align-items:center; gap:7px; background:#13111c; border:1px solid #2a2540; border-radius:8px; padding:6px 12px; color:#4b4569; font-size:12px; width:230px; }
+.topbar-actions { display:flex; gap:7px; }
+.icon-action { width:32px; height:32px; background:#13111c; border:1px solid #2a2540; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#6b7280; font-size:12px; position:relative; }
+.icon-action .dot { position:absolute; top:5px; right:5px; width:6px; height:6px; background:#f85149; border-radius:50%; }
+.btn-new { padding:6px 14px; background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 10px rgba(124,58,237,.35); }
+
+/* ─── TABS ─── */
+.tabs-bar { display:flex; gap:2px; padding:10px 20px 0; border-bottom:1px solid #2a2540; background:#1a1730; }
+.tab { padding:7px 14px; font-size:12px; color:#6b7280; cursor:pointer; border-radius:7px 7px 0 0; transition:.15s; border-bottom:2px solid transparent; margin-bottom:-1px; }
+.tab:hover { color:#e6edf3; }
+.tab.active { color:#818cf8; border-bottom-color:#818cf8; font-weight:600; background:#13111c; }
+
+/* ─── CONTENT ─── */
+.content { flex:1; overflow-y:auto; padding:18px 20px; }
+
+/* ─── KIRA BANNER ─── */
+.kira-banner { background:linear-gradient(135deg,#1e1b4b 0%,#1a2744 100%); border:1px solid #3b3d7a; border-radius:12px; padding:14px 18px; margin-bottom:18px; display:flex; align-items:center; gap:14px; }
+.kb-icon { width:42px; height:42px; background:linear-gradient(135deg,#7c3aed,#3b82f6); border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; box-shadow:0 2px 14px rgba(124,58,237,.4); }
+.kb-title { font-size:19px; font-weight:800; background:linear-gradient(135deg,#c4b5fd,#93c5fd); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.kb-sub { font-size:11px; color:#6b7280; margin-top:2px; }
+.kb-tags { display:flex; gap:6px; margin-left:auto; flex-wrap:wrap; justify-content:flex-end; max-width:500px; }
+.kb-tag { font-size:10px; padding:3px 9px; border-radius:20px; display:flex; align-items:center; gap:3px; }
+.kb-tag.done { background:#1a3a1a; border:1px solid #2a5a2a; color:#4ade80; }
+.kb-tag.new  { background:#2d1b4a; border:1px solid #5b21b6; color:#c4b5fd; }
+.kb-tag.lock { background:#1a1730; border:1px solid #2a2540; color:#3d3757; }
+
+/* ─── STAT ROW ─── */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+.stat-card { background:#1a1730; border:1px solid #2a2540; border-radius:10px; padding:14px 16px; transition:.15s; }
+.stat-card:hover { border-color:#3b3d7a; }
+.s-lbl { font-size:10px; color:#4b4569; text-transform:uppercase; letter-spacing:.07em; margin-bottom:6px; }
+.s-val { font-size:25px; font-weight:800; color:#e6edf3; line-height:1; }
+.s-sub { font-size:10px; color:#4b4569; margin-top:4px; }
+.s-trend { font-size:10px; margin-top:3px; }
+.s-trend.up { color:#4ade80; }
+.s-trend.dn { color:#f87171; }
+
+/* ─── GRIDS ─── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:18px; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+
+/* ─── CARD ─── */
+.card { background:#1a1730; border:1px solid #2a2540; border-radius:10px; padding:15px; }
+.card-hdr { display:flex; align-items:center; margin-bottom:12px; }
+.card-hdr h3 { font-size:13px; font-weight:700; color:#e6edf3; flex:1; }
+.card-hdr .sub { font-size:11px; color:#4b4569; margin-left:6px; }
+.see-all { font-size:11px; color:#818cf8; cursor:pointer; margin-left:auto; }
+.sec-lbl { font-size:10px; font-weight:700; color:#3d3757; text-transform:uppercase; letter-spacing:.07em; margin-bottom:7px; }
+
+/* ─── MODEL CARDS ─── */
+.model-card { background:#1a1730; border:1px solid #2a2540; border-radius:10px; padding:13px; transition:.15s; cursor:pointer; }
+.model-card:hover { border-color:#3b3d7a; transform:translateY(-1px); box-shadow:0 4px 20px rgba(0,0,0,.3); }
+.mc-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.mc-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.mc-icon.kimi   { background:#1a3a5c; }
+.mc-icon.glm    { background:#1a3a1a; }
+.mc-icon.sonnet { background:#2d1b4a; }
+.mc-icon.codex  { background:#3a1a1a; }
+.mc-name { font-size:13px; font-weight:700; color:#e6edf3; }
+.mc-role { font-size:10px; color:#4b4569; }
+.mc-status { margin-left:auto; font-size:10px; display:flex; align-items:center; gap:4px; }
+.dot-on  { width:6px; height:6px; background:#4ade80; border-radius:50%; }
+.dot-off { width:6px; height:6px; background:#d29922; border-radius:50%; }
+.mc-metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:9px; }
+.mm .mv { font-size:16px; font-weight:800; color:#e6edf3; }
+.mm .ml { font-size:9px; color:#6b7280; }
+.mc-chart { height:40px; margin-bottom:9px; }
+.mc-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.btn-p { padding:5px; background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; text-align:center; }
+.btn-s { padding:5px; background:#2a2540; color:#6b7280; border:none; border-radius:6px; font-size:11px; cursor:pointer; text-align:center; transition:.15s; }
+.btn-s:hover { background:#3b3d7a; color:#e6edf3; }
+
+/* ─── PIPELINE ─── */
+.p-row { display:flex; align-items:center; gap:9px; background:#13111c; border-radius:7px; padding:8px 11px; margin-bottom:5px; cursor:pointer; transition:.15s; border:1px solid transparent; }
+.p-row:hover { border-color:#2a2540; }
+.p-id    { font-size:11px; font-weight:700; color:#818cf8; width:78px; flex-shrink:0; }
+.p-title { font-size:12px; color:#e6edf3; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.p-model { font-size:10px; color:#6b7280; width:55px; flex-shrink:0; }
+.p-status { font-size:10px; padding:2px 7px; border-radius:8px; font-weight:600; flex-shrink:0; }
+.ps-ip   { background:#1a3a5c; color:#60a5fa; }
+.ps-rv   { background:#2d1b4a; color:#a78bfa; }
+.ps-done { background:#1a3a1a; color:#4ade80; }
+.ps-rf   { background:#3a2a00; color:#fbbf24; }
+.ps-mrg  { background:#1a2a1a; color:#34d399; border:1px solid #2a5a2a; }
+
+/* ─── EPICS ─── */
+.epic-card { display:flex; align-items:center; gap:11px; background:#13111c; border-radius:8px; padding:10px 13px; margin-bottom:6px; cursor:pointer; transition:.15s; border:1px solid transparent; }
+.epic-card:hover { border-color:#2a2540; }
+.epic-icon { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.epic-name { font-size:13px; font-weight:600; color:#e6edf3; }
+.epic-meta { font-size:10px; color:#4b4569; margin-top:1px; }
+.epic-badge { font-size:10px; padding:2px 8px; border-radius:7px; font-weight:600; margin-left:auto; flex-shrink:0; }
+.eb-done    { background:#1a3a1a; color:#4ade80; }
+.eb-next    { background:#3a2a00; color:#fbbf24; }
+.eb-design  { background:#2d1b4a; color:#c4b5fd; }
+
+/* ─── VELOCITY CHART ─── */
+.vchart-wrap { height:110px; margin-bottom:10px; }
+.fchart-wrap { height:110px; }
+
+/* ─── ACTIVITY FEED ─── */
+.activity-list { display:flex; flex-direction:column; gap:0; }
+.act-item { display:flex; gap:10px; padding:7px 0; border-bottom:1px solid #1f1c2e; position:relative; }
+.act-item:last-child { border-bottom:none; }
+.act-timeline { display:flex; flex-direction:column; align-items:center; gap:0; flex-shrink:0; padding-top:3px; }
+.act-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.act-line { width:1px; background:#2a2540; flex:1; margin-top:3px; }
+.act-item:last-child .act-line { display:none; }
+.act-body { flex:1; }
+.act-event { font-size:12px; color:#e6edf3; }
+.act-event span { color:#818cf8; font-weight:600; }
+.act-time { font-size:10px; color:#4b4569; margin-top:1px; }
+
+/* ─── EVAL ─── */
+.eval-score-area { display:flex; gap:16px; align-items:center; margin-bottom:12px; }
+.ev-big { text-align:center; }
+.ev-num { font-size:36px; font-weight:800; color:#4ade80; line-height:1; }
+.ev-lbl { font-size:10px; color:#6b7280; }
+.ev-sub { font-size:10px; color:#4ade80; margin-top:2px; }
+.eval-cats { flex:1; display:flex; flex-direction:column; gap:4px; }
+.ecat { display:flex; align-items:center; gap:7px; }
+.ecat-name { font-size:10px; color:#6b7280; width:125px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ecat-bg { flex:1; background:#2a2540; border-radius:3px; height:5px; }
+.ecat-fill { background:linear-gradient(90deg,#4ade80,#34d399); height:5px; border-radius:3px; }
+.ecat-pct { font-size:10px; color:#4ade80; width:30px; text-align:right; }
+
+/* ─── PATTERNS ─── */
+.pat-row { display:flex; align-items:center; gap:7px; background:#13111c; border-radius:6px; padding:6px 9px; margin-bottom:5px; }
+.pt { font-size:9px; padding:2px 6px; border-radius:6px; font-weight:700; flex-shrink:0; }
+.pt.freq { background:#1a3a5c; color:#60a5fa; }
+.pt.temp { background:#2d1b4a; color:#a78bfa; }
+.pt.cooc { background:#1a3a1a; color:#4ade80; }
+.pat-topic { font-size:12px; color:#e6edf3; flex:1; }
+.pat-count { font-size:10px; color:#4b4569; }
+
+/* ─── LESSONS ─── */
+.les-row { padding:8px 10px; background:#13111c; border-radius:7px; border-left:2px solid #7c3aed; margin-bottom:5px; }
+.les-meta { font-size:10px; color:#818cf8; font-weight:600; margin-bottom:2px; }
+.les-text { font-size:11px; color:#6b7280; line-height:1.4; }
+
+/* ─── NIGHTCLAW ─── */
+.nightclaw-card { background:linear-gradient(135deg,#13111c,#1a1730); border:1px solid #3b3d7a; border-radius:10px; padding:14px; cursor:pointer; transition:.15s; }
+.nightclaw-card:hover { border-color:#7c3aed; box-shadow:0 0 20px rgba(124,58,237,.2); }
+.nc-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.nc-icon { width:36px; height:36px; background:#1e1b4b; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+.nc-title { font-size:13px; font-weight:700; color:#e6edf3; }
+.nc-sub { font-size:10px; color:#4b4569; }
+.nc-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.nc-stat { background:#13111c; border-radius:7px; padding:8px 10px; }
+.nc-stat .nv { font-size:18px; font-weight:700; color:#c4b5fd; }
+.nc-stat .nl { font-size:10px; color:#4b4569; }
+
+/* ─── COST TRACKER ─── */
+.cost-row { display:flex; align-items:center; gap:9px; background:#13111c; border-radius:7px; padding:7px 11px; margin-bottom:5px; }
+.cost-model { font-size:12px; color:#e6edf3; flex:1; font-weight:600; }
+.cost-runs { font-size:11px; color:#6b7280; width:44px; text-align:right; }
+.cost-bar-bg { width:80px; background:#2a2540; border-radius:3px; height:5px; }
+.cost-bar { height:5px; border-radius:3px; }
+.cost-val { font-size:11px; color:#e6edf3; font-weight:600; width:50px; text-align:right; }
+
+/* ─── HEALTH ─── */
+.health-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:12px; }
+.hi { background:#13111c; border-radius:7px; padding:9px 11px; }
+.hi .hl { font-size:10px; color:#4b4569; margin-bottom:3px; }
+.hi .hv { font-size:12px; font-weight:600; color:#e6edf3; }
+.hi .hv.ok { color:#4ade80; }
+.al-row { display:flex; align-items:center; gap:7px; padding:6px 9px; background:#13111c; border-radius:6px; margin-bottom:5px; }
+.al-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.al-dot.ok { background:#4ade80; }
+.al-name { font-size:12px; color:#e6edf3; flex:1; }
+.al-st { font-size:10px; color:#4b4569; }
+
+/* ─── MODAL ─── */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); z-index:100; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:#1a1730; border:1px solid #3b3d7a; border-radius:14px; width:540px; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.6); animation:fadeUp .2s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.modal-header { padding:18px 20px 12px; border-bottom:1px solid #2a2540; display:flex; align-items:flex-start; gap:12px; }
+.modal-icon { width:40px; height:40px; border-radius:10px; background:#2d1b4a; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.modal-title { font-size:16px; font-weight:700; color:#e6edf3; }
+.modal-id { font-size:12px; color:#818cf8; margin-top:2px; }
+.modal-close { margin-left:auto; width:28px; height:28px; background:#2a2540; border:none; border-radius:7px; color:#6b7280; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.modal-close:hover { background:#3b3d7a; color:#e6edf3; }
+.modal-body { padding:16px 20px; }
+.modal-section { margin-bottom:16px; }
+.modal-section h4 { font-size:11px; font-weight:700; color:#4b4569; text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
+.modal-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.meta-item { background:#13111c; border-radius:7px; padding:8px 11px; }
+.meta-item .ml { font-size:10px; color:#4b4569; margin-bottom:2px; }
+.meta-item .mv { font-size:13px; font-weight:600; color:#e6edf3; }
+.modal-runs { display:flex; flex-direction:column; gap:6px; }
+.run-row { display:flex; align-items:center; gap:9px; background:#13111c; border-radius:7px; padding:8px 11px; }
+.rr-step  { font-size:11px; font-weight:700; color:#818cf8; width:70px; }
+.rr-model { font-size:11px; color:#6b7280; flex:1; }
+.rr-dur   { font-size:11px; color:#6b7280; width:44px; text-align:right; }
+.rr-st    { font-size:10px; padding:2px 7px; border-radius:7px; font-weight:600; }
+.modal-footer { padding:12px 20px 16px; border-top:1px solid #2a2540; display:flex; gap:9px; justify-content:flex-end; }
+.mf-btn-p { padding:7px 18px; background:linear-gradient(135deg,#7c3aed,#3b82f6); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
+.mf-btn-s { padding:7px 18px; background:#2a2540; color:#6b7280; border:none; border-radius:8px; font-size:12px; cursor:pointer; }
+
+/* scroll */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:#13111c; }
+::-webkit-scrollbar-thumb { background:#2a2540; border-radius:4px; }
+</style>
+</head>
+<body>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="storyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon">🔧</div>
+      <div>
+        <div class="modal-title" id="modal-title">Auto log-run hook w state machine</div>
+        <div class="modal-id" id="modal-id">STORY-13.8 · EPIC-13 Multi-Project</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <h4>Metadata</h4>
+        <div class="modal-meta-grid">
+          <div class="meta-item"><div class="ml">Status</div><div class="mv" style="color:#4ade80">✅ DONE</div></div>
+          <div class="meta-item"><div class="ml">Model</div><div class="mv">Sonnet 4.6</div></div>
+          <div class="meta-item"><div class="ml">Size</div><div class="mv">Medium</div></div>
+          <div class="meta-item"><div class="ml">Completed</div><div class="mv">Feb 19, 11:05</div></div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <h4>Definition of Done</h4>
+        <div style="background:#13111c;border-radius:8px;padding:10px 12px;font-size:12px;color:#6b7280;line-height:1.6;">
+          bridge advance --to REVIEW/DONE/REFACTOR automatycznie tworzy wpis w runs table; bridge log-run nadal działa jako override; zero manualnych kroków dla orchestratora
+        </div>
+      </div>
+      <div class="modal-section">
+        <h4>Runs (2 steps)</h4>
+        <div class="modal-runs">
+          <div class="run-row">
+            <div class="rr-step">IMPLEMENT</div>
+            <div class="rr-model">sonnet-1 · feature/STORY-13.8</div>
+            <div class="rr-dur">3.4m</div>
+            <div class="rr-st" style="background:#1a3a1a;color:#4ade80">DONE</div>
+          </div>
+          <div class="run-row">
+            <div class="rr-step">REVIEW</div>
+            <div class="rr-model">kimi-1 · cross-review</div>
+            <div class="rr-dur">0.7m</div>
+            <div class="rr-st" style="background:#1a3a1a;color:#4ade80">DONE</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <h4>Lesson extracted</h4>
+        <div class="les-row" style="margin:0">
+          <div class="les-meta">Auto-extracted on DONE</div>
+          <div class="les-text">Non-blocking hooks in state machine transitions. Pattern: try/except isolation — hook failure must never block the primary operation.</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="mf-btn-s" onclick="closeModal()">Close</button>
+      <button class="mf-btn-p">View Full Story →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ICON RAIL -->
+<div class="icon-rail">
+  <div class="rail-icon" title="Recent">🕐</div>
+  <div class="rail-icon active" title="Pipeline">⚙️</div>
+  <div class="rail-icon" title="Calendar">📅</div>
+  <div class="rail-icon" title="Starred">⭐</div>
+  <div class="rail-icon" title="Models">🤖</div>
+  <div class="rail-spacer"></div>
+  <div class="rail-avatar">M</div>
+</div>
+
+<!-- SIDE NAV -->
+<div class="side-nav">
+  <div class="side-nav-header">
+    <!-- Multi-project switcher ← SUGESTIA #4 -->
+    <div class="proj-switcher" onclick="alert('Project switcher: kira → gym-tracker → ...')">
+      <div class="ps-icon">🤖</div>
+      <div class="ps-name">kira</div>
+      <div class="ps-arrow">⌄</div>
+    </div>
+    <div class="kira-version-tag">
+      <div class="kv-dot"></div>
+      <div class="kv-text">Bridge API connected</div>
+      <div class="kv-badge">v1.0</div>
+    </div>
+  </div>
+  <div class="side-nav-items">
+    <div class="nav-lbl">Pipeline</div>
+    <div class="nav-item active"><span class="ni-icon">📊</span> Overview</div>
+    <div class="nav-item"><span class="ni-icon">▶️</span> Active Stories <span class="ni-badge">0</span></div>
+    <div class="nav-item"><span class="ni-icon">👁️</span> Review Queue <span class="ni-badge">0</span></div>
+    <div class="nav-item"><span class="ni-icon">🔀</span> Merge Queue <span class="ni-badge warn">2</span></div>
+
+    <div class="nav-lbl">Projects</div>
+    <div class="nav-item"><span class="ni-icon">🐍</span> kira <span class="ni-badge ok">✓</span></div>
+    <div class="nav-item" style="color:#3d3757"><span class="ni-icon">🏋️</span> gym-tracker</div>
+    <div class="nav-item" style="color:#3d3757"><span class="ni-icon">➕</span> Add project</div>
+
+    <div class="nav-lbl">Intelligence</div>
+    <div class="nav-item"><span class="ni-icon">🧪</span> Eval Framework</div>
+    <div class="nav-item"><span class="ni-icon">🧠</span> Patterns</div>
+    <div class="nav-item"><span class="ni-icon">📚</span> Lessons</div>
+    <div class="nav-item"><span class="ni-icon">🌙</span> NightClaw</div>
+
+    <div class="nav-lbl">System</div>
+    <div class="nav-item"><span class="ni-icon">🔔</span> Alerts</div>
+    <div class="nav-item"><span class="ni-icon">⚡</span> Skills</div>
+    <div class="nav-item"><span class="ni-icon">⚙️</span> Settings</div>
+  </div>
+  <div class="side-nav-footer">
+    <div class="bridge-pill">
+      <div class="bridge-dot"></div>
+      <div class="bridge-lbl">Bridge :8199</div>
+      <div class="bridge-val">online</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <h1>Overview</h1>
+    <div class="topbar-search">🔍 Search stories, models, epics...</div>
+    <div class="topbar-actions">
+      <div class="icon-action">🔔<div class="dot"></div></div>
+      <div class="icon-action">🌙</div>
+      <button class="btn-new">+ Start Story</button>
+    </div>
+  </div>
+
+  <div class="tabs-bar">
+    <div class="tab active">Overview</div>
+    <div class="tab">Pipeline</div>
+    <div class="tab">Models</div>
+    <div class="tab">Epics</div>
+    <div class="tab">Eval</div>
+    <div class="tab">Patterns</div>
+    <div class="tab">NightClaw 🌙</div>
+  </div>
+
+  <div class="content">
+
+    <!-- KIRA BANNER -->
+    <div class="kira-banner">
+      <div class="kb-icon">🤖</div>
+      <div>
+        <div class="kb-title">Kira v1.0</div>
+        <div class="kb-sub">AI Pipeline Orchestrator · 158 stories shipped · Bridge API live · EPIC-11 CI/CD next</div>
+      </div>
+      <div class="kb-tags">
+        <div class="kb-tag done">✅ Multi-project</div>
+        <div class="kb-tag done">✅ Auto run tracking</div>
+        <div class="kb-tag new">🆕 Lesson hooks</div>
+        <div class="kb-tag new">🆕 memU events</div>
+        <div class="kb-tag new">🆕 Eval CLI</div>
+        <div class="kb-tag new">🆕 Dashboard</div>
+        <div class="kb-tag lock">🔒 CI/CD EPIC-11</div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="s-lbl">Stories Done</div>
+        <div class="s-val">158</div>
+        <div class="s-sub">across 15 epics</div>
+        <div class="s-trend up">↑ +10 this session</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-lbl">Total Runs</div>
+        <div class="s-val">49</div>
+        <div class="s-sub">auto-tracked from today</div>
+        <div class="s-trend up">↑ hooks live ✅</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-lbl">Success Rate</div>
+        <div class="s-val">93.9%</div>
+        <div class="s-sub">kimi 100% · glm 85.7%</div>
+        <div class="s-trend up">↑ 7-day trend stable</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-lbl">Est. Token Cost</div>
+        <div class="s-val">~$4.2</div>
+        <div class="s-sub">today · all models</div>
+        <div class="s-trend dn">kimi $1.8 · sonnet $2.1</div>
+      </div>
+    </div>
+
+    <!-- MODEL AGENTS -->
+    <div class="card-hdr" style="margin-bottom:10px;">
+      <h3 style="font-size:14px;font-weight:700;color:#e6edf3;">Model Agents</h3>
+      <span style="font-size:11px;color:#4b4569;margin-left:8px;flex:1;">performance last 7 days — click for details</span>
+      <span class="see-all">All runs →</span>
+    </div>
+    <div class="grid-4">
+      <div class="model-card" onclick="openModal('Kimi K2.5','kimi','Easy · Short implementations','22','100%','3.5m')">
+        <div class="mc-head">
+          <div class="mc-icon kimi">🌙</div>
+          <div><div class="mc-name">Kimi K2.5</div><div class="mc-role">Easy · Short · Impl</div></div>
+          <div class="mc-status"><div class="dot-on"></div><span style="color:#4ade80;font-size:10px">Active</span></div>
+        </div>
+        <div class="mc-metrics">
+          <div class="mm"><div class="mv">22</div><div class="ml">Runs</div></div>
+          <div class="mm"><div class="mv">100%</div><div class="ml">Success</div></div>
+          <div class="mm"><div class="mv">3.5m</div><div class="ml">Avg</div></div>
+        </div>
+        <div class="mc-chart"><canvas id="ck"></canvas></div>
+        <div class="mc-actions"><div class="btn-p">✨ Analyze</div><div class="btn-s">Runs</div></div>
+      </div>
+      <div class="model-card" onclick="openModal('GLM-5','glm','Frontend · Heartbeat','14','85.7%','3.8m')">
+        <div class="mc-head">
+          <div class="mc-icon glm">⚡</div>
+          <div><div class="mc-name">GLM-5</div><div class="mc-role">Frontend · Heartbeat</div></div>
+          <div class="mc-status"><div class="dot-on"></div><span style="color:#4ade80;font-size:10px">Active</span></div>
+        </div>
+        <div class="mc-metrics">
+          <div class="mm"><div class="mv">14</div><div class="ml">Runs</div></div>
+          <div class="mm"><div class="mv">85.7%</div><div class="ml">Success</div></div>
+          <div class="mm"><div class="mv">3.8m</div><div class="ml">Avg</div></div>
+        </div>
+        <div class="mc-chart"><canvas id="cg"></canvas></div>
+        <div class="mc-actions"><div class="btn-p">✨ Analyze</div><div class="btn-s">Runs</div></div>
+      </div>
+      <div class="model-card" onclick="openModal('Sonnet 4.6','sonnet','Medium · Review · Main agent','8','87.5%','4.4m')">
+        <div class="mc-head">
+          <div class="mc-icon sonnet">🎵</div>
+          <div><div class="mc-name">Sonnet 4.6</div><div class="mc-role">Medium · Review · Main</div></div>
+          <div class="mc-status"><div class="dot-on"></div><span style="color:#4ade80;font-size:10px">Active</span></div>
+        </div>
+        <div class="mc-metrics">
+          <div class="mm"><div class="mv">8</div><div class="ml">Runs</div></div>
+          <div class="mm"><div class="mv">87.5%</div><div class="ml">Success</div></div>
+          <div class="mm"><div class="mv">4.4m</div><div class="ml">Avg</div></div>
+        </div>
+        <div class="mc-chart"><canvas id="cs"></canvas></div>
+        <div class="mc-actions"><div class="btn-p">✨ Analyze</div><div class="btn-s">Runs</div></div>
+      </div>
+      <div class="model-card" onclick="openModal('Codex 5.3','codex','Hard · Infra Review','5','100%','4.9m')">
+        <div class="mc-head">
+          <div class="mc-icon codex">🔴</div>
+          <div><div class="mc-name">Codex 5.3</div><div class="mc-role">Hard · Infra Review</div></div>
+          <div class="mc-status"><div class="dot-off"></div><span style="color:#d29922;font-size:10px">Idle</span></div>
+        </div>
+        <div class="mc-metrics">
+          <div class="mm"><div class="mv">5</div><div class="ml">Runs</div></div>
+          <div class="mm"><div class="mv">100%</div><div class="ml">Success</div></div>
+          <div class="mm"><div class="mv">4.9m</div><div class="ml">Avg</div></div>
+        </div>
+        <div class="mc-chart"><canvas id="cc"></canvas></div>
+        <div class="mc-actions"><div class="btn-p">✨ Analyze</div><div class="btn-s">Runs</div></div>
+      </div>
+    </div>
+
+    <!-- VELOCITY + PIPELINE -->
+    <div class="grid-2">
+      <!-- VELOCITY CHART ← SUGESTIA #5 -->
+      <div class="card">
+        <div class="card-hdr"><h3>Story Velocity</h3><span class="sub">— stories/day · last 14 days</span><span class="see-all">Full history →</span></div>
+        <div class="vchart-wrap"><canvas id="cv"></canvas></div>
+        <div style="display:flex;gap:16px;margin-top:8px;">
+          <div style="font-size:11px;color:#6b7280;">Avg/day: <b style="color:#e6edf3">11.3</b></div>
+          <div style="font-size:11px;color:#6b7280;">Peak: <b style="color:#e6edf3">24 (Feb 18)</b></div>
+          <div style="font-size:11px;color:#6b7280;">Total: <b style="color:#e6edf3">158 stories</b></div>
+        </div>
+      </div>
+
+      <!-- PIPELINE -->
+      <div class="card">
+        <div class="card-hdr"><h3>Pipeline</h3><span class="sub">— active + merge queue</span><span class="see-all">+ Start Story</span></div>
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <span style="font-size:11px;color:#6b7280;">Active: <b style="color:#60a5fa">0</b></span>
+          <span style="font-size:11px;color:#6b7280;">Review: <b style="color:#a78bfa">0</b></span>
+          <span style="font-size:11px;color:#6b7280;">Merge: <b style="color:#4ade80">2</b></span>
+        </div>
+        <div style="background:#13111c;border-radius:8px;padding:10px;text-align:center;color:#3d3757;font-size:12px;margin-bottom:10px;">🎉 Pipeline idle — all stories done</div>
+        <div class="sec-lbl">MERGE QUEUE</div>
+        <div class="p-row" onclick="document.getElementById('storyModal').classList.add('open')">
+          <div class="p-id">STORY-12.10</div><div class="p-title">bridge eval run CLI</div>
+          <div class="p-model">sonnet</div><div class="p-status ps-mrg">MERGE</div>
+        </div>
+        <div class="p-row" onclick="document.getElementById('storyModal').classList.add('open')">
+          <div class="p-id">STORY-13.8</div><div class="p-title">Auto log-run hook</div>
+          <div class="p-model">sonnet</div><div class="p-status ps-mrg">MERGE</div>
+        </div>
+        <div class="sec-lbl" style="margin-top:10px;">DONE TODAY</div>
+        <div class="p-row" onclick="document.getElementById('storyModal').classList.add('open')">
+          <div class="p-id">STORY-13.10</div><div class="p-title">memU story events</div>
+          <div class="p-model">sonnet</div><div class="p-status ps-done">DONE</div>
+        </div>
+        <div class="p-row" onclick="document.getElementById('storyModal').classList.add('open')">
+          <div class="p-id">STORY-13.9</div><div class="p-title">LessonExtractor hook</div>
+          <div class="p-model">sonnet</div><div class="p-status ps-done">DONE</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY FEED + EVAL -->
+    <div class="grid-2">
+      <!-- LIVE ACTIVITY FEED ← SUGESTIA #1 -->
+      <div class="card">
+        <div class="card-hdr"><h3>Activity Feed</h3><span class="sub">— live events</span><span class="see-all">All events →</span></div>
+        <div class="activity-list">
+          <div class="act-item">
+            <div class="act-timeline"><div class="act-dot" style="background:#4ade80"></div><div class="act-line"></div></div>
+            <div class="act-body"><div class="act-event"><span>STORY-12.10</span> → DONE · review approved</div><div class="act-time">11:46 · Sonnet 4.6 · 18 min review</div></div>
+          </div>
+          <div class="act-item">
+            <div class="act-timeline"><div class="act-dot" style="background:#4ade80"></div><div class="act-line"></div></div>
+            <div class="act-body"><div class="act-event"><span>STORY-13.10</span> → DONE · after refactor</div><div class="act-time">11:46 · Sonnet 4.6 · bug fixed in main.py</div></div>
+          </div>
+          <div class="act-item">
+            <div class="act-timeline"><div class="act-dot" style="background:#f87171"></div><div class="act-line"></div></div>
+            <div class="act-body"><div class="act-event"><span>STORY-13.10</span> → REFACTOR · Opus found bug</div><div class="act-time">11:11 · Opus 4.6 · memu_client not wired in main.py</div></div>
+          </div>
+          <div class="act-item">
+            <div class="act-timeline"><div class="act-dot" style="background:#4ade80"></div><div class="act-line"></div></div>
+            <div class="act-body"><div class="act-event"><span>STORY-13.9</span> → DONE · Opus approved</div><div class="act-time">11:11 · Opus 4.6 · 12 min review · 2 low issues</div></div>
+          </div>
+          <div class="act-item">
+            <div class="act-timeline"><div class="act-dot" style="background:#60a5fa"></div><div class="act-line"></div></div>
+            <div class="act-body"><div class="act-event"><span>STORY-13.8</span> → REVIEW · hook implemented</div><div class="act-time">11:03 · Sonnet 4.6 · 2943 tests passing</div></div>
+          </div>
+          <div class="act-item">
+            <div class="act-timeline"><div class="act-dot" style="background:#818cf8"></div></div>
+            <div class="act-body"><div class="act-event">System audit complete · <span>5 issues found</span></div><div class="act-time">10:59 · Sonnet 4.6 · auto-run gap identified</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EVAL -->
+      <div class="card">
+        <div class="card-hdr"><h3>Eval Framework</h3><span class="sub">— latest run</span><span class="see-all">Run eval →</span></div>
+        <div class="eval-score-area">
+          <div class="ev-big">
+            <div class="ev-num">100%</div>
+            <div class="ev-lbl">Pass Rate</div>
+            <div class="ev-sub">4 runs · 54 scores</div>
+          </div>
+          <div class="eval-cats">
+            <div class="ecat"><div class="ecat-name">intent_classification</div><div class="ecat-bg"><div class="ecat-fill" style="width:100%"></div></div><div class="ecat-pct">100%</div></div>
+            <div class="ecat"><div class="ecat-name">reminder_parsing</div><div class="ecat-bg"><div class="ecat-fill" style="width:100%"></div></div><div class="ecat-pct">100%</div></div>
+            <div class="ecat"><div class="ecat-name">lesson_extraction</div><div class="ecat-bg"><div class="ecat-fill" style="width:100%"></div></div><div class="ecat-pct">100%</div></div>
+            <div class="ecat"><div class="ecat-name">review_quality</div><div class="ecat-bg"><div class="ecat-fill" style="width:100%"></div></div><div class="ecat-pct">100%</div></div>
+            <div class="ecat"><div class="ecat-name">pipeline_scheduling</div><div class="ecat-bg"><div class="ecat-fill" style="width:100%"></div></div><div class="ecat-pct">100%</div></div>
+            <div class="ecat"><div class="ecat-name">refactor_quality</div><div class="ecat-bg"><div class="ecat-fill" style="width:100%"></div></div><div class="ecat-pct">100%</div></div>
+            <div class="ecat"><div class="ecat-name">cross_user_reminder</div><div class="ecat-bg"><div class="ecat-fill" style="width:100%"></div></div><div class="ecat-pct">100%</div></div>
+            <div class="ecat"><div class="ecat-name">story_dependency</div><div class="ecat-bg"><div class="ecat-fill" style="width:100%"></div></div><div class="ecat-pct">100%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NIGHTCLAW + COST + PATTERNS -->
+    <div class="grid-3">
+      <!-- NIGHTCLAW ← SUGESTIA #3 -->
+      <div class="nightclaw-card" onclick="alert('NightClaw Digest — Feb 19\n\nPatterns: 3 new\nLessons: 5 extracted\nModel stats updated\nAnti-patterns: 2 identified')">
+        <div class="nc-head">
+          <div class="nc-icon">🌙</div>
+          <div>
+            <div class="nc-title">NightClaw Digest</div>
+            <div class="nc-sub">Feb 19 · click to open · auto-runs at 2:00 AM</div>
+          </div>
+        </div>
+        <div class="nc-stats">
+          <div class="nc-stat"><div class="nv">3</div><div class="nl">New Patterns</div></div>
+          <div class="nc-stat"><div class="nv">5</div><div class="nl">Lessons</div></div>
+          <div class="nc-stat"><div class="nv">2</div><div class="nl">Anti-patterns</div></div>
+        </div>
+      </div>
+
+      <!-- COST TRACKER ← SUGESTIA #2 -->
+      <div class="card">
+        <div class="card-hdr"><h3>Cost Tracker</h3><span class="sub">— est. today</span></div>
+        <div class="cost-row">
+          <div class="cost-model">Kimi K2.5</div>
+          <div class="cost-runs">22 runs</div>
+          <div class="cost-bar-bg"><div class="cost-bar" style="width:43%;background:linear-gradient(90deg,#60a5fa,#3b82f6)"></div></div>
+          <div class="cost-val">~$1.80</div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-model">Sonnet 4.6</div>
+          <div class="cost-runs">8 runs</div>
+          <div class="cost-bar-bg"><div class="cost-bar" style="width:50%;background:linear-gradient(90deg,#a78bfa,#7c3aed)"></div></div>
+          <div class="cost-val">~$2.10</div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-model">GLM-5</div>
+          <div class="cost-runs">14 runs</div>
+          <div class="cost-bar-bg"><div class="cost-bar" style="width:12%;background:linear-gradient(90deg,#4ade80,#22c55e)"></div></div>
+          <div class="cost-val">~$0.22</div>
+        </div>
+        <div class="cost-row">
+          <div class="cost-model">Codex 5.3</div>
+          <div class="cost-runs">5 runs</div>
+          <div class="cost-bar-bg"><div class="cost-bar" style="width:19%;background:linear-gradient(90deg,#f87171,#ef4444)"></div></div>
+          <div class="cost-val">~$0.08</div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a2540;display:flex;justify-content:space-between;">
+          <span style="font-size:12px;color:#6b7280;">Total today</span>
+          <span style="font-size:14px;font-weight:700;color:#e6edf3;">~$4.20</span>
+        </div>
+      </div>
+
+      <!-- PATTERNS + HEALTH -->
+      <div class="card">
+        <div class="card-hdr"><h3>Patterns & Health</h3><span class="see-all">All →</span></div>
+        <div class="pat-row"><div class="pt freq">freq</div><div class="pat-topic">dev_code_review</div><div class="pat-count">54×</div></div>
+        <div class="pat-row"><div class="pt freq">freq</div><div class="pat-topic">home_calendar</div><div class="pat-count">25×</div></div>
+        <div class="pat-row"><div class="pt temp">temporal</div><div class="pat-topic">dev · Tue 11–15h</div><div class="pat-count">12×</div></div>
+        <div style="border-top:1px solid #2a2540;margin:10px 0;"></div>
+        <div class="health-grid" style="margin:0">
+          <div class="hi"><div class="hl">Bridge API</div><div class="hv ok">● Online</div></div>
+          <div class="hi"><div class="hl">memU</div><div class="hv ok">● Online</div></div>
+          <div class="hi"><div class="hl">DB Size</div><div class="hv">2.4 MB</div></div>
+          <div class="hi"><div class="hl">Last Run</div><div class="hv">11:46</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// Charts
+const sp=(id,d,col)=>{const c=document.getElementById(id);if(!c)return;new Chart(c,{type:'line',data:{labels:d.map((_,i)=>i),datasets:[{data:d,borderColor:col,borderWidth:1.5,fill:true,backgroundColor:col.replace('rgb','rgba').replace(')',',0.12)'),pointRadius:0,tension:0.4}]},options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},animation:false,responsive:true,maintainAspectRatio:false}});};
+sp('ck',[3,4,5,4,6,5,7,6,8,9,10,11,12,11,12,13,14,15,18,20,22],'rgb(56,189,248)');
+sp('cg',[2,3,3,4,5,6,6,7,8,9,10,11,12,12,13,13,14,14,14,14,14],'rgb(74,222,128)');
+sp('cs',[0,0,1,1,2,3,4,4,5,5,6,6,7,7,8,8,8,8,8,8,8],'rgb(167,139,250)');
+sp('cc',[0,1,1,1,2,2,3,3,3,4,4,4,5,5,5,5,5,5,5,5,5],'rgb(248,113,113)');
+
+// Velocity chart
+const vc=document.getElementById('cv');if(vc){new Chart(vc,{type:'bar',data:{labels:['6','7','8','9','10','11','12','13','14','15','16','17','18','19'],datasets:[{label:'Stories done',data:[0,0,0,9,6,12,14,9,8,8,12,18,24,10],backgroundColor:(ctx)=>{const v=ctx.raw;return v>=20?'rgba(124,58,237,.9)':v>=15?'rgba(99,102,241,.85)':'rgba(56,189,248,.7)';},borderRadius:3}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4b4569',font:{size:9}},grid:{color:'#1f1c2e'}},y:{ticks:{color:'#4b4569',font:{size:9}},grid:{color:'#1f1c2e'}}},responsive:true,maintainAspectRatio:false,animation:false}});}
+
+// Modal
+function openModal(name,model,role,runs,success,avg){
+  document.getElementById('modal-title').textContent=name+' — '+role;
+  document.getElementById('modal-id').textContent='model: '+model+' · '+runs+' runs · '+success+' success · avg '+avg;
+  document.getElementById('storyModal').classList.add('open');
+}
+function closeModal(){document.getElementById('storyModal').classList.remove('open');}
+document.getElementById('storyModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+</script>
+</body>
+</html>
