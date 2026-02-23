@@ -11,7 +11,7 @@ Wave 6: STORY-5.6 (sonnet), STORY-5.7 (kimi)   — after 5.4 + 5.5
 ## Status
 | Story | Status | Agent | Session | Notes |
 |-------|--------|-------|---------|-------|
-| 5.1 | ✅ Done | Sonnet | feature/STORY-5.1 | Wave 1 |
+| 5.1 | 🔄 In Progress | Sonnet | — | Wave 1 |
 | 5.2 | ⏳ Waiting | — | — | Depends on 5.1 |
 | 5.3 | ⏳ Waiting | — | — | Depends on 5.1+5.2 |
 | 5.4 | ⏳ Waiting | — | — | Depends on 5.1+5.2+5.3 |
