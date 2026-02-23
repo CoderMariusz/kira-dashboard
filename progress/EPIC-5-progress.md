@@ -13,7 +13,7 @@ Wave 6: STORY-5.6 (sonnet), STORY-5.7 (kimi)   — after 5.4 + 5.5
 |-------|--------|-------|---------|-------|
 | 5.1 | ✅ Done | Sonnet | — | Wave 1 |
 | 5.2 | ✅ Done | Kimi | — | Wave 2 |
-| 5.3 | ⏳ Waiting | — | — | Depends on 5.1+5.2 |
+| 5.3 | ✅ Done | Sonnet | — | Wave 3 |
 | 5.4 | ⏳ Waiting | — | — | Depends on 5.1+5.2+5.3 |
 | 5.5 | ⏳ Waiting | — | — | Depends on 5.4 |
 | 5.6 | ⏳ Waiting | — | — | Depends on 5.4+5.5 |
