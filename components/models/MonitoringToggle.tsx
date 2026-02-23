@@ -10,9 +10,10 @@ import { isModelMonitored, setModelMonitoring } from '@/lib/model-monitoring'
 
 interface MonitoringToggleProps {
   alias: string   // canonical_key modelu, np. "kimi-k2.5", "sonnet-4.6"
+  onToggle?: (enabled: boolean) => void
 }
 
-export function MonitoringToggle({ alias }: MonitoringToggleProps) {
+export function MonitoringToggle({ alias, onToggle }: MonitoringToggleProps) {
   // SSR-safe: domyślnie true (ON) po stronie serwera
   const [enabled, setEnabled] = useState<boolean>(true)
 
@@ -26,6 +27,8 @@ export function MonitoringToggle({ alias }: MonitoringToggleProps) {
     setEnabled(checked)
     // Zapis do localStorage
     setModelMonitoring(alias, checked)
+    // Powiadom rodzica (np. ModelCard) żeby odświeżył swój stan
+    onToggle?.(checked)
   }
 
   return (

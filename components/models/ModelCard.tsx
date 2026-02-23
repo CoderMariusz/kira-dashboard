@@ -3,6 +3,7 @@
 // Karta jednego modelu AI — STORY-5.5.
 // Wyświetla statystyki, koszty i toggle monitorowania.
 
+import { useState } from 'react'
 import { ModelEntry } from '@/types/models'
 import { isModelMonitored } from '@/lib/model-monitoring'
 import { MonitoringToggle } from './MonitoringToggle'
@@ -34,7 +35,8 @@ function formatStat(value: number | null | undefined, format: StatFormat): strin
 }
 
 export function ModelCard({ model, isExpanded, onToggleExpand }: ModelCardProps) {
-  const monitored = isModelMonitored(model.canonical_key)
+  // Reaktywny stan monitorowania — aktualizuje się natychmiast po toggle
+  const [monitored, setMonitored] = useState(() => isModelMonitored(model.canonical_key))
   const isDisabled = !monitored
 
   const providerColor = PROVIDER_COLORS[model.provider] ?? 'bg-slate-600'
@@ -75,7 +77,7 @@ export function ModelCard({ model, isExpanded, onToggleExpand }: ModelCardProps)
         </div>
 
         {/* Monitoring toggle */}
-        <MonitoringToggle alias={model.canonical_key} />
+        <MonitoringToggle alias={model.canonical_key} onToggle={setMonitored} />
       </div>
 
       {/* Stats row */}
