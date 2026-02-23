@@ -1,42 +1,47 @@
 'use client'
 // components/models/MonitoringToggle.tsx
-// Placeholder — pełna implementacja w STORY-5.7.
-// Renderuje prosty toggle przełączający localStorage monitoring state.
+// Toggle przełączający monitoring modelu z optimistic UI.
+// Używa localStorage do persystencji stanu.
 
 import { useState, useEffect } from 'react'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { isModelMonitored, setModelMonitoring } from '@/lib/model-monitoring'
 
 interface MonitoringToggleProps {
-  alias: string
+  alias: string   // canonical_key modelu, np. "kimi-k2.5", "sonnet-4.6"
 }
 
 export function MonitoringToggle({ alias }: MonitoringToggleProps) {
-  const [enabled, setEnabled] = useState(true)
+  // SSR-safe: domyślnie true (ON) po stronie serwera
+  const [enabled, setEnabled] = useState<boolean>(true)
 
+  // Synchronizacja z localStorage po hydration (unika hydration mismatch)
   useEffect(() => {
     setEnabled(isModelMonitored(alias))
   }, [alias])
 
-  const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const next = !enabled
-    setModelMonitoring(alias, next)
-    setEnabled(next)
+  const handleToggle = (checked: boolean) => {
+    // Optimistic update: natychmiast zmieniamy UI
+    setEnabled(checked)
+    // Zapis do localStorage
+    setModelMonitoring(alias, checked)
   }
 
   return (
-    <button
-      onClick={handleToggle}
-      aria-label={enabled ? 'Wyłącz monitoring' : 'Włącz monitoring'}
-      className={`w-8 h-4 rounded-full transition-colors relative flex-shrink-0 ${
-        enabled ? 'bg-[#818cf8]' : 'bg-slate-600'
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
-          enabled ? 'translate-x-4' : 'translate-x-0.5'
-        }`}
+    <div className="flex items-center gap-2">
+      <Switch
+        id={`monitoring-${alias}`}
+        checked={enabled}
+        onCheckedChange={handleToggle}
+        className="data-[state=checked]:bg-[#818cf8]"
       />
-    </button>
+      <Label
+        htmlFor={`monitoring-${alias}`}
+        className="text-xs text-slate-400 cursor-pointer select-none"
+      >
+        Monitoruj
+      </Label>
+    </div>
   )
 }
