@@ -15,7 +15,7 @@ Wave 6: STORY-5.6 (sonnet), STORY-5.7 (kimi)   — after 5.4 + 5.5
 | 5.2 | ✅ Done | Kimi | — | Wave 2 |
 | 5.3 | ✅ Done | Sonnet | — | Wave 3 |
 | 5.4 | ✅ Done | Sonnet | — | Wave 4 — types + SWR hooks |
-| 5.5 | ⏳ Waiting | — | — | Depends on 5.4 |
+| 5.5 | ✅ Done | Sonnet | — | Wave 5 — Models page grid /dashboard/models |
 | 5.6 | ⏳ Waiting | — | — | Depends on 5.4+5.5 |
 | 5.7 | ⏳ Waiting | — | — | Depends on 5.4+5.5 |
 | 5.8 | ✅ Done | Haiku | — | Wave 1 |
