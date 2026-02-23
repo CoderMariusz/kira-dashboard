@@ -14,7 +14,7 @@ export interface ModelStats {
   /** Average run duration in seconds. null when no completed runs with duration data. */
   avg_duration_s: number | null
   /** Sum of all run costs in USD (uses cost_usd if present, else calculates from tokens). */
-  total_cost_usd: number
+  total_cost_usd: number | null
   /** ISO 8601 timestamp of the most recent run. null when no runs. */
   last_run_at: string | null
 }
