@@ -1,9 +1,13 @@
 // lib/model-overrides.ts
-// Stub — runtime cost overrides singleton.
-// This file is intentionally minimal. STORY-5.2 will implement the full PATCH endpoint
-// and populate this map with database-persisted overrides.
-//
-// Shape: canonical_key → partial cost override
-// Example: 'kimi-k2.5' → { input: 0.5, output: 1.0 }
+// In-memory store dla runtime overrides kosztów modeli.
+// UWAGA: Jest resetowany przy każdym restarcie serwera Next.js.
+// Wartości domyślne: brak wpisów (= używaj MODEL_COSTS z config/model-costs.ts)
 
-export const modelOverrides: Map<string, { input?: number; output?: number }> = new Map()
+export interface ModelCostOverride {
+  cost_input_per_1m: number
+  cost_output_per_1m: number
+}
+
+// Singleton — jeden obiekt na cały proces Node.js
+const store = new Map<string, ModelCostOverride>()
+export const modelOverrides = store

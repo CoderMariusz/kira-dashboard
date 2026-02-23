@@ -72,7 +72,7 @@ export async function GET(): Promise<Response> {
     }
 
     // 4. LOAD RUNTIME OVERRIDES (optional — created by STORY-5.2)
-    let overrides: Map<string, { input?: number; output?: number }> = new Map()
+    let overrides: Map<string, { cost_input_per_1m?: number; cost_output_per_1m?: number }> = new Map()
     try {
       const { modelOverrides } = await import('@/lib/model-overrides')
       overrides = modelOverrides
@@ -137,8 +137,8 @@ export async function GET(): Promise<Response> {
         display_name: costConfig.displayName,
         provider: PROVIDER_MAP[canonicalKey] ?? canonicalKey,
         model_id: MODEL_ID_MAP[canonicalKey] ?? null,
-        cost_input_per_1m: override?.input ?? costConfig.input,
-        cost_output_per_1m: override?.output ?? costConfig.output,
+        cost_input_per_1m: override?.cost_input_per_1m ?? costConfig.input,
+        cost_output_per_1m: override?.cost_output_per_1m ?? costConfig.output,
         monitoring_enabled: true, // default true; managed via localStorage in STORY-5.7
         stats,
       }
