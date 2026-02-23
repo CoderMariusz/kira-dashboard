@@ -128,6 +128,8 @@ export function ModelCard({ model, isExpanded, onToggleExpand }: ModelCardProps)
           <ModelDetailPanel
             alias={model.canonical_key}
             displayName={model.display_name}
+            currentCostInput={model.cost_input_per_1m}
+            currentCostOutput={model.cost_output_per_1m}
           />
         </div>
       )}
