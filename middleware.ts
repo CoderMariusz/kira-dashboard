@@ -85,37 +85,43 @@ async function getRoleFromDBOrCache(
     return cachedRole;
   }
 
-  // Cache miss → odpytaj DB
-  const { data, error } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', userId)
-    .single();
+  try {
+    // Cache miss → odpytaj DB
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
 
-  if (error || !data) {
-    console.warn('[RBAC] Failed to fetch role from DB:', error);
-    return null; // brak roli
-  }
+    if (error || !data) {
+      console.warn('[RBAC] Failed to fetch role from DB:', error?.message);
+      return null; // brak roli — middleware przepuści, strona obsłuży
+    }
 
-  const rawRole = (data as { role: string }).role;
+    const rawRole = (data as { role: string }).role;
 
-  if (!isValidRole(rawRole)) {
-    console.warn('[RBAC] Unknown role value from DB:', rawRole);
+    if (!isValidRole(rawRole)) {
+      console.warn('[RBAC] Unknown role value from DB:', rawRole);
+      return null;
+    }
+
+    const role: UserRole = rawRole;
+
+    // Zapisz w cookie (response cookies — propagowane do przeglądarki)
+    response.cookies.set(ROLE_COOKIE_NAME, role, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: ROLE_COOKIE_TTL_SECONDS,
+      path: '/',
+    });
+
+    return role;
+  } catch (err) {
+    // DB query failed (timeout, network error w Edge Runtime) — fail open
+    console.warn('[RBAC] DB query threw in Edge Runtime:', err);
     return null;
   }
-
-  const role: UserRole = rawRole;
-
-  // Zapisz w cookie (response cookies — propagowane do przeglądarki)
-  response.cookies.set(ROLE_COOKIE_NAME, role, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: ROLE_COOKIE_TTL_SECONDS,
-    path: '/',
-  });
-
-  return role;
 }
 
 // ============================================================
@@ -126,78 +132,94 @@ export async function middleware(request: NextRequest) {
   // Krok 1: Inicjuj Supabase client z cookie-based session (edge-compatible)
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim(),
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
+  // Guard: env vars muszą istnieć
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Krok 2: Pobierz sesję (getUser() — bezpieczne, weryfikuje z Supabase Auth Server)
-  // KRYTYCZNE: nie pisz kodu między createServerClient a getUser()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-
-  // Krok 3: Brak sesji → redirect /login
-  if (!user) {
-    // Wyczyść cache roli jeśli był ustawiony
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/login';
-    const redirectResponse = NextResponse.redirect(redirectUrl);
-    redirectResponse.cookies.delete(ROLE_COOKIE_NAME);
-    return redirectResponse;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // Brak konfiguracji Supabase — przepuść request (nie crashuj)
+    console.error('[middleware] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    return supabaseResponse;
   }
 
-  // Krok 4: Zalogowany user na /login → redirect do domyślnego widoku
-  // (Zostanie obsłużony przez getRedirectForRole jeśli /login nie jest w matcherze,
-  //  ale dodajemy explicit check jako safety net)
-  if (pathname.startsWith('/login')) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/home';
-    return NextResponse.redirect(redirectUrl);
-  }
+  try {
+    const supabase = createServerClient(
+      supabaseUrl.trim(),
+      supabaseAnonKey.trim(),
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            supabaseResponse = NextResponse.next({ request });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
+          },
+        },
+      }
+    );
 
-  // Krok 5: Jest sesja — odczytaj rolę (z cache lub DB)
-  const role = await getRoleFromDBOrCache(request, supabase, user.id, supabaseResponse);
+    // Krok 2: Pobierz sesję (getUser() — bezpieczne, weryfikuje z Supabase Auth Server)
+    // KRYTYCZNE: nie pisz kodu między createServerClient a getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  // Krok 6: Sprawdź uprawnienia per pathname
-  const redirectTarget = getRedirectForRole(pathname, role);
+    const { pathname } = request.nextUrl;
 
-  if (redirectTarget) {
-    // Unikaj pętli redirect (jeśli sam target jest zablokowany dla danej roli)
-    if (redirectTarget === pathname) {
-      return supabaseResponse;
+    // Krok 3: Brak sesji → redirect /login
+    if (!user) {
+      // Wyczyść cache roli jeśli był ustawiony
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/login';
+      const redirectResponse = NextResponse.redirect(redirectUrl);
+      redirectResponse.cookies.delete(ROLE_COOKIE_NAME);
+      return redirectResponse;
     }
 
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = redirectTarget;
-    const redirectResponse = NextResponse.redirect(redirectUrl);
-    // Przekopiuj cookies sesji do redirect response
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
-    });
-    return redirectResponse;
-  }
+    // Krok 4: Zalogowany user na /login → redirect do domyślnego widoku
+    if (pathname.startsWith('/login')) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/home';
+      return NextResponse.redirect(redirectUrl);
+    }
 
-  // Krok 7: Dostęp dozwolony — zwróć supabaseResponse (z odświeżonym tokenem)
-  return supabaseResponse;
+    // Krok 5: Jest sesja — odczytaj rolę (z cache lub DB)
+    const role = await getRoleFromDBOrCache(request, supabase, user.id, supabaseResponse);
+
+    // Krok 6: Sprawdź uprawnienia per pathname
+    const redirectTarget = getRedirectForRole(pathname, role);
+
+    if (redirectTarget) {
+      // Unikaj pętli redirect (jeśli sam target jest zablokowany dla danej roli)
+      if (redirectTarget === pathname) {
+        return supabaseResponse;
+      }
+
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = redirectTarget;
+      const redirectResponse = NextResponse.redirect(redirectUrl);
+      // Przekopiuj cookies sesji do redirect response
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      return redirectResponse;
+    }
+
+    // Krok 7: Dostęp dozwolony — zwróć supabaseResponse (z odświeżonym tokenem)
+    return supabaseResponse;
+
+  } catch (err) {
+    // Ostatnia linia obrony — middleware nigdy nie powinien crashować aplikację
+    // Fail open: przepuść request, strona sama obsłuży brak sesji
+    console.error('[middleware] Unhandled error in Edge Function:', err);
+    return supabaseResponse;
+  }
 }
 
 // ============================================================
