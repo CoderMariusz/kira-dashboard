@@ -19,4 +19,4 @@ Wave 6: STORY-5.6 (sonnet), STORY-5.7 (kimi)   — after 5.4 + 5.5
 | 5.6 | ⏳ Waiting | — | — | Depends on 5.4+5.5 |
 | 5.7 | ⏳ Waiting | — | — | Depends on 5.4+5.5 |
 | 5.8 | ✅ Done | Haiku | — | Wave 1 |
-| 5.9 | ⏳ Waiting | — | — | Depends on 5.8 |
+| 5.9 | ✅ Done | Sonnet | — | Wave 2 — sync script + fallback API |

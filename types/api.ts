@@ -18,3 +18,84 @@ export interface ApiResponse<T> {
 export interface ApiErrorResponse {
   error: string
 }
+
+// ─── Sync / Hybrid Mode types ─────────────────────────────────────────────
+
+/** A story row from bridge_stories Supabase table (read-only, synced from SQLite). */
+export interface BridgeSyncStory {
+  project_id: string
+  id: string
+  epic_id: string
+  title: string
+  file_path: string
+  status: string
+  size: string
+  expected_duration_min: number
+  depends_on: string[]
+  parallel_with: string[]
+  assigned_worker: string | null
+  branch: string | null
+  definition_of_done: string
+  model: string | null
+  created_at: string | null
+  updated_at: string | null
+  started_at: string | null
+  synced_at: string
+}
+
+/** An epic row from bridge_epics with nested stories. */
+export interface BridgeSyncEpic {
+  project_id: string
+  id: string
+  title: string
+  file_path: string
+  status: string
+  created_at: string | null
+  synced_at: string
+  stories: BridgeSyncStory[]
+}
+
+/** A project row from bridge_projects. */
+export interface BridgeSyncProject {
+  key: string
+  name: string
+  path: string
+  type: string
+  description: string
+  bridge_project: boolean
+  is_current: boolean
+  created_at: string | null
+  updated_at: string | null
+  synced_at: string
+}
+
+/** A run row from bridge_runs. */
+export interface BridgeSyncRun {
+  id: string
+  story_id: string
+  project_id: string | null
+  step: string
+  worker: string
+  model: string
+  status: string
+  attempt_number: number
+  started_at: string | null
+  ended_at: string | null
+  duration_ms: number | null
+  error_message: string | null
+  synced_at: string
+}
+
+/** Response shape for GET /api/sync/status */
+export interface SyncStatusResponse {
+  source: 'supabase'
+  synced_at: string | null
+  projects: BridgeSyncProject[]
+  epics: BridgeSyncEpic[]
+}
+
+/** Response shape for GET /api/sync/runs */
+export interface SyncRunsResponse {
+  data: BridgeSyncRun[]
+  total: number
+}

@@ -42,6 +42,10 @@ export interface UseLivePipelineReturn {
   sseError: string | null
   /** Uruchamia story z optimistic update i rollback przy błędzie */
   startStory: (storyId: string) => Promise<void>
+  /** true gdy dane pochodzą z Supabase (Hybrid Mode / STORY-5.9) */
+  isOfflineMode: boolean
+  /** ISO timestamp ostatniej synchronizacji Supabase. null gdy Bridge online. */
+  syncedAt: string | null
 }
 
 /**
@@ -59,7 +63,7 @@ export interface UseLivePipelineReturn {
  * EC-5: Nieznane story_id w SSE event — brak akcji (map nie znajduje, zwraca bez zmian)
  */
 export function useLivePipeline(): UseLivePipelineReturn {
-  const { stories: baseStories, loading, offline } = usePipeline()
+  const { stories: baseStories, loading, offline, isOfflineMode, syncedAt } = usePipeline()
   const { events, connected: sseConnected, error: sseError } = useSSE('/api/events')
 
   // Lokalny state stories — kopia baseStories z nałożonymi live updates
@@ -247,5 +251,7 @@ export function useLivePipeline(): UseLivePipelineReturn {
     sseConnected,
     sseError,
     startStory,
+    isOfflineMode,
+    syncedAt,
   }
 }
