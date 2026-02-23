@@ -1,6 +1,6 @@
 // types/models.ts
-// Shared types for the Models API (STORY-5.1).
-// Used by: app/api/models/route.ts, future hooks (STORY-5.4), components (STORY-5.5).
+// Shared types for the Models API (STORY-5.1, STORY-5.4).
+// Used by: app/api/models/route.ts, hooks/useModels.ts, hooks/useModelMetrics.ts, components.
 
 /**
  * Computed per-model statistics derived from Bridge runs data.
@@ -43,3 +43,46 @@ export interface ModelEntry {
   /** Live stats from Bridge runs. null when Bridge is offline. */
   stats: ModelStats | null
 }
+
+/**
+ * One data point in the per-model time-series (one day bucket).
+ * Returned by GET /api/models/[alias]/metrics (STORY-5.3).
+ */
+export interface ModelMetricPoint {
+  /** Date in "YYYY-MM-DD" format (UTC). */
+  date: string
+  /** Total cost in USD for this day. */
+  cost_usd: number
+  /** Total input tokens for this day. */
+  tokens_in: number
+  /** Total output tokens for this day. */
+  tokens_out: number
+  /** Number of runs for this day. */
+  runs: number
+}
+
+/**
+ * Full response from GET /api/models/[alias]/metrics (STORY-5.3).
+ */
+export interface ModelMetricsResponse {
+  alias: string
+  period: '7d' | '30d'
+  /** Array of daily points sorted ASC by date, no gaps. Length = 7 or 30. */
+  points: ModelMetricPoint[]
+}
+
+/**
+ * Request body for PATCH /api/models/[alias] — cost override update (STORY-5.2).
+ */
+export interface ModelCostUpdateDTO {
+  /** New input cost per 1M tokens in USD. Optional. */
+  cost_input_per_1m?: number
+  /** New output cost per 1M tokens in USD. Optional. */
+  cost_output_per_1m?: number
+}
+
+/**
+ * Shape stored by lib/model-overrides.ts.
+ * Maps canonical_key → cost override values.
+ */
+export type ModelOverrideStore = Map<string, { cost_input_per_1m: number; cost_output_per_1m: number }>
