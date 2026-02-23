@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import PipelinePanel from './PipelinePanel'
 import ActivityFeed from './ActivityFeed'
 import PipelineStoryModal from './PipelineStoryModal'
+import OfflineBanner from './OfflineBanner'
 import type { Story } from '@/types/bridge'
 
 /**
@@ -28,6 +29,8 @@ function PipelinePageInner() {
     sseConnected,
     sseError,
     startStory,
+    isOfflineMode,
+    syncedAt,
   } = useLivePipeline()
 
   const { filters, setFilters, resetFilters } = usePipelineFilters()
@@ -69,12 +72,17 @@ function PipelinePageInner() {
   )
 
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* AC-10: Offline Mode banner — shows when Bridge is unavailable and data comes from Supabase */}
+      {isOfflineMode && <OfflineBanner syncedAt={syncedAt} />}
+
     <div
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: '14px',
-        height: '100%',
+        flex: 1,
+        minHeight: 0,
       }}
     >
       {/* Left panel: active stories + queues + FilterBar */}
@@ -109,6 +117,7 @@ function PipelinePageInner() {
           onClose={handleModalClose}
         />
       )}
+    </div>
     </div>
   )
 }
