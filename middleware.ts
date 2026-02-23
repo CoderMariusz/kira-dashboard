@@ -4,7 +4,15 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
-import { type UserRole, isValidRole } from '@/lib/types/roles';
+
+// ============================================================
+// ROLES — inlined (Edge Runtime nie obsługuje @/ path aliasów)
+// ============================================================
+type UserRole = 'ADMIN' | 'HELPER_PLUS' | 'HELPER';
+const VALID_ROLES: readonly UserRole[] = ['ADMIN', 'HELPER_PLUS', 'HELPER'] as const;
+function isValidRole(value: string): value is UserRole {
+  return (VALID_ROLES as readonly string[]).includes(value);
+}
 
 // ============================================================
 // REGUŁY DOSTĘPU PER ROUTE
