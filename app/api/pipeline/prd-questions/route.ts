@@ -158,9 +158,36 @@ export async function POST(request: NextRequest): Promise<Response> {
     )
   }
 
-  // 7. Trim to max 5 questions (EC-2)
+  // 7. Validate each question has required fields (spec step 8)
+  for (let i = 0; i < parsed.questions.length; i++) {
+    const q = parsed.questions[i]
+    if (
+      typeof q?.id !== 'string' ||
+      typeof q?.text !== 'string' ||
+      typeof q?.type !== 'string' ||
+      typeof q?.required !== 'boolean'
+    ) {
+      console.error(`[POST /api/pipeline/prd-questions] Question ${i} missing required fields:`, q)
+      return NextResponse.json(
+        { error: 'AI wygenerowało nieprawidłowe pytanie — brak wymaganych pól' },
+        { status: 422 }
+      )
+    }
+    // Validate type:'choice' has options with min 2 items
+    if (q.type === 'choice') {
+      if (!Array.isArray(q.options) || q.options.length < 2 || !q.options.every(opt => typeof opt === 'string')) {
+        console.error(`[POST /api/pipeline/prd-questions] Question ${i} choice missing/invalid options:`, q)
+        return NextResponse.json(
+          { error: 'AI wygenerowało pytanie typu "choice" bez wymaganych opcji' },
+          { status: 422 }
+        )
+      }
+    }
+  }
+
+  // 8. Trim to max 5 questions (EC-2)
   const questions: PrdQuestion[] = parsed.questions.slice(0, 5)
 
-  // 8. Return 200 with questions
+  // 9. Return 200 with questions
   return NextResponse.json({ questions } satisfies SuccessResponse, { status: 200 })
 }
