@@ -6,6 +6,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchBridge } from '@/lib/bridge'
+import { createClient } from '@/lib/supabase/server'
 import { resolveModelKey, calcTokenCost } from '@/config/model-costs'
 import { requireAdmin } from '@/lib/utils/require-admin'
 import type { RunsResponse, BridgeRunRaw } from '@/types/bridge'
@@ -133,26 +134,63 @@ export async function GET(
     // 5. FALLBACK — AGGREGATE FROM RUNS
     const runsData = await fetchBridge<RunsResponse>('/api/status/runs')
 
-    if (runsData === null) {
-      // Bridge offline — return empty series (all zeros)
-      const points: ModelMetricPoint[] = dateRange.map((date) => ({
-        date,
-        cost_usd: 0,
-        tokens_in: 0,
-        tokens_out: 0,
-        runs: 0,
-      }))
-      return NextResponse.json(
-        { alias: aliasShort, period, points } satisfies ModelMetricsResponse,
-        { status: 200, headers: { 'Cache-Control': 'no-store' } }
-      )
+    // Unified run type for aggregation (Bridge or Supabase)
+    type AggRun = {
+      started_at: string
+      tokens_in: number | null
+      tokens_out: number | null
+      cost_usd: number | null
+    }
+
+    let aggRuns: AggRun[] = []
+
+    if (runsData !== null) {
+      // Bridge online — filter runs by model
+      aggRuns = runsData.runs
+        .filter((r): r is BridgeRunRaw & { started_at: string } =>
+          !!r.started_at && resolveModelKey(r.model) === canonicalKey
+        )
+        .map((r) => ({
+          started_at: r.started_at,
+          tokens_in: r.tokens_in,
+          tokens_out: r.tokens_out,
+          cost_usd: r.cost_usd,
+        }))
+    } else {
+      // Bridge offline — query Supabase bridge_runs
+      try {
+        const supabase = await createClient()
+        // All aliases that map to this canonical key
+        const modelAliases = Object.entries(
+          (await import('@/config/model-costs')).MODEL_ALIAS_MAP
+        )
+          .filter(([, v]) => v === canonicalKey)
+          .map(([k]) => k)
+
+        const { data: sbRuns } = await supabase
+          .from('bridge_runs')
+          .select('started_at, tokens_in, tokens_out, cost_usd, model')
+          .eq('project_id', 'kira-dashboard')
+          .gte('started_at', startDate.toISOString())
+          .in('model', modelAliases)
+          .order('started_at', { ascending: true })
+
+        if (sbRuns) {
+          aggRuns = sbRuns.map((r) => ({
+            started_at: r.started_at,
+            tokens_in: r.tokens_in,
+            tokens_out: r.tokens_out,
+            cost_usd: r.cost_usd,
+          }))
+        }
+      } catch (e) {
+        console.warn('[metrics] Supabase fallback failed:', e)
+      }
     }
 
     // Filter runs: match this model, have a valid started_at, and fall within the date range
-    const modelRuns: BridgeRunRaw[] = runsData.runs.filter((r) => {
+    const modelRuns: AggRun[] = aggRuns.filter((r) => {
       if (!r.started_at) return false
-      const runKey = resolveModelKey(r.model)
-      if (runKey !== canonicalKey) return false
       const runDate = new Date(r.started_at)
       return runDate >= startDate
     })

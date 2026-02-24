@@ -135,7 +135,7 @@ function ModelDetailPanelInner({
   const { metrics, isLoading, error } = useModelMetrics(alias, period)
   const { mutate: mutateModels } = useModels()
 
-  const { data: runsData } = useSWR('/api/bridge/api/status/runs', fetchRuns, {
+  const { data: runsData } = useSWR('/api/runs', fetchRuns, {
     revalidateOnFocus: false,
     dedupingInterval: 30_000,
   })

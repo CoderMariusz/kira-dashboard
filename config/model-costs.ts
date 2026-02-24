@@ -22,10 +22,10 @@ export interface ModelCostConfig {
  * AC-7 requirement: exactly these 4 models with these prices.
  */
 export const MODEL_COSTS: Record<string, ModelCostConfig> = {
-  'kimi-k2.5': { input: 0.0, output: 0.0, displayName: 'Kimi K2.5', color: '#3b82f6' },
-  'glm-5':     { input: 0.0, output: 0.0, displayName: 'GLM-5',     color: '#22c55e' },
-  'sonnet-4.6':{ input: 3.0, output: 15.0, displayName: 'Sonnet 4.6', color: '#7c3aed' },
-  'codex-5.3': { input: 3.0, output: 12.0, displayName: 'Codex 5.3', color: '#ef4444' },
+  'kimi-k2.5': { input: 0.15, output: 0.60,  displayName: 'Kimi K2.5',  color: '#3b82f6' },
+  'glm-5':     { input: 0.10, output: 0.10,  displayName: 'GLM-5',      color: '#22c55e' },
+  'sonnet-4.6':{ input: 3.00, output: 15.00, displayName: 'Sonnet 4.6', color: '#7c3aed' },
+  'codex-5.3': { input: 3.00, output: 12.00, displayName: 'Codex 5.3',  color: '#ef4444' },
 }
 
 /**
