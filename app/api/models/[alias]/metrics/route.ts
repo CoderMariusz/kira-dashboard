@@ -7,7 +7,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchBridge } from '@/lib/bridge'
 import { createClient } from '@/lib/supabase/server'
-import { resolveModelKey, calcTokenCost } from '@/config/model-costs'
+import { resolveModelKey, calcTokenCost, MODEL_ALIAS_MAP } from '@/config/model-costs'
 import { requireAdmin } from '@/lib/utils/require-admin'
 import type { RunsResponse, BridgeRunRaw } from '@/types/bridge'
 
@@ -161,9 +161,7 @@ export async function GET(
       try {
         const supabase = await createClient()
         // All aliases that map to this canonical key
-        const modelAliases = Object.entries(
-          (await import('@/config/model-costs')).MODEL_ALIAS_MAP
-        )
+        const modelAliases = Object.entries(MODEL_ALIAS_MAP)
           .filter(([, v]) => v === canonicalKey)
           .map(([k]) => k)
 

@@ -30,7 +30,12 @@ function formatStat(value: number | null | undefined, format: StatFormat): strin
     case 'runs':    return String(value)
     case 'percent': return `${Math.round(value * 100)}%`
     case 'seconds': return `${value.toFixed(1)}s`
-    case 'cost':    return `$${value.toFixed(2)}`
+    case 'cost':
+      // Use more decimal places for small amounts to avoid showing $0.00
+      if (value === 0) return '$0.00'
+      if (value < 0.01) return `$${value.toFixed(4)}`
+      if (value < 1) return `$${value.toFixed(3)}`
+      return `$${value.toFixed(2)}`
   }
 }
 

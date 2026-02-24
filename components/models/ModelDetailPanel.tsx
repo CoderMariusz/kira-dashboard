@@ -144,7 +144,7 @@ function ModelDetailPanelInner({
   const recentRuns = useMemo(() => {
     if (!runsData?.runs) return null
     return runsData.runs
-      .filter((r) => resolveModelKey(r.model) === alias)
+      .filter((r) => r.model != null && resolveModelKey(r.model) === alias)
       .sort(
         (a, b) =>
           new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
@@ -525,9 +525,9 @@ function ModelDetailPanelInner({
 // ─── Stats grid subcomponent ──────────────────────────────────────────────────
 
 function StatsGrid({ points }: { points: ModelMetricPoint[] }) {
-  const totalRuns = points.reduce((s, p) => s + p.runs, 0)
-  const totalCost = points.reduce((s, p) => s + p.cost_usd, 0)
-  const totalTokens = points.reduce((s, p) => s + p.tokens_in + p.tokens_out, 0)
+  const totalRuns = points.reduce((s, p) => s + (p.runs ?? 0), 0)
+  const totalCost = points.reduce((s, p) => s + (p.cost_usd ?? 0), 0)
+  const totalTokens = points.reduce((s, p) => s + (p.tokens_in ?? 0) + (p.tokens_out ?? 0), 0)
 
   const tokenLabel =
     totalTokens >= 1_000_000
