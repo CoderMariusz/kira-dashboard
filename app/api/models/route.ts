@@ -22,6 +22,9 @@ interface SupabaseRun {
   status: string
   duration_ms: number | null
   started_at: string | null
+  tokens_in: number | null
+  tokens_out: number | null
+  cost_usd: number | null
 }
 
 // ─── Static metadata maps ────────────────────────────────────────────────────
@@ -90,7 +93,7 @@ export async function GET(): Promise<Response> {
         const supabase = await createClient()
         const { data: sbRuns, error } = await supabase
           .from('bridge_runs')
-          .select('model, status, duration_ms, started_at')
+          .select('model, status, duration_ms, started_at, tokens_in, tokens_out, cost_usd')
           .eq('project_id', 'kira-dashboard')
           .order('started_at', { ascending: false })
           .limit(500)
