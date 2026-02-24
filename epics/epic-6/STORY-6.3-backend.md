@@ -6,7 +6,7 @@ module: pipeline
 domain: backend
 status: draft
 difficulty: moderate
-recommended_model: sonnet-4.6
+recommended_model: glm-5
 priority: must
 estimated_effort: 4h
 depends_on: none

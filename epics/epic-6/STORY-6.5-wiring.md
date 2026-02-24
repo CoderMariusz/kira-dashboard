@@ -6,7 +6,7 @@ module: pipeline
 domain: wiring
 status: draft
 difficulty: moderate
-recommended_model: sonnet-4.6
+recommended_model: glm-5
 priority: must
 estimated_effort: 4h
 depends_on: [STORY-6.1, STORY-6.2, STORY-6.3, STORY-6.4]
