@@ -66,10 +66,13 @@ const STATUS_STYLES: Record<RunStatus, { bg: string; text: string }> = {
   REVIEW:      { bg: 'bg-yellow-500/20', text: 'text-yellow-400'  },
   MERGE:       { bg: 'bg-blue-500/20',   text: 'text-blue-400'    },
   REFACTOR:    { bg: 'bg-orange-500/20', text: 'text-orange-400'  },
+  FAILED:      { bg: 'bg-red-500/20',    text: 'text-red-400'     },
 }
 
+const FALLBACK_STATUS_STYLE = { bg: 'bg-slate-500/20', text: 'text-slate-400' }
+
 function StatusBadge({ status }: { status: RunStatus }) {
-  const styles = STATUS_STYLES[status]
+  const styles = STATUS_STYLES[status] ?? FALLBACK_STATUS_STYLE
   return (
     <span
       className={`inline-block px-1.5 py-0.5 rounded text-xs font-mono font-semibold ${styles.bg} ${styles.text}`}

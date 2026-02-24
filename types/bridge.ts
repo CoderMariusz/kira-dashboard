@@ -86,7 +86,7 @@ export interface PipelineResponse {
 // ─── Runs ──────────────────────────────────────────────────────────────────
 
 /** Status jednotego runu (uruchomienia modelu AI). */
-export type RunStatus = 'DONE' | 'REFACTOR' | 'IN_PROGRESS' | 'REVIEW' | 'MERGE'
+export type RunStatus = 'DONE' | 'REFACTOR' | 'IN_PROGRESS' | 'REVIEW' | 'MERGE' | 'FAILED'
 
 /**
  * Raw run as returned by Bridge API GET /api/status/runs.

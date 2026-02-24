@@ -17,6 +17,7 @@ const STATUS_STYLES: Record<StoryStatus | RunStatus, ModalStatusStyle> = {
   MERGE:       { bg: '#1a2a1a', color: '#34d399',  label: 'MERGE' },
   TODO:        { bg: '#1a1a2a', color: '#6b7280',  label: 'TODO' },
   BLOCKED:     { bg: '#3a1a1a', color: '#f87171',  label: 'BLOCKED' },
+  FAILED:      { bg: '#3a1a1a', color: '#f87171',  label: 'FAILED' },
 }
 
 const DEFAULT_MODAL_STYLE: ModalStatusStyle = { bg: '#1a1a2a', color: '#6b7280', label: 'UNKNOWN' }
