@@ -135,10 +135,10 @@ function parsePatternLine(line: string): ParsedPatternLine | null {
     // Both are optional. If only one bracket present after date it could be
     // either model or domain — we store them positionally (second=model, third=domain).
     return {
-      date:   date,
+      date:   date ?? null,
       model:  second?.trim() || null,
       domain: third?.trim() || null,
-      text:   text.trim(),
+      text:   (text ?? '').trim(),
     }
   }
 
@@ -147,17 +147,17 @@ function parsePatternLine(line: string): ParsedPatternLine | null {
   if (dateNoSep) {
     const [, date, second, third, text] = dateNoSep
     return {
-      date:   date,
+      date:   date ?? null,
       model:  second?.trim() || null,
       domain: third?.trim() || null,
-      text:   text.trim(),
+      text:   (text ?? '').trim(),
     }
   }
 
   // Try plain `- text` fallback
   const plain = RE_PLAIN_LINE.exec(line)
   if (plain) {
-    return { date: null, model: null, domain: null, text: plain[1].trim() }
+    return { date: null, model: null, domain: null, text: (plain[1] ?? '').trim() }
   }
 
   return null
@@ -227,7 +227,7 @@ function extractSubSection(body: string, labels: string[]): string | null {
     const re = new RegExp(`\\*\\*${label}[:\\s]*\\*\\*\\s*\\n?([\\s\\S]*?)(?=\\*\\*[\\w ]+[:\\s]*\\*\\*|^---$|$)`, 'i')
     const m = re.exec(body)
     if (m) {
-      const text = m[1].trim()
+      const text = (m[1] ?? '').trim()
       if (text) return text
     }
   }
@@ -247,7 +247,7 @@ function parseLessonsFile(content: string): Lesson[] {
     if (!headerMatch) continue
 
     const [, kind, num, title] = headerMatch
-    const id = `${kind}-${num.padStart(3, '0')}`
+    const id = `${kind ?? ''}-${(num ?? '').padStart(3, '0')}`
     const severity: 'critical' | 'warning' | 'info' =
       kind === 'BUG' ? 'critical' :
       kind === 'LESSON' ? 'warning' : 'info'
@@ -262,15 +262,15 @@ function parseLessonsFile(content: string): Lesson[] {
     lessons.push({
       id,
       source:     'LESSONS_LEARNED.md',
-      title:      title.trim(),
+      title:      (title ?? '').trim(),
       severity,
-      category:   kind,
+      category:   kind ?? '',
       date:       null,
       body:       whatWentWrong ?? body.slice(0, 200).trim(),
       root_cause: rootCause,
       fix,
-      lesson:     lessonText ?? title.trim(),
-      tags:       [kind.toLowerCase(), severity],
+      lesson:     lessonText ?? (title ?? '').trim(),
+      tags:       [(kind ?? '').toLowerCase(), severity],
     })
   }
 
