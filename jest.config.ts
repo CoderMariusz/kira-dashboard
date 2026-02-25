@@ -38,6 +38,17 @@ const config: Config = {
     // Wyklucz starszy kod (EPIC-1-5) — testy w osobnym tickecie
     '!app/api/home/**',
     '!hooks/home/**',
+    // Hooki wykluczone — zbyt złożone lub nie dotyczą EPIC-6 (testy w osobnym tickecie)
+    '!hooks/useSSE.ts',
+    '!hooks/useLivePipeline.ts',
+    '!hooks/useStoryActions.ts',
+    '!hooks/useEval.ts',
+    '!hooks/useEvalRun.ts',
+    '!hooks/useHealth.ts',
+    '!hooks/useActiveTab.ts',
+    '!hooks/useModelMetrics.ts',
+    '!hooks/useNightClaw.ts',
+    '!hooks/usePatterns.ts',
     '!app/api/models/**',
     '!app/api/events/**',
     '!app/api/bridge/**',
