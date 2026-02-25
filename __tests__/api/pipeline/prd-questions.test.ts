@@ -1,11 +1,21 @@
 /**
  * __tests__/api/pipeline/prd-questions.test.ts
- * STORY-7.2 — Integration tests for POST /api/pipeline/prd-questions
+ * STORY-7.2 / STORY-14.4 — Integration tests for POST /api/pipeline/prd-questions
  *
  * Test matrix:
  *  TC-1  401 — no session (unauthenticated)
  *  TC-2  400 — admin session but prd_text too short (<50 chars)
  *  TC-3  200 — admin session + valid prd_text + mocked Anthropic response
+ *  TC-4  400 — prd_text too long (> 20000 chars)
+ *  TC-5  503 — Anthropic API error
+ *  TC-6  422 — AI returns non-text block
+ *  TC-7  422 — AI returns invalid JSON
+ *  TC-8  422 — AI returns empty questions array
+ *  TC-9  422 — Question missing required fields
+ *  TC-10 422 — Choice type question missing options
+ *  TC-11 422 — Choice type question with fewer than 2 options
+ *  TC-12 422 — Choice options containing non-string values
+ *  TC-13 200 — Questions array sliced to max 5
  */
 
 import { jest } from '@jest/globals';
@@ -164,5 +174,297 @@ describe('POST /api/pipeline/prd-questions', () => {
       type: expect.any(String),
       required: expect.any(Boolean),
     });
+  });
+
+  // ── TC-4: 400 prd_text too long (> 20000) ──────────────────────────────────
+
+  it('TC-4: returns 400 when prd_text exceeds 20000 characters', async () => {
+    mockAdminSession();
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: 'A'.repeat(20001) },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.error).toContain('20 000');
+  });
+
+  // ── TC-5: 503 Anthropic API error ──────────────────────────────────────────
+
+  it('TC-5: returns 503 when Anthropic API fails', async () => {
+    mockAdminSession();
+
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockRejectedValue(new Error('API Error')),
+      },
+    }));
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: VALID_PRD },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(json.error.toLowerCase()).toContain('niedostępny');
+  });
+
+  // ── TC-6: 422 AI returns non-text block ────────────────────────────────────
+
+  it('TC-6: returns 422 when AI returns non-text content block', async () => {
+    mockAdminSession();
+
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockResolvedValue({
+          content: [{ type: 'image' }],
+        }),
+      },
+    }));
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: VALID_PRD },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(422);
+    expect(json.error.toLowerCase()).toContain('nie wygenerowało');
+  });
+
+  // ── TC-7: 422 AI returns invalid JSON ──────────────────────────────────────
+
+  it('TC-7: returns 422 when AI returns invalid JSON', async () => {
+    mockAdminSession();
+
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockResolvedValue({
+          content: [{ type: 'text', text: 'not valid json' }],
+        }),
+      },
+    }));
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: VALID_PRD },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(422);
+    expect(json.error.toLowerCase()).toContain('nie wygenerowało');
+  });
+
+  // ── TC-8: 422 AI returns empty questions array ─────────────────────────────
+
+  it('TC-8: returns 422 when AI returns empty questions array', async () => {
+    mockAdminSession();
+
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockResolvedValue({
+          content: [{ type: 'text', text: JSON.stringify({ questions: [] }) }],
+        }),
+      },
+    }));
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: VALID_PRD },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(422);
+    expect(json.error.toLowerCase()).toContain('nie wygenerowało');
+  });
+
+  // ── TC-9: 422 Question missing required fields ─────────────────────────────
+
+  it('TC-9: returns 422 when question is missing required fields', async () => {
+    mockAdminSession();
+
+    const invalidResponse = {
+      questions: [
+        { id: 'q1', text: 'Valid question', type: 'text', required: true },
+        { id: 'q2', text: 'Missing required field' } // missing type and required
+      ],
+    };
+
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockResolvedValue({
+          content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
+        }),
+      },
+    }));
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: VALID_PRD },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(422);
+    expect(json.error.toLowerCase()).toContain('brak wymaganych pól');
+  });
+
+  // ── TC-10: 422 Choice type question missing options ────────────────────────
+
+  it('TC-10: returns 422 when choice question has no options', async () => {
+    mockAdminSession();
+
+    const invalidResponse = {
+      questions: [
+        { id: 'q1', text: 'Valid question', type: 'text', required: true },
+        { id: 'q2', text: 'Choice without options', type: 'choice', required: true } // missing options
+      ],
+    };
+
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockResolvedValue({
+          content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
+        }),
+      },
+    }));
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: VALID_PRD },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(422);
+    expect(json.error.toLowerCase()).toContain('bez wymaganych opcji');
+  });
+
+  // ── TC-11: 422 Choice type question with fewer than 2 options ──────────────
+
+  it('TC-11: returns 422 when choice question has fewer than 2 options', async () => {
+    mockAdminSession();
+
+    const invalidResponse = {
+      questions: [
+        { id: 'q1', text: 'Valid question', type: 'text', required: true },
+        { id: 'q2', text: 'Choice with 1 option', type: 'choice', required: true, options: ['Only one'] }
+      ],
+    };
+
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockResolvedValue({
+          content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
+        }),
+      },
+    }));
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: VALID_PRD },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(422);
+    expect(json.error.toLowerCase()).toContain('bez wymaganych opcji');
+  });
+
+  // ── TC-12: 422 Choice options containing non-string values ─────────────────
+
+  it('TC-12: returns 422 when choice options contain non-string values', async () => {
+    mockAdminSession();
+
+    const invalidResponse = {
+      questions: [
+        {
+          id: 'q1',
+          text: 'Choice with invalid options',
+          type: 'choice',
+          required: true,
+          options: ['Valid', 123, null] // contains non-strings
+        },
+      ],
+    };
+
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockResolvedValue({
+          content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
+        }),
+      },
+    }));
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: VALID_PRD },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(422);
+    expect(json.error.toLowerCase()).toContain('bez wymaganych opcji');
+  });
+
+  // ── TC-13: 200 Questions array sliced to max 5 ─────────────────────────────
+
+  it('TC-13: returns at most 5 questions even when AI returns more', async () => {
+    mockAdminSession();
+
+    const manyQuestions = {
+      questions: Array.from({ length: 8 }, (_, i) => ({
+        id: `q${i + 1}`,
+        text: `Question ${i + 1}`,
+        type: 'text',
+        required: true,
+      })),
+    };
+
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockResolvedValue({
+          content: [{ type: 'text', text: JSON.stringify(manyQuestions) }],
+        }),
+      },
+    }));
+
+    const req = mockRequest({
+      method: 'POST',
+      url: 'http://localhost/api/pipeline/prd-questions',
+      body: { prd_text: VALID_PRD },
+    });
+
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.questions.length).toBe(5);
   });
 });
