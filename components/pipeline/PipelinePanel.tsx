@@ -3,15 +3,23 @@
 // components/pipeline/PipelinePanel.tsx
 // Left/top card: Active Stories, Review Queue, Blocked, Done Today sections.
 // v2 (STORY-2.7): FilterBar + search/filter + live SSE updates + optimistic UI.
+// v3 (STORY-6.8): Bulk selection + BulkActionBar.
 
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useCallback } from 'react'
+import { useSWRConfig } from 'swr'
+import { toast } from 'sonner'
 import type { Story } from '@/types/bridge'
 import type { LiveStory } from '@/hooks/useLivePipeline'
 import type { PipelineFilters } from '@/hooks/usePipelineFilters'
 import type { Project } from '@/types/bridge'
+import type { BulkActionRequest, BulkActionResponse } from '@/types/pipeline-prd'
 import PipelineRow from './PipelineRow'
+import BulkActionBar from './BulkActionBar'
 import { FilterBar } from './FilterBar'
 import { PipelineEmptyState } from './PipelineEmptyState'
+
+/** SWR key for pipeline data — must match usePipeline hook */
+const PIPELINE_SWR_KEY = '/api/status/pipeline'
 
 interface PipelinePanelProps {
   stories: Story[] | null
@@ -89,6 +97,75 @@ export default function PipelinePanel({
     if (!stories) return []
     return stories.filter((story) => matchesFilters(story, filters))
   }, [stories, filters])
+
+  // ─── STORY-6.8: Bulk selection state ─────────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkLoading, setIsBulkLoading] = useState(false)
+  const { mutate } = useSWRConfig()
+
+  const isSelecting = selectedIds.size > 0
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }, [])
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(filteredStories.map((s) => s.id)))
+  }, [filteredStories])
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set())
+  }, [])
+
+  const handleBulkAction = useCallback(async (actionReq: BulkActionRequest) => {
+    setIsBulkLoading(true)
+    try {
+      const res = await fetch('/api/stories/bulk-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(actionReq),
+      })
+
+      if (!res.ok) {
+        const errData = (await res.json().catch(() => ({}))) as { error?: string }
+        toast.error(`Błąd serwera: ${errData.error ?? res.statusText}`)
+        return
+      }
+
+      const data = (await res.json()) as BulkActionResponse
+      const total = actionReq.story_ids.length
+
+      if (data.failure_count === 0) {
+        // Full success
+        const label =
+          actionReq.action === 'advance'
+            ? `do ${actionReq.payload?.status ?? ''}`
+            : `do modelu ${actionReq.payload?.model ?? ''}`
+        toast.success(`${data.success_count}/${total} stories przesunięte ${label}`)
+      } else {
+        // Partial success — show details
+        const errors = data.results
+          .filter((r) => !r.success)
+          .map((r) => `${r.id} — ${r.error ?? 'błąd'}`)
+          .join('; ')
+        toast.warning(
+          `${data.success_count}/${total} sukces, ${data.failure_count} błąd: ${errors}`
+        )
+      }
+
+      clearSelection()
+      await mutate(PIPELINE_SWR_KEY)
+    } catch (err) {
+      toast.error(`Błąd serwera: ${err instanceof Error ? err.message : 'Nieznany błąd'}`)
+    } finally {
+      setIsBulkLoading(false)
+    }
+  }, [clearSelection, mutate])
+  // ─────────────────────────────────────────────────────────────────────────────
 
   // Klasyfikuj stories na sekcje (po filtrowaniu)
   const todayStr = new Date().toISOString().slice(0, 10)
@@ -310,6 +387,9 @@ export default function PipelinePanel({
                         ? () => onStartStory(story.id)
                         : undefined
                     }
+                    isSelected={selectedIds.has(story.id)}
+                    onToggleSelect={toggleSelect}
+                    showCheckbox={isSelecting}
                   />
                 ))}
               </>
@@ -326,6 +406,9 @@ export default function PipelinePanel({
                     onClick={() => onStoryClick(story)}
                     justUpdated={(story as LiveStory)._justUpdated}
                     isOptimistic={(story as LiveStory)._isOptimistic}
+                    isSelected={selectedIds.has(story.id)}
+                    onToggleSelect={toggleSelect}
+                    showCheckbox={isSelecting}
                   />
                 ))}
               </>
@@ -341,6 +424,9 @@ export default function PipelinePanel({
                     story={story}
                     onClick={() => onStoryClick(story)}
                     justUpdated={(story as LiveStory)._justUpdated}
+                    isSelected={selectedIds.has(story.id)}
+                    onToggleSelect={toggleSelect}
+                    showCheckbox={isSelecting}
                   />
                 ))}
               </>
@@ -356,6 +442,9 @@ export default function PipelinePanel({
                     story={story}
                     onClick={() => onStoryClick(story)}
                     justUpdated={(story as LiveStory)._justUpdated}
+                    isSelected={selectedIds.has(story.id)}
+                    onToggleSelect={toggleSelect}
+                    showCheckbox={isSelecting}
                   />
                 ))}
               </>
@@ -371,6 +460,9 @@ export default function PipelinePanel({
                     story={story}
                     onClick={() => onStoryClick(story)}
                     justUpdated={(story as LiveStory)._justUpdated}
+                    isSelected={selectedIds.has(story.id)}
+                    onToggleSelect={toggleSelect}
+                    showCheckbox={isSelecting}
                   />
                 ))}
               </>
@@ -386,6 +478,9 @@ export default function PipelinePanel({
                     story={story}
                     onClick={() => onStoryClick(story)}
                     justUpdated={(story as LiveStory)._justUpdated}
+                    isSelected={selectedIds.has(story.id)}
+                    onToggleSelect={toggleSelect}
+                    showCheckbox={isSelecting}
                   />
                 ))}
               </>
@@ -398,6 +493,17 @@ export default function PipelinePanel({
           </>
         )
       })()}
+
+      {/* STORY-6.8: BulkActionBar — AC-3: slide-up when selectedIds.size > 0 */}
+      {isSelecting && (
+        <BulkActionBar
+          selectedIds={Array.from(selectedIds)}
+          onSelectAll={selectAll}
+          onClearSelection={clearSelection}
+          onBulkAction={handleBulkAction}
+          isLoading={isBulkLoading}
+        />
+      )}
     </div>
   )
 }
