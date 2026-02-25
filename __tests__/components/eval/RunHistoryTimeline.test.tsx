@@ -127,8 +127,8 @@ describe('RunHistoryTimeline', () => {
     )
 
     await waitFor(() => {
-      // Score text should appear
-      expect(screen.getByText(/87%/)).toBeInTheDocument()
+      // Score text should appear — exact '87%' (not raw '0.87%')
+      expect(screen.getByText('87%')).toBeInTheDocument()
     })
   })
 
@@ -141,7 +141,7 @@ describe('RunHistoryTimeline', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText(/87%/)).toBeInTheDocument()
+      expect(screen.getByText('87%')).toBeInTheDocument()
     })
 
     // Selected run button should have highlighted border

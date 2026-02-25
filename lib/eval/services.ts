@@ -133,9 +133,15 @@ interface UseEvalRunsReturn {
 }
 
 export function useEvalRuns(limit = 20): UseEvalRunsReturn {
-  const { data, isLoading, mutate } = useSWR<EvalRunsListResponse>(
+  const { data, isLoading, mutate } = useSWR<{ runs: EvalRun[]; total: number }>(
     `/api/eval/runs?page=1&pageSize=${limit}`,
-    (url: string) => fetcher<EvalRunsListResponse>(url),
+    async (url: string) => {
+      const raw = await fetcher<RawRunsResponse>(url)
+      return {
+        runs: raw.runs.map(mapRawRun),
+        total: raw.total,
+      }
+    },
     { revalidateOnFocus: false, shouldRetryOnError: false }
   )
 

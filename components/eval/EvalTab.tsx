@@ -5,10 +5,12 @@
 // Wywołuje hooki useEval() i useRuns(), przekazuje dane do paneli.
 // STORY-7.8: dodano RunHistoryTimeline + RunDetailPanel pod istniejącymi panelami.
 
-import { Suspense, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { CircleHelp } from 'lucide-react'
 import { useEval } from '@/hooks/useEval'
 import { useRuns } from '@/hooks/useRuns'
+import { useEvalRuns, useEvalRunDetail } from '@/lib/eval/services'
+import type { EvalRun } from '@/lib/eval/types'
 import {
   Popover,
   PopoverContent,
@@ -33,6 +35,30 @@ function EvalTabContent() {
 
   // STORY-7.8 — selected run state for history timeline + detail panel
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
+
+  // Fetch run list for enriched delta propagation (SWR-deduplicated with RunHistoryTimeline)
+  const { runs: rawRuns } = useEvalRuns(20)
+  // Fetch detail for selected run to extract diff data
+  const { diff } = useEvalRunDetail(selectedRunId)
+
+  // AC-4: Enriched runs — delta badges populated from run detail (derived, no extra state)
+  const enrichedRuns = useMemo<EvalRun[]>(() => {
+    if (!rawRuns?.length) return []
+    if (!diff || !selectedRunId) return rawRuns
+    return rawRuns.map((r) =>
+      r.id === selectedRunId
+        ? {
+            ...r,
+            delta: {
+              has_previous: diff.has_previous,
+              fixed: diff.fixed,
+              new_failures: diff.new_failures,
+              unchanged: diff.unchanged,
+            },
+          }
+        : r,
+    )
+  }, [rawRuns, diff, selectedRunId])
 
   const handleSelectRun = (runId: string) => {
     setSelectedRunId((prev) => (prev === runId ? null : runId))
@@ -120,6 +146,9 @@ function EvalTabContent() {
           flex: 1;
           min-width: 0;
         }
+        .rh-mobile-overlay {
+          display: none;
+        }
         @media (max-width: 1023px) and (min-width: 768px) {
           .rh-layout { flex-direction: column; }
           .rh-timeline { width: 100%; }
@@ -127,7 +156,16 @@ function EvalTabContent() {
         @media (max-width: 767px) {
           .rh-layout { flex-direction: column; }
           .rh-timeline { width: 100%; }
-          .rh-detail  { display: none; }
+          .rh-detail  { display: none !important; }
+          .rh-mobile-overlay {
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: #0d0c1a;
+            overflow-y: auto;
+          }
         }
       `}</style>
 
@@ -136,6 +174,7 @@ function EvalTabContent() {
           <RunHistoryTimeline
             selectedRunId={selectedRunId}
             onSelectRun={handleSelectRun}
+            runs={enrichedRuns}
           />
         </div>
 
@@ -145,6 +184,45 @@ function EvalTabContent() {
           </div>
         )}
       </div>
+
+      {/* AC-6: Mobile fullscreen overlay — shown only on <768px */}
+      {selectedRunId && (
+        <div className="rh-mobile-overlay">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '12px 16px',
+              borderBottom: '1px solid #2a2540',
+              background: '#13111c',
+              position: 'sticky',
+              top: 0,
+              zIndex: 1,
+            }}
+          >
+            <button
+              onClick={() => setSelectedRunId(null)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#818cf8',
+                fontSize: '14px',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: '6px',
+              }}
+            >
+              ← Wróć
+            </button>
+          </div>
+          <div style={{ padding: '12px 16px', flex: 1 }}>
+            <RunDetailPanel
+              runId={selectedRunId}
+              onClose={() => setSelectedRunId(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

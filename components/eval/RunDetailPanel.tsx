@@ -14,6 +14,8 @@ import type { EvalTaskResult, EvalRunStatus } from '@/lib/eval/types'
 
 interface RunDetailPanelProps {
   runId: string
+  /** Optional close handler — used by mobile overlay in EvalTab. */
+  onClose?: () => void
 }
 
 // ─── Filter types ─────────────────────────────────────────────────────────────
@@ -191,7 +193,7 @@ function TaskRow({ task }: TaskRowProps) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function RunDetailPanel({ runId }: RunDetailPanelProps) {
+export default function RunDetailPanel({ runId, onClose }: RunDetailPanelProps) {
   const { run, taskResults, diff, isLoading } = useEvalRunDetail(runId)
   const [filter, setFilter] = useState<FilterTab>('all')
 

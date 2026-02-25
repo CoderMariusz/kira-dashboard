@@ -14,6 +14,8 @@ import type { EvalRun, EvalRunStatus } from '@/lib/eval/types'
 interface RunHistoryTimelineProps {
   selectedRunId: string | null
   onSelectRun: (runId: string) => void
+  /** Optional enriched runs override from EvalTab (with delta populated). */
+  runs?: EvalRun[]
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -181,9 +183,11 @@ function RunRow({ run, isSelected, onClick }: RunRowProps) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function RunHistoryTimeline({ selectedRunId, onSelectRun }: RunHistoryTimelineProps) {
+export default function RunHistoryTimeline({ selectedRunId, onSelectRun, runs: runsProp }: RunHistoryTimelineProps) {
   const [limit, setLimit] = useState(20)
-  const { runs, hasMore, isLoading, mutate } = useEvalRuns(limit)
+  const { runs: fetchedRuns, hasMore, isLoading, mutate } = useEvalRuns(limit)
+  // Use externally enriched runs (with delta populated) if provided; otherwise use fetched runs.
+  const runs = runsProp ?? fetchedRuns
 
   return (
     <section
