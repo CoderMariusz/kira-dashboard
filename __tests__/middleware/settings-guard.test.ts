@@ -39,8 +39,11 @@ jest.mock('@supabase/ssr', () => ({
 
 function createMockRequest(pathname: string): NextRequest {
   const url = `http://localhost:3000${pathname}`;
+  const nextUrl = new URL(url);
+  // Add clone() method required by middleware redirect logic
+  (nextUrl as URL & { clone: () => URL }).clone = () => new URL(url);
   return {
-    nextUrl: new URL(url),
+    nextUrl,
     url,
     cookies: {
       getAll: jest.fn(() => []),
@@ -90,9 +93,9 @@ describe('middleware /settings/* route guard (STORY-10.2)', () => {
 
     expect(response).toBeInstanceOf(NextResponse);
 
-    // Should NOT redirect to /403
+    // Should NOT redirect to /403 (either no location header or points elsewhere)
     const locationHeader = response.headers.get('location');
-    expect(locationHeader).not.toContain('/403');
+    expect(locationHeader ?? '').not.toContain('/403');
   });
 
   it('redirects HELPER_PLUS role accessing /settings/system to /403', async () => {
@@ -126,5 +129,21 @@ describe('middleware /settings/* route guard (STORY-10.2)', () => {
 
     const locationHeader = response.headers.get('location');
     expect(locationHeader).toBeNull();
+  });
+
+  it('redirects unauthenticated user accessing /settings/users to /login', async () => {
+    // No authenticated user
+    mockSupabaseAuthGetUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+
+    const request = createMockRequest('/settings/users');
+    const response = await middleware(request);
+
+    expect(response).toBeInstanceOf(NextResponse);
+    const locationHeader = response.headers.get('location');
+    // Should redirect to /login (not /403) for unauthenticated users
+    expect(locationHeader).toContain('/login');
   });
 });
