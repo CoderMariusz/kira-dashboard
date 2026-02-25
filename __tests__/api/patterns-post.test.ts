@@ -48,7 +48,7 @@ beforeEach(() => {
 
 // ─── Imports (after mocks) ────────────────────────────────────────────────────
 
-import { POST as postPatterns, GET as getPatterns } from '@/app/api/patterns/route'
+import { POST as postPatterns } from '@/app/api/patterns/route'
 import { POST as postLessons } from '@/app/api/lessons/route'
 import { mockAdminSession, mockUserSession, mockNoSession } from '@/__tests__/helpers/auth'
 import { mockRequest } from '@/__tests__/helpers/fetch'

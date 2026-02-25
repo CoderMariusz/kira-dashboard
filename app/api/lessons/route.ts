@@ -160,9 +160,10 @@ ${body.body}
       const header = `# LESSONS_LEARNED.md — Kira Bridge\n\n## 1. BUGS WE HIT\n\n`
       await writeFile(LESSONS_FILE, header + lessonBlock, 'utf-8')
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const fsErr = err as NodeJS.ErrnoException
     return NextResponse.json(
-      { error: `Błąd zapisu pliku: ${err.message}` },
+      { error: `Błąd zapisu pliku: ${fsErr.message}` },
       { status: 500 }
     )
   }

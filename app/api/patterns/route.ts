@@ -13,7 +13,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { readFile, writeFile, access } from 'fs/promises'
+import { readFile, writeFile } from 'fs/promises'
 import { createHash } from 'crypto'
 import { requireAuth, requireAdmin } from '@/lib/auth/requireRole'
 import type { RequireAuthResult, RequireAdminResult } from '@/lib/auth/requireRole'
@@ -446,14 +446,15 @@ export async function POST(req: Request): Promise<Response> {
       const sectionHeader = `\n## ${body.category}\n${entry}`
       await writeFile(targetFile, existingContent + sectionHeader, 'utf-8')
     }
-  } catch (err: any) {
-    if (err.code === 'ENOENT') {
+  } catch (err: unknown) {
+    const fsErr = err as NodeJS.ErrnoException
+    if (fsErr.code === 'ENOENT') {
       // File doesn't exist - create it with header and section
       const newContent = fileHeader + `## ${body.category}\n${entry}`
       await writeFile(targetFile, newContent, 'utf-8')
     } else {
       return NextResponse.json(
-        { error: `Błąd zapisu pliku: ${err.message}` },
+        { error: `Błąd zapisu pliku: ${fsErr.message}` },
         { status: 500 }
       )
     }
