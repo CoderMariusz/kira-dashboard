@@ -1,5 +1,6 @@
 'use client'
 // components/nightclaw/DigestViewer.tsx — STORY-9.7
+// Hook-based digest viewer with date picker + prev/next navigation.
 import React, { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
