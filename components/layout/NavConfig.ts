@@ -39,7 +39,8 @@ export const NAV_CONFIG: NavSectionConfig[] = [
       { id: 'pipeline-pipeline', label: 'Pipeline', icon: '▶️', href: '/dashboard/pipeline' },
       { id: 'pipeline-eval',     label: 'Eval',     icon: '🧪', href: '/dashboard/eval' },
       { id: 'pipeline-patterns', label: 'Patterns & Lessons', icon: '🧠', href: '/dashboard/patterns' },
-      { id: 'pipeline-health',   label: 'Health',   icon: '❤️', href: '/dashboard/health' },
+      { id: 'pipeline-health',     label: 'Health',    icon: '❤️', href: '/dashboard/health' },
+      { id: 'pipeline-nightclaw', label: 'NightClaw', icon: '🌙', href: '/dashboard/nightclaw' },
     ],
   },
   {
