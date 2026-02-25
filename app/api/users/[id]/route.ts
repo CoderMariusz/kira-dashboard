@@ -1,3 +1,8 @@
+// app/api/users/[id]/route.ts
+// DELETE /api/users/[id] — usunięcie użytkownika z user_roles (ADMIN only)
+// STORY-10.3 — User Management API
+// Spec: Supabase Auth account zostaje (tylko revoke) — usuwa tylko z user_roles
+
 export const runtime = 'nodejs'
 
 import { NextResponse } from 'next/server'
@@ -19,9 +24,10 @@ export async function DELETE(
     return auth.response
   }
 
+  // Guard: blokuj auto-usunięcie
   if (id === auth.callerId) {
     return NextResponse.json(
-      { error: 'Nie możesz usunąć własnego konta' },
+      { error: 'Nie możesz usunąć własnego dostępu' },
       { status: 422 }
     )
   }
@@ -64,6 +70,7 @@ export async function DELETE(
       }
     }
 
+    // Usuń tylko z user_roles — Supabase Auth account zostaje (tylko revoke)
     const { error: roleDeleteError } = await adminSupabase
       .from('user_roles')
       .delete()
@@ -76,17 +83,7 @@ export async function DELETE(
       )
     }
 
-    const { error: authDeleteError } = await adminSupabase.auth.admin.deleteUser(id)
-
-    if (authDeleteError) {
-      console.error('Supabase auth deleteUser failed:', authDeleteError.message)
-      return NextResponse.json(
-        { error: 'Błąd podczas usuwania konta' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ ok: true }, { status: 200 })
+    return NextResponse.json({ success: true }, { status: 200 })
   } catch {
     return NextResponse.json({ error: 'Błąd serwera' }, { status: 500 })
   }

@@ -1,73 +1,55 @@
+// app/api/users/invite/route.ts
+// POST /api/users/invite — zaproszenie użytkownika przez Supabase Admin API (ADMIN only)
+// STORY-10.3 — User Management API
+
 export const runtime = 'nodejs'
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isValidRole } from '@/lib/types/roles'
 import { requireAdmin } from '@/lib/utils/require-admin'
 
-function isValidEmail(email: string): boolean {
-  const atIndex = email.indexOf('@')
-  if (atIndex <= 0 || atIndex === email.length - 1) {
-    return false
-  }
+// ─── Zod schema ───────────────────────────────────────────────────────────────
 
-  const domainPart = email.slice(atIndex + 1)
-  return domainPart.includes('.')
-}
+const InviteSchema = z.object({
+  email: z.email({ error: 'Nieprawidłowy format adresu email' }),
+  role: z.enum(['ADMIN', 'HELPER_PLUS', 'HELPER'], {
+    error: 'Nieprawidłowa rola. Dozwolone: ADMIN, HELPER_PLUS, HELPER',
+  }),
+})
+
+// ─── POST /api/users/invite ───────────────────────────────────────────────────
 
 export async function POST(request: NextRequest): Promise<Response> {
-  let body: unknown
+  // Wymagaj roli ADMIN przed przetworzeniem body
+  const auth = await requireAdmin()
+  if (!auth.success) {
+    return auth.response
+  }
 
+  let body: unknown
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Nieprawidłowe dane wejściowe' }, { status: 400 })
   }
 
-  const rawEmail =
-    typeof body === 'object' && body !== null && 'email' in body
-      ? (body as Record<string, unknown>)['email']
-      : undefined
-
-  if (typeof rawEmail !== 'string' || rawEmail.trim() === '') {
-    return NextResponse.json({ error: 'Pole email jest wymagane' }, { status: 400 })
-  }
-
-  const email = rawEmail.trim()
-
-  if (!isValidEmail(email)) {
+  // Walidacja Zod
+  const parsed = InviteSchema.safeParse(body)
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]
     return NextResponse.json(
-      { error: 'Nieprawidłowy format adresu email' },
+      { error: firstError?.message ?? 'Nieprawidłowe dane wejściowe' },
       { status: 400 }
     )
   }
 
-  const rawRole =
-    typeof body === 'object' && body !== null && 'role' in body
-      ? (body as Record<string, unknown>)['role']
-      : undefined
-
-  if (typeof rawRole !== 'string' || rawRole.trim() === '') {
-    return NextResponse.json({ error: 'Pole role jest wymagane' }, { status: 400 })
-  }
-
-  const role = rawRole.trim()
-
-  if (!isValidRole(role)) {
-    return NextResponse.json(
-      { error: 'Nieprawidłowa rola. Dozwolone: ADMIN, HELPER_PLUS, HELPER' },
-      { status: 400 }
-    )
-  }
-
-  const auth = await requireAdmin()
-  if (!auth.success) {
-    return auth.response
-  }
+  const { email, role } = parsed.data
 
   try {
     const adminSupabase = createAdminClient()
 
+    // Wyślij zaproszenie przez Supabase Admin API
     const { data: inviteData, error: inviteError } =
       await adminSupabase.auth.admin.inviteUserByEmail(email)
 
@@ -75,7 +57,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       const normalizedMessage = inviteError.message.toLowerCase()
       if (inviteError.status === 422 || normalizedMessage.includes('already')) {
         return NextResponse.json(
-          { error: 'Użytkownik z tym adresem email już istnieje' },
+          { error: 'Użytkownik z tym adresem już istnieje' },
           { status: 409 }
         )
       }
@@ -94,11 +76,18 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
+    // Wstaw rekord do user_roles z invited_by i invited_at
     const { error: roleError } = await adminSupabase
       .from('user_roles')
-      .insert({ user_id: newUserId, role })
+      .insert({
+        user_id: newUserId,
+        role,
+        invited_by: auth.callerId,
+        invited_at: new Date().toISOString(),
+      })
 
     if (roleError) {
+      // Rollback — usuń zaproszonego usera z auth
       await adminSupabase.auth.admin.deleteUser(newUserId)
       return NextResponse.json(
         { error: 'Błąd podczas przypisywania roli. Spróbuj ponownie.' },
@@ -106,7 +95,10 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
     }
 
-    return NextResponse.json({ ok: true, userId: newUserId }, { status: 201 })
+    return NextResponse.json(
+      { success: true, message: 'Zaproszenie wysłane' },
+      { status: 201 }
+    )
   } catch {
     return NextResponse.json({ error: 'Błąd serwera' }, { status: 500 })
   }

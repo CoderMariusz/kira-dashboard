@@ -1,9 +1,15 @@
+// app/api/users/[id]/role/route.ts
+// PATCH /api/users/[id]/role — zmiana roli użytkownika (ADMIN only)
+// STORY-10.3 — User Management API
+
 export const runtime = 'nodejs'
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isValidRole } from '@/lib/types/roles'
 import { requireAdmin } from '@/lib/utils/require-admin'
+import type { Role } from '@/types/auth.types'
+import type { UserWithRole } from '@/app/api/users/route'
 
 export async function PATCH(
   request: NextRequest,
@@ -41,6 +47,7 @@ export async function PATCH(
     return auth.response
   }
 
+  // Guard: blokuj zmianę własnej roli
   if (id === auth.callerId) {
     return NextResponse.json(
       { error: 'Nie możesz zmienić własnej roli' },
@@ -68,6 +75,7 @@ export async function PATCH(
       )
     }
 
+    // Guard: nie pozwól zdegradować ostatniego ADMIN-a
     if (targetUser.role === 'ADMIN' && newRole !== 'ADMIN') {
       const { count, error: countError } = await adminSupabase
         .from('user_roles')
@@ -86,6 +94,7 @@ export async function PATCH(
       }
     }
 
+    // Zaktualizuj rolę
     const { error: updateError } = await adminSupabase
       .from('user_roles')
       .update({ role: newRole })
@@ -95,7 +104,32 @@ export async function PATCH(
       return NextResponse.json({ error: 'Błąd aktualizacji roli' }, { status: 500 })
     }
 
-    return NextResponse.json({ ok: true }, { status: 200 })
+    // Build UserWithRole response per spec
+    const { data: authUserData } = await adminSupabase.auth.admin.getUserById(id)
+    const email = authUserData?.user?.email ?? ''
+
+    const { data: updatedRoleRow } = await adminSupabase
+      .from('user_roles')
+      .select('role, invited_at, invited_by')
+      .eq('user_id', id)
+      .maybeSingle()
+
+    let invited_by_email: string | null = null
+    const invitedById = updatedRoleRow?.invited_by as string | null | undefined
+    if (invitedById) {
+      const { data: inviterData } = await adminSupabase.auth.admin.getUserById(invitedById)
+      invited_by_email = inviterData?.user?.email ?? null
+    }
+
+    const user: UserWithRole = {
+      id,
+      email,
+      role: ((updatedRoleRow?.role ?? newRole) as Role),
+      invited_at: (updatedRoleRow?.invited_at as string | null) ?? null,
+      invited_by_email,
+    }
+
+    return NextResponse.json({ success: true, user }, { status: 200 })
   } catch {
     return NextResponse.json({ error: 'Błąd serwera' }, { status: 500 })
   }

@@ -1,6 +1,6 @@
 // app/api/users/route.ts
 // GET /api/users — lista wszystkich użytkowników (ADMIN only)
-// Zaimplementowane w STORY-3.4
+// STORY-10.3 — User Management API
 
 export const runtime = 'nodejs'
 
@@ -8,7 +8,14 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/utils/require-admin'
 import type { Role } from '@/types/auth.types'
-import type { UserRow } from '@/types/users.types'
+
+export interface UserWithRole {
+  id: string
+  email: string
+  role: Role
+  invited_at: string | null
+  invited_by_email: string | null
+}
 
 export async function GET(): Promise<Response> {
   // Wymagaj roli ADMIN
@@ -20,10 +27,10 @@ export async function GET(): Promise<Response> {
   try {
     const adminSupabase = createAdminClient()
 
-    // 1. Pobierz wszystkie role z user_roles
+    // 1. Pobierz wszystkie role z user_roles (z polami invited_by i invited_at)
     const { data: roleData, error: roleError } = await adminSupabase
       .from('user_roles')
-      .select('user_id, role, created_at')
+      .select('user_id, role, created_at, invited_by, invited_at')
       .order('created_at', { ascending: true })
 
     if (roleError) {
@@ -38,7 +45,6 @@ export async function GET(): Promise<Response> {
     }
 
     // 2. Pobierz listę userów z Supabase Auth (email)
-    //    listUsers() jest paginowany — dla projektu rodzinnego (max ~10 userów) wystarczy 1 strona
     const { data: authData, error: authError } =
       await adminSupabase.auth.admin.listUsers({ perPage: 1000 })
 
@@ -58,19 +64,21 @@ export async function GET(): Promise<Response> {
     // 4. Połącz dane ról z emailami
     const validRoles: Role[] = ['ADMIN', 'HELPER_PLUS', 'HELPER']
 
-    const users: UserRow[] = roleData
-      .filter((r): r is typeof r & { user_id: string; role: string; created_at: string } =>
-        typeof r.user_id === 'string' &&
-        typeof r.role === 'string' &&
-        validRoles.includes(r.role as Role)
+    const users: UserWithRole[] = roleData
+      .filter(
+        (r): r is typeof r & { user_id: string; role: string } =>
+          typeof r.user_id === 'string' &&
+          typeof r.role === 'string' &&
+          validRoles.includes(r.role as Role)
       )
       .map((r) => ({
         id: r.user_id,
         email: emailMap.get(r.user_id) ?? '',
         role: r.role as Role,
-        created_at: r.created_at ?? new Date().toISOString(),
+        invited_at: (r.invited_at as string | null) ?? null,
+        invited_by_email: r.invited_by ? (emailMap.get(r.invited_by as string) ?? null) : null,
       }))
-      .filter((u) => u.email !== '')  // pomiń userów bez emaila
+      .filter((u) => u.email !== '') // pomiń userów bez emaila
 
     return NextResponse.json({ users })
   } catch {
