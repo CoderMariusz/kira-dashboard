@@ -2,11 +2,13 @@
  * app/api/nightclaw/research/route.ts
  * STORY-9.4 — GET /api/nightclaw/research
  *
- * Lists all .md files from solutions/ directory with metadata.
- * Excludes _pending-apply.md (internal file).
+ * Lists and returns all .md files from the NightClaw solutions/ directory.
+ * Skips _pending-apply.md (internal file).
+ * Each file includes: filename, title, preview, content, modified_at.
+ * Sorted by modified_at descending (newest first).
  *
  * Auth: requireAuth — 401 for unauthenticated requests.
- * Empty/missing directory: { files: [] } (not 500).
+ * Missing / empty dir: { files: [] } (not 500).
  */
 
 export const runtime = 'nodejs'
@@ -14,7 +16,6 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { readdir, readFile, stat } from 'fs/promises'
-import { join } from 'path'
 import { requireAuth } from '@/lib/auth/requireRole'
 import type { RequireAuthResult } from '@/lib/auth/requireRole'
 
@@ -32,10 +33,14 @@ interface ResearchResponse {
   files: ResearchFile[]
 }
 
-// ─── File paths ───────────────────────────────────────────────────────────────
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 const KIRA_DIR = process.env.KIRA_DIR || '/Users/mariuszkrawczyk/codermariusz/kira'
 const SOLUTIONS_DIR = `${KIRA_DIR}/.kira/nightclaw/solutions`
+
+const SKIP_FILE = '_pending-apply.md'
+const PREVIEW_MAX_CHARS = 200
+const PREVIEW_MAX_LINES = 3
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -44,128 +49,109 @@ function isErrorResponse(result: RequireAuthResult): result is NextResponse {
   return result instanceof Response
 }
 
-/** Check if filename is a valid research file (ends with .md, not _pending-apply.md) */
-function isValidResearchFile(filename: string | { name: string }): boolean {
-  const name = typeof filename === 'string' ? filename : filename.name
-  return name.endsWith('.md') && name !== '_pending-apply.md'
-}
-
-/** Extract title from first # header, or use filename without .md */
+/**
+ * Extract the title from file content.
+ * Returns the text of the first line starting with '#', stripped of '#' and whitespace.
+ * Falls back to filename without '.md' extension.
+ */
 function extractTitle(content: string, filename: string): string {
   const lines = content.split('\n')
   for (const line of lines) {
-    const match = line.match(/^#\s+(.+)$/)
-    if (match) {
-      return match[1]!.trim()
+    const trimmed = line.trim()
+    if (trimmed.startsWith('#')) {
+      // Strip all leading '#' chars and surrounding whitespace
+      return trimmed.replace(/^#+\s*/, '').trim()
     }
   }
-  // Fallback: filename without .md extension
+  // Fallback: filename without .md
   return filename.replace(/\.md$/, '')
 }
 
-/** Extract preview: first 3 non-header lines, max 200 chars */
+/**
+ * Extract preview: first 3 non-header, non-empty lines joined with ' ', max 200 chars.
+ * Headers are lines starting with '#'.
+ */
 function extractPreview(content: string): string {
   const lines = content.split('\n')
   const nonHeaderLines: string[] = []
 
   for (const line of lines) {
-    // Skip header lines (starting with #)
-    if (/^#+\s*/.test(line)) {
-      continue
-    }
-    // Skip empty lines
-    if (line.trim().length === 0) {
-      continue
-    }
-    nonHeaderLines.push(line.trim())
-    if (nonHeaderLines.length >= 3) {
-      break
-    }
+    const trimmed = line.trim()
+    // Skip headers and blank lines
+    if (!trimmed || trimmed.startsWith('#')) continue
+    nonHeaderLines.push(trimmed)
+    if (nonHeaderLines.length >= PREVIEW_MAX_LINES) break
   }
 
-  const preview = nonHeaderLines.join(' ')
-  return preview.length > 200 ? preview.slice(0, 200) : preview
-}
-
-/** Get file stats, returning null on error */
-async function getFileStats(filePath: string): Promise<{ mtime: Date } | null> {
-  try {
-    const stats = await stat(filePath)
-    return { mtime: stats.mtime }
-  } catch {
-    return null
-  }
-}
-
-/** Read file content, returning null on error */
-async function readFileContent(filePath: string): Promise<string | null> {
-  try {
-    return await readFile(filePath, 'utf-8')
-  } catch {
-    return null
-  }
+  const joined = nonHeaderLines.join(' ')
+  return joined.length > PREVIEW_MAX_CHARS ? joined.slice(0, PREVIEW_MAX_CHARS) : joined
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
-export async function GET(req: Request): Promise<Response> {
+export async function GET(req?: Request): Promise<Response> {
   // 1. Auth check
   const authResult = await requireAuth(req)
   if (isErrorResponse(authResult)) return authResult
 
-  // 2. Read directory — return empty array if missing or empty
-  let entries: string[] = []
+  // 2. Read solutions directory — graceful on ENOENT
+  let entries: Awaited<ReturnType<typeof readdir>>
   try {
-    entries = await readdir(SOLUTIONS_DIR)
-  } catch (err) {
-    // ENOENT (directory doesn't exist) → return empty files array
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      return NextResponse.json({ files: [] })
+    entries = await readdir(SOLUTIONS_DIR, { withFileTypes: true })
+  } catch (err: unknown) {
+    const nodeErr = err as NodeJS.ErrnoException
+    if (nodeErr.code === 'ENOENT') {
+      return NextResponse.json<ResearchResponse>({ files: [] })
     }
-    // Other errors → return empty files array (graceful degradation)
-    return NextResponse.json({ files: [] })
+    throw err
   }
 
-  // 3. Filter to valid research files
-  const validEntries = entries.filter(isValidResearchFile)
-  
-  // 4. Extract filenames (handle both strings and Dirent objects)
-  const validFilenames = validEntries.map((entry) =>
-    typeof entry === 'string' ? entry : entry.name
+  // 3. Filter: only .md files, skip _pending-apply.md, skip non-files
+  const mdEntries = entries.filter(
+    (e) => e.isFile() && e.name.endsWith('.md') && e.name !== SKIP_FILE
   )
 
-  // 4. Build file list with metadata
-  const files: ResearchFile[] = []
-
-  for (const filename of validFilenames) {
-    const filePath = join(SOLUTIONS_DIR, filename)
-
-    // Read content
-    const content = await readFileContent(filePath)
-    if (content === null) {
-      continue // Skip files we can't read
-    }
-
-    // Get stats
-    const stats = await getFileStats(filePath)
-    const modifiedAt = stats?.mtime ?? new Date()
-
-    // Build file entry
-    files.push({
-      filename,
-      title: extractTitle(content, filename),
-      preview: extractPreview(content),
-      content,
-      modified_at: modifiedAt.toISOString(),
-    })
+  if (mdEntries.length === 0) {
+    return NextResponse.json<ResearchResponse>({ files: [] })
   }
 
-  // 5. Sort by modified_at descending (newest first)
+  // 4. Read each file + stat in parallel, skip on error
+  const fileResults = await Promise.all(
+    mdEntries.map(async (entry): Promise<ResearchFile | null> => {
+      const filePath = `${SOLUTIONS_DIR}/${entry.name}`
+      try {
+        const [content, fileStat] = await Promise.all([
+          readFile(filePath, 'utf-8'),
+          stat(filePath).catch(() => null),
+        ])
+
+        const modified_at = fileStat
+          ? fileStat.mtime.toISOString()
+          : new Date().toISOString()
+
+        return {
+          filename: entry.name,
+          title: extractTitle(content, entry.name),
+          preview: extractPreview(content),
+          content,
+          modified_at,
+        }
+      } catch {
+        // Skip files that can't be read
+        return null
+      }
+    })
+  )
+
+  // 5. Filter nulls (skipped files)
+  const files = fileResults.filter((f): f is ResearchFile => f !== null)
+
+  // 6. Sort by modified_at descending (newest first)
   files.sort((a, b) => {
-    return new Date(b.modified_at).getTime() - new Date(a.modified_at).getTime()
+    const aTime = new Date(a.modified_at).getTime()
+    const bTime = new Date(b.modified_at).getTime()
+    return bTime - aTime
   })
 
-  // 6. Build and return response
-  const response: ResearchResponse = { files }
-  return NextResponse.json(response)
+  return NextResponse.json<ResearchResponse>({ files })
 }
