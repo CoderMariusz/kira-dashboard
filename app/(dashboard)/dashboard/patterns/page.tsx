@@ -20,6 +20,7 @@ import { Suspense, useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { usePatternPage } from '@/hooks/usePatternPage'
 import type { PatternCard, Lesson } from '@/types/patterns'
+import { PatternGrid } from '@/components/patterns/PatternGrid'
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const C = {
@@ -447,19 +448,11 @@ function PatternsPageContent() {
         filteredPatterns.length === 0 ? (
           <PatternsEmptyState query={urlQuery} />
         ) : (
-          <div
-            style={{
-              padding: '16px',
-              background: C.card,
-              borderRadius: '12px',
-              border: `1px solid ${C.border}`,
-              color: C.secondary,
-              fontSize: '13px',
-            }}
-          >
-            {/* Placeholder for STORY-8.5 — PatternCard list */}
-            Patterns content here ({filteredPatterns.length} wzorców)
-          </div>
+          <PatternGrid
+            patterns={filteredPatterns}
+            activeTag={urlTag || null}
+            onTagFilter={handleTagChange}
+          />
         )
       ) : (
         // Lessons tab
