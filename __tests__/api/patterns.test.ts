@@ -242,6 +242,26 @@ describe('GET /api/patterns', () => {
 
   // ── AC-4: Parsing date/model/domain from pattern lines ───────────────────
 
+  it('extracts date from anti-pattern line without em-dash separator (Bug 1 fix)', async () => {
+    mockUserSession()
+    const md = `## Pipeline
+- [2026-02-16] NIE używaj expired API keys
+`
+    mockReadFile
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce(md)
+      .mockResolvedValueOnce('')
+
+    const res = await GET(mockRequest())
+    const json = await res.json()
+
+    expect(json.patterns).toHaveLength(1)
+    const p = json.patterns[0]
+    expect(p.date).toBe('2026-02-16')
+    expect(p.text).toBe('NIE używaj expired API keys')
+    expect(p.type).toBe('ANTI_PATTERN')
+  })
+
   it('extracts date, model, domain, text from a full pattern line (AC-4)', async () => {
     mockUserSession()
     const md = `## Pipeline\n- [2026-02-17] [GLM-5] [frontend] — Parallel execution pattern works\n`
@@ -377,6 +397,39 @@ describe('GET /api/patterns', () => {
     expect(bug.root_cause).toBeTruthy()
     expect(bug.fix).toBeTruthy()
     expect(bug.lesson).toBeTruthy()
+  })
+
+  it('extracts multiline "What went wrong" section fully (Bug 2 fix)', async () => {
+    mockUserSession()
+    const mdWithMultiline = `### BUG-099: Multiline Test
+
+**What went wrong:**
+First line of the problem.
+Second line with more details.
+Third line explaining the impact.
+
+**Root cause:**
+Single line cause.
+
+**Fix:**
+The fix.
+
+**Lesson:**
+Learned.
+`
+    mockReadFile
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce(mdWithMultiline)
+
+    const res = await GET(mockRequest())
+    const json = await res.json()
+
+    const bug = json.lessons.find((l: any) => l.id === 'BUG-099')
+    expect(bug).toBeDefined()
+    expect(bug.body).toContain('First line of the problem')
+    expect(bug.body).toContain('Second line with more details')
+    expect(bug.body).toContain('Third line explaining the impact')
   })
 
   it('falls back to title when lesson field is missing (EC-2)', async () => {

@@ -96,11 +96,17 @@ async function tryReadFile(filePath: string): Promise<string | null> {
 // ─── Pattern line parser ──────────────────────────────────────────────────────
 
 /**
- * Pattern: `- [YYYY-MM-DD] [model?] [domain?] — text`
+ * Pattern: `- [YYYY-MM-DD] [model?] [domain?] — text` OR `- [YYYY-MM-DD] text` (no separator)
  * All bracket groups are optional.
  * Fallback: `- raw text` → date/model/domain = null, text = rest of line.
  */
 const RE_FULL_PATTERN = /^-\s+\[(\d{4}-\d{2}-\d{2})\](?:\s*\[([^\]]*)\])?(?:\s*\[([^\]]*)\])?\s*[—–-]{1,2}\s*(.+)$/
+
+/**
+ * Pattern with date but NO em-dash separator (e.g., anti-pattern lines)
+ * `- [YYYY-MM-DD] text` or `- [YYYY-MM-DD] [model] text`
+ */
+const RE_DATE_NO_SEPARATOR = /^-\s+\[(\d{4}-\d{2}-\d{2})\](?:\s*\[([^\]]*)\])?(?:\s*\[([^\]]*)\])?\s+(.+)$/
 
 /**
  * Match a line that starts with `- ` but has no date brackets.
@@ -116,13 +122,25 @@ interface ParsedPatternLine {
 }
 
 function parsePatternLine(line: string): ParsedPatternLine | null {
-  // Try full format first
+  // Try full format with em-dash separator first
   const full = RE_FULL_PATTERN.exec(line)
   if (full) {
     const [, date, second, third, text] = full
     // Determine if second/third bracket is model or domain:
     // Both are optional. If only one bracket present after date it could be
     // either model or domain — we store them positionally (second=model, third=domain).
+    return {
+      date:   date,
+      model:  second?.trim() || null,
+      domain: third?.trim() || null,
+      text:   text.trim(),
+    }
+  }
+
+  // Try pattern with date but no em-dash separator (anti-pattern lines)
+  const dateNoSep = RE_DATE_NO_SEPARATOR.exec(line)
+  if (dateNoSep) {
+    const [, date, second, third, text] = dateNoSep
     return {
       date:   date,
       model:  second?.trim() || null,
@@ -200,7 +218,8 @@ const RE_LESSON_HEADER = /^###\s+(BUG|LESSON|OBS)-(\d+):\s+(.+)$/
 function extractSubSection(body: string, labels: string[]): string | null {
   for (const label of labels) {
     // Match **Label:** at start of a line (flexible whitespace/punctuation)
-    const re = new RegExp(`\\*\\*${label}[:\\s]*\\*\\*\\s*\\n?([\\s\\S]*?)(?=\\*\\*[\\w ]+[:\\s]*\\*\\*|^---$|$)`, 'im')
+    // Note: NO 'm' flag so $ matches end-of-string, not end-of-line (fixes multiline truncation)
+    const re = new RegExp(`\\*\\*${label}[:\\s]*\\*\\*\\s*\\n?([\\s\\S]*?)(?=\\*\\*[\\w ]+[:\\s]*\\*\\*|^---$|$)`, 'i')
     const m = re.exec(body)
     if (m) {
       const text = m[1].trim()
