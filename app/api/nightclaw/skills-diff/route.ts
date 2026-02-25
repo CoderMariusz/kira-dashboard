@@ -58,7 +58,7 @@ function runGit(cmd: string): string {
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe'],
   })
-  return typeof output === 'string' ? output : output.toString()
+  return typeof output === 'string' ? output : String(output)
 }
 
 /**

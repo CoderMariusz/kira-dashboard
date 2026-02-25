@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { readdir, readFile, stat } from 'fs/promises'
+import { Dirent } from 'fs'
 import { requireAuth } from '@/lib/auth/requireRole'
 import type { RequireAuthResult } from '@/lib/auth/requireRole'
 
@@ -95,9 +96,9 @@ export async function GET(req?: Request): Promise<Response> {
   if (isErrorResponse(authResult)) return authResult
 
   // 2. Read solutions directory — graceful on ENOENT
-  let entries: Awaited<ReturnType<typeof readdir>>
+  let entries: Dirent[]
   try {
-    entries = await readdir(SOLUTIONS_DIR, { withFileTypes: true })
+    entries = await readdir(SOLUTIONS_DIR, { withFileTypes: true }) as Dirent[]
   } catch (err: unknown) {
     const nodeErr = err as NodeJS.ErrnoException
     if (nodeErr.code === 'ENOENT') {
@@ -108,7 +109,7 @@ export async function GET(req?: Request): Promise<Response> {
 
   // 3. Filter: only .md files, skip _pending-apply.md, skip non-files
   const mdEntries = entries.filter(
-    (e) => e.isFile() && e.name.endsWith('.md') && e.name !== SKIP_FILE
+    (e) => e.isFile() && (e.name as string).endsWith('.md') && e.name !== SKIP_FILE
   )
 
   if (mdEntries.length === 0) {
@@ -129,9 +130,10 @@ export async function GET(req?: Request): Promise<Response> {
           ? fileStat.mtime.toISOString()
           : new Date().toISOString()
 
+        const entryName = entry.name as string
         return {
-          filename: entry.name,
-          title: extractTitle(content, entry.name),
+          filename: entryName,
+          title: extractTitle(content, entryName),
           preview: extractPreview(content),
           content,
           modified_at,
