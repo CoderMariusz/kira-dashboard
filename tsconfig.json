@@ -44,6 +44,9 @@
   "exclude": [
     "node_modules",
     "archive",
-    "epics"
+    "epics",
+    "__tests__",
+    "jest.config.ts",
+    "jest.setup.ts"
   ]
 }
