@@ -22,7 +22,7 @@ jest.mock('next/headers', () => ({
   cookies: jest.fn().mockResolvedValue({
     getAll: () => [],
     set: jest.fn(),
-  }),
+  } as any),
 }));
 
 // Mock Anthropic SDK.
@@ -141,7 +141,7 @@ describe('POST /api/pipeline/prd-questions', () => {
       messages: {
         create: jest.fn().mockResolvedValue({
           content: [{ type: 'text', text: JSON.stringify(mockQuestionsResponse) }],
-        }),
+        } as any),
       },
     }));
 
