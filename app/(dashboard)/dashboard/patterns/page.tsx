@@ -23,6 +23,9 @@ import type { PatternCard, Lesson } from '@/types/patterns'
 import { PatternGrid } from '@/components/patterns/PatternGrid'
 import { LessonsTimeline } from '@/components/patterns/LessonsTimeline'
 import type { LessonSeverity } from '@/types/patterns'
+import { useUserRole } from '@/hooks/useUserRole'
+import { AddPatternModal } from '@/components/patterns/AddPatternModal'
+import { AddLessonModal } from '@/components/patterns/AddLessonModal'
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const C = {
@@ -332,6 +335,11 @@ function PatternsSearchBar({
 function PatternsPageContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
+  const { isAdmin }  = useUserRole()
+
+  // Modal state
+  const [patternModalOpen, setPatternModalOpen] = useState(false)
+  const [lessonModalOpen,  setLessonModalOpen]  = useState(false)
 
   // Read URL state
   const rawTab = searchParams.get('tab') ?? 'patterns'
@@ -428,6 +436,40 @@ function PatternsPageContent() {
         <p style={{ margin: '4px 0 0', fontSize: '13px', color: C.secondary }}>
           Baza wiedzy pipeline — wzorce, antywzorce i lekcje wyciągnięte z historii uruchomień
         </p>
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+            <button
+              onClick={() => setPatternModalOpen(true)}
+              style={{
+                background: C.accent,
+                border: 'none',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '13px',
+                fontWeight: 600,
+                padding: '8px 16px',
+                cursor: 'pointer',
+              }}
+            >
+              + Dodaj Pattern
+            </button>
+            <button
+              onClick={() => setLessonModalOpen(true)}
+              style={{
+                background: 'transparent',
+                border: `1px solid ${C.border}`,
+                borderRadius: '8px',
+                color: C.text,
+                fontSize: '13px',
+                fontWeight: 600,
+                padding: '8px 16px',
+                cursor: 'pointer',
+              }}
+            >
+              + Dodaj Lesson
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Search + Tags ── */}
@@ -470,6 +512,16 @@ function PatternsPageContent() {
           onSeverityChange={handleSeverityChange}
         />
       )}
+
+      {/* ── Modals ── */}
+      <AddPatternModal
+        isOpen={patternModalOpen}
+        onClose={() => setPatternModalOpen(false)}
+      />
+      <AddLessonModal
+        isOpen={lessonModalOpen}
+        onClose={() => setLessonModalOpen(false)}
+      />
     </div>
   )
 }
