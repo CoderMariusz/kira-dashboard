@@ -418,63 +418,8 @@ function NightClawPageContent() {
         )}
         {activeTab === 'digest' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* STORY-9.7: Date picker */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => {
-                  const d = new Date(selectedDate)
-                  d.setDate(d.getDate() - 1)
-                  setSelectedDate(d.toISOString().slice(0, 10))
-                }}
-                style={{
-                  padding: '4px 12px',
-                  background: COLORS.card,
-                  border: `1px solid ${COLORS.border}`,
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  color: COLORS.text,
-                  cursor: 'pointer',
-                }}
-              >
-                ← Poprzedni
-              </button>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
-                style={{
-                  padding: '4px 12px',
-                  background: COLORS.card,
-                  border: `1px solid ${COLORS.border}`,
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  color: COLORS.text,
-                  cursor: 'pointer',
-                  outline: 'none',
-                }}
-              />
-              <button
-                onClick={() => {
-                  const d = new Date(selectedDate)
-                  d.setDate(d.getDate() + 1)
-                  setSelectedDate(d.toISOString().slice(0, 10))
-                }}
-                style={{
-                  padding: '4px 12px',
-                  background: COLORS.card,
-                  border: `1px solid ${COLORS.border}`,
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  color: COLORS.text,
-                  cursor: 'pointer',
-                }}
-              >
-                Następny →
-              </button>
-            </div>
-
-            {/* STORY-9.7: Digest viewer */}
-            <DigestViewer initialDate={selectedDate} />
+            {/* STORY-9.7: Digest viewer (date picker is internal to DigestViewer) */}
+            <DigestViewer key={selectedDate} initialDate={selectedDate} />
 
             {/* STORY-9.7: 90-day run calendar */}
             <div>
