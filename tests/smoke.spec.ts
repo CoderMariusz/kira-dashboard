@@ -4,24 +4,14 @@
  * Verifies: no 500 errors, body visible, no critical console errors.
  * Auth-protected pages: just checks redirect/load (no real session needed).
  */
-import { test, expect, type Page } from '@playwright/test'
-
-// Collect non-favicon console errors
-async function collectErrors(page: Page): Promise<string[]> {
-  const errors: string[] = []
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') {
-      errors.push(msg.text())
-    }
-  })
-  return errors
-}
+import { test, expect, type Page, type ConsoleMessage } from '@playwright/test'
 
 // Routes to test — derived from app/ directory structure
 const publicRoutes = ['/login']
 
 const appRoutes = [
   '/dashboard',
+  '/dashboard/models',
   '/home',
   '/home/activity',
   '/home/analytics',
@@ -29,12 +19,13 @@ const appRoutes = [
   '/home/shopping',
   '/home/tasks',
   '/settings',
+  '/settings/users',
 ]
 
 // Helper: smoke test a single page
 async function smokePage(page: Page, route: string) {
   const errors: string[] = []
-  page.on('console', (msg) => {
+  page.on('console', (msg: ConsoleMessage) => {
     if (msg.type() === 'error') {
       errors.push(msg.text())
     }
@@ -85,7 +76,7 @@ test.describe('App pages', () => {
   for (const route of appRoutes) {
     test(`[smoke] ${route} — loads or redirects (no 500)`, async ({ page }) => {
       const errors: string[] = []
-      page.on('console', (msg) => {
+      page.on('console', (msg: ConsoleMessage) => {
         if (msg.type() === 'error') errors.push(msg.text())
       })
 
