@@ -319,11 +319,10 @@ function NightClawPageContent() {
 
   const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
 
-  // STORY-9.7 — date state for digest tab (not in URL to avoid Suspense issues)
+  // STORY-9.7 — date state for calendar ↔ DigestViewer sync
   const [selectedDate, setSelectedDate] = useState<string>(today)
 
   const { data: digest, isLoading: digestLoading, error: digestError, refresh: digestRefresh } = useNightClawDigest()
-  const { data: digestForDate, isLoading: digestDateLoading, error: digestDateError } = useNightClawDigest(selectedDate)
   const { data: history, isLoading: historyLoading, error: historyError } = useNightClawHistory()
 
   const isLoading = digestLoading || historyLoading
@@ -475,12 +474,7 @@ function NightClawPageContent() {
             </div>
 
             {/* STORY-9.7: Digest viewer */}
-            <DigestViewer
-              date={selectedDate}
-              isLoading={digestDateLoading}
-              markdown={digestForDate?.markdown}
-              error={digestDateError}
-            />
+            <DigestViewer initialDate={selectedDate} />
 
             {/* STORY-9.7: 90-day run calendar */}
             <div>
