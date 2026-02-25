@@ -27,7 +27,7 @@ function getLastNDates(n: number): string[] {
   for (let i = 0; i < n; i++) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
-    dates.push(d.toISOString().split('T')[0])
+    dates.push(d.toISOString().split('T')[0] ?? '')
   }
   return dates
 }
