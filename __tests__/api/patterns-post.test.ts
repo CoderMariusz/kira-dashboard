@@ -39,6 +39,13 @@ jest.mock('fs/promises', () => ({
   access: (...args: any[]) => mockAccess(...args),
 }))
 
+// Reset all mocks before each test
+beforeEach(() => {
+  jest.clearAllMocks()
+  // Default: file exists for access check
+  mockAccess.mockResolvedValue(undefined)
+})
+
 // ─── Imports (after mocks) ────────────────────────────────────────────────────
 
 import { POST as postPatterns, GET as getPatterns } from '@/app/api/patterns/route'
@@ -57,8 +64,6 @@ const PATTERNS_MD = `# Patterns — Co działa ✅
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('POST /api/patterns', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   // ── AC-AUTH: 401 without session ──────────────────────────────────────────
 
   it('returns 401 when unauthenticated (AC-AUTH)', async () => {
@@ -90,7 +95,7 @@ describe('POST /api/patterns', () => {
   it('appends PATTERN to patterns.md (AC-1)', async () => {
     mockAdminSession()
     mockReadFile.mockResolvedValueOnce(PATTERNS_MD)
-    mockAppendFile.mockResolvedValueOnce(undefined)
+    mockWriteFile.mockResolvedValueOnce(undefined)
 
     const res = await postPatterns(mockRequest({
       method: 'POST',
@@ -113,9 +118,9 @@ describe('POST /api/patterns', () => {
     expect(json.entry).toContain('backend')
     expect(json.entry).toContain('Kimi działa świetnie na medium tasks')
 
-    // Verify appendFile was called with correct file path and content
-    expect(mockAppendFile).toHaveBeenCalled()
-    const [filePath, content] = mockAppendFile.mock.calls[0]
+    // Verify writeFile was called with correct file path and content
+    expect(mockWriteFile).toHaveBeenCalled()
+    const [filePath, content] = mockWriteFile.mock.calls[0]
     expect(filePath).toContain('patterns.md')
     expect(content).toContain('Related: STORY-8.1')
   })
@@ -125,7 +130,7 @@ describe('POST /api/patterns', () => {
   it('appends ANTI_PATTERN to anti-patterns.md (AC-2)', async () => {
     mockAdminSession()
     mockReadFile.mockResolvedValueOnce('# Anti-patterns\n\n## Pipeline\n')
-    mockAppendFile.mockResolvedValueOnce(undefined)
+    mockWriteFile.mockResolvedValueOnce(undefined)
 
     const res = await postPatterns(mockRequest({
       method: 'POST',
@@ -140,9 +145,9 @@ describe('POST /api/patterns', () => {
     const json = await res.json()
     expect(json.success).toBe(true)
 
-    // Verify appendFile was called with anti-patterns.md path
-    expect(mockAppendFile).toHaveBeenCalled()
-    const [filePath] = mockAppendFile.mock.calls[0]
+    // Verify writeFile was called with anti-patterns.md path
+    expect(mockWriteFile).toHaveBeenCalled()
+    const [filePath] = mockWriteFile.mock.calls[0]
     expect(filePath).toContain('anti-patterns.md')
   })
 
@@ -258,8 +263,6 @@ describe('POST /api/patterns', () => {
 })
 
 describe('POST /api/lessons', () => {
-  beforeEach(() => jest.clearAllMocks())
-
   // ── AC-AUTH: 401 without session ──────────────────────────────────────────
 
   it('returns 401 when unauthenticated (AC-AUTH)', async () => {
@@ -434,8 +437,9 @@ describe('POST /api/lessons', () => {
 
   it('creates LESSONS_LEARNED.md if it does not exist (EC-1)', async () => {
     mockAdminSession()
+    // File doesn't exist (access throws ENOENT)
     const enoent = Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
-    mockAppendFile.mockRejectedValueOnce(enoent)
+    mockAccess.mockRejectedValueOnce(enoent)
     mockWriteFile.mockResolvedValueOnce(undefined)
 
     const res = await postLessons(mockRequest({
