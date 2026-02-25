@@ -21,7 +21,7 @@
  * Tab URL state: ?tab=overview|digest|research|stats
  */
 
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useNightClawDigest } from '@/hooks/useNightClawDigest'
 import { useNightClawHistory } from '@/hooks/useNightClawHistory'
@@ -317,22 +317,17 @@ function NightClawPageContent() {
 
   const activeTab = (searchParams.get('tab') ?? 'overview') as Tab
 
+  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+
+  // STORY-9.7 — date state for calendar ↔ DigestViewer sync
+  const [selectedDate, setSelectedDate] = useState<string>(today)
+
   const { data: digest, isLoading: digestLoading, error: digestError, refresh: digestRefresh } = useNightClawDigest()
   const { data: history, isLoading: historyLoading, error: historyError } = useNightClawHistory()
 
   const isLoading = digestLoading || historyLoading
 
-  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-  const selectedDate = searchParams.get('date') ?? today
-
   const lastEntry = history?.entries[0]
-
-  function handleDateSelect(date: string) {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('date', date)
-    params.set('tab', 'digest')
-    router.push(`/dashboard/nightclaw?${params.toString()}`)
-  }
 
   function handleTabChange(tab: Tab) {
     const params = new URLSearchParams(searchParams.toString())
@@ -422,9 +417,72 @@ function NightClawPageContent() {
           />
         )}
         {activeTab === 'digest' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '24px', alignItems: 'start' }}>
-            <DigestViewer key={selectedDate} initialDate={selectedDate} />
-            <RunCalendar selectedDate={selectedDate} onDateSelect={handleDateSelect} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* STORY-9.7: Date picker */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  const d = new Date(selectedDate)
+                  d.setDate(d.getDate() - 1)
+                  setSelectedDate(d.toISOString().slice(0, 10))
+                }}
+                style={{
+                  padding: '4px 12px',
+                  background: COLORS.card,
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  color: COLORS.text,
+                  cursor: 'pointer',
+                }}
+              >
+                ← Poprzedni
+              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={e => setSelectedDate(e.target.value)}
+                style={{
+                  padding: '4px 12px',
+                  background: COLORS.card,
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  color: COLORS.text,
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              />
+              <button
+                onClick={() => {
+                  const d = new Date(selectedDate)
+                  d.setDate(d.getDate() + 1)
+                  setSelectedDate(d.toISOString().slice(0, 10))
+                }}
+                style={{
+                  padding: '4px 12px',
+                  background: COLORS.card,
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  color: COLORS.text,
+                  cursor: 'pointer',
+                }}
+              >
+                Następny →
+              </button>
+            </div>
+
+            {/* STORY-9.7: Digest viewer */}
+            <DigestViewer initialDate={selectedDate} />
+
+            {/* STORY-9.7: 90-day run calendar */}
+            <div>
+              <h3 style={{ fontSize: '13px', fontWeight: 500, color: COLORS.muted, marginBottom: '12px' }}>
+                Historia runów (90 dni)
+              </h3>
+              <RunCalendar selectedDate={selectedDate} onDateSelect={setSelectedDate} />
+            </div>
           </div>
         )}
         {activeTab === 'research' && (
