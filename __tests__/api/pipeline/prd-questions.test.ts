@@ -29,10 +29,11 @@ jest.mock('@/lib/supabase/server', () => ({
 
 // Mock next/headers (cookies) — required by createClient even when mocked above
 jest.mock('next/headers', () => ({
-  cookies: jest.fn().mockResolvedValue({
-    getAll: () => [],
-    set: jest.fn(),
-  } as any),
+  cookies: jest.fn(() => {
+    const getAll = () => [];
+    const set = jest.fn();
+    return Promise.resolve({ getAll, set });
+  }),
 }));
 
 // Mock Anthropic SDK.
@@ -147,12 +148,14 @@ describe('POST /api/pipeline/prd-questions', () => {
 
     // Set up the mock Anthropic constructor to return an instance
     // whose messages.create resolves with the expected AI response
+    const createMock = jest.fn(() =>
+      Promise.resolve({
+        content: [{ type: 'text', text: JSON.stringify(mockQuestionsResponse) }],
+      })
+    );
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'text', text: JSON.stringify(mockQuestionsResponse) }],
-        } as any),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
@@ -199,10 +202,10 @@ describe('POST /api/pipeline/prd-questions', () => {
   it('TC-5: returns 503 when Anthropic API fails', async () => {
     mockAdminSession();
 
+    const createMock = jest.fn(() => Promise.reject(new Error('API Error')));
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockRejectedValue(new Error('API Error')),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
@@ -223,12 +226,10 @@ describe('POST /api/pipeline/prd-questions', () => {
   it('TC-6: returns 422 when AI returns non-text content block', async () => {
     mockAdminSession();
 
+    const createMock = jest.fn(() => Promise.resolve({ content: [{ type: 'image' }] }));
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'image' }],
-        }),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
@@ -249,12 +250,14 @@ describe('POST /api/pipeline/prd-questions', () => {
   it('TC-7: returns 422 when AI returns invalid JSON', async () => {
     mockAdminSession();
 
+    const createMock = jest.fn(() =>
+      Promise.resolve({
+        content: [{ type: 'text', text: 'not valid json' }],
+      })
+    );
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'text', text: 'not valid json' }],
-        }),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
@@ -275,12 +278,14 @@ describe('POST /api/pipeline/prd-questions', () => {
   it('TC-8: returns 422 when AI returns empty questions array', async () => {
     mockAdminSession();
 
+    const createMock = jest.fn(() =>
+      Promise.resolve({
+        content: [{ type: 'text', text: JSON.stringify({ questions: [] }) }],
+      })
+    );
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'text', text: JSON.stringify({ questions: [] }) }],
-        }),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
@@ -308,12 +313,14 @@ describe('POST /api/pipeline/prd-questions', () => {
       ],
     };
 
+    const createMock = jest.fn(() =>
+      Promise.resolve({
+        content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
+      })
+    );
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
-        }),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
@@ -341,12 +348,14 @@ describe('POST /api/pipeline/prd-questions', () => {
       ],
     };
 
+    const createMock = jest.fn(() =>
+      Promise.resolve({
+        content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
+      })
+    );
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
-        }),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
@@ -374,12 +383,14 @@ describe('POST /api/pipeline/prd-questions', () => {
       ],
     };
 
+    const createMock = jest.fn(() =>
+      Promise.resolve({
+        content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
+      })
+    );
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
-        }),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
@@ -412,12 +423,14 @@ describe('POST /api/pipeline/prd-questions', () => {
       ],
     };
 
+    const createMock = jest.fn(() =>
+      Promise.resolve({
+        content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
+      })
+    );
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'text', text: JSON.stringify(invalidResponse) }],
-        }),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
@@ -447,12 +460,14 @@ describe('POST /api/pipeline/prd-questions', () => {
       })),
     };
 
+    const createMock = jest.fn(() =>
+      Promise.resolve({
+        content: [{ type: 'text', text: JSON.stringify(manyQuestions) }],
+      })
+    );
+
     getAnthropicMock().mockImplementationOnce(() => ({
-      messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'text', text: JSON.stringify(manyQuestions) }],
-        }),
-      },
+      messages: { create: createMock },
     }));
 
     const req = mockRequest({
