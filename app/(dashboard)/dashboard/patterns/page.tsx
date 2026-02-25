@@ -21,6 +21,8 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { usePatternPage } from '@/hooks/usePatternPage'
 import type { PatternCard, Lesson } from '@/types/patterns'
 import { PatternGrid } from '@/components/patterns/PatternGrid'
+import { LessonsTimeline } from '@/components/patterns/LessonsTimeline'
+import type { LessonSeverity } from '@/types/patterns'
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const C = {
@@ -334,8 +336,9 @@ function PatternsPageContent() {
   // Read URL state
   const rawTab = searchParams.get('tab') ?? 'patterns'
   const activeTab: TabValue = rawTab === 'lessons' ? 'lessons' : 'patterns'
-  const urlQuery = searchParams.get('q')  ?? ''
-  const urlTag   = searchParams.get('tag') ?? ''
+  const urlQuery    = searchParams.get('q')        ?? ''
+  const urlTag      = searchParams.get('tag')      ?? ''
+  const urlSeverity = searchParams.get('severity') as LessonSeverity | null
 
   // Local search input value (pre-debounce)
   const [searchInput, setSearchInput] = useState(urlQuery)
@@ -347,11 +350,12 @@ function PatternsPageContent() {
 
   // ─── URL updater ─────────────────────────────────────────────────────────
   const updateUrl = useCallback(
-    (tab: TabValue, q: string, tag: string) => {
+    (tab: TabValue, q: string, tag: string, severity: string) => {
       const params = new URLSearchParams()
       if (tab !== 'patterns') params.set('tab', tab)
-      if (q)   params.set('q',   q)
-      if (tag) params.set('tag', tag)
+      if (q)        params.set('q',        q)
+      if (tag)      params.set('tag',      tag)
+      if (severity) params.set('severity', severity)
       const qs = params.toString()
       router.replace(`/dashboard/patterns${qs ? `?${qs}` : ''}`)
     },
@@ -360,11 +364,15 @@ function PatternsPageContent() {
 
   // ─── Handlers ────────────────────────────────────────────────────────────
   function handleTabChange(tab: TabValue) {
-    updateUrl(tab, urlQuery, urlTag)
+    updateUrl(tab, urlQuery, urlTag, urlSeverity ?? '')
   }
 
   function handleTagChange(tag: string) {
-    updateUrl(activeTab, urlQuery, tag)
+    updateUrl(activeTab, urlQuery, tag, urlSeverity ?? '')
+  }
+
+  function handleSeverityChange(severity: LessonSeverity | null) {
+    updateUrl(activeTab, urlQuery, urlTag, severity ?? '')
   }
 
   // Search input: update local state immediately, debounce URL update 300ms
@@ -374,7 +382,7 @@ function PatternsPageContent() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      updateUrl(activeTab, searchInput, urlTag)
+      updateUrl(activeTab, searchInput, urlTag, urlSeverity ?? '')
     }, 300)
     return () => clearTimeout(timer)
     // We intentionally only re-run when searchInput changes
@@ -456,23 +464,11 @@ function PatternsPageContent() {
         )
       ) : (
         // Lessons tab
-        filteredLessons.length === 0 ? (
-          <PatternsEmptyState query={urlQuery} />
-        ) : (
-          <div
-            style={{
-              padding: '16px',
-              background: C.card,
-              borderRadius: '12px',
-              border: `1px solid ${C.border}`,
-              color: C.secondary,
-              fontSize: '13px',
-            }}
-          >
-            {/* Placeholder for STORY-8.6 — LessonItem list */}
-            Lessons content here ({filteredLessons.length} lekcji)
-          </div>
-        )
+        <LessonsTimeline
+          lessons={filteredLessons}
+          activeSeverity={urlSeverity}
+          onSeverityChange={handleSeverityChange}
+        />
       )}
     </div>
   )
