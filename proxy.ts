@@ -1,10 +1,33 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+/**
+ * proxy.ts — Next.js 16 App Router proxy (replaces middleware.ts)
+ * STORY-7.2: Protects authenticated routes including /dashboard/eval.
+ *
+ * Any unauthenticated request to a protected path is redirected to /login.
+ * Role-based write restrictions are enforced inside API routes via requireAdmin().
+ *
+ * Note: Next.js 16 uses proxy.ts instead of middleware.ts.
+ * The exported function must be named `proxy`.
+ */
 
-export function proxy(_request: NextRequest) {
-  return NextResponse.next();
+import { type NextRequest, NextResponse } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
+
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  return updateSession(request);
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/home/:path*', '/settings/:path*'],
+  matcher: [
+    /*
+     * Match all request paths EXCEPT:
+     *  - _next/static (static files)
+     *  - _next/image (image optimisation)
+     *  - favicon.ico, sitemap.xml, robots.txt, manifest.*
+     *  - /login (public auth page)
+     *
+     * Note: /api/auth/logout is NOT excluded (it requires session check for security).
+     * This covers /dashboard/eval automatically (AC-1).
+     */
+    '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|manifest\\..+|login).*)',
+  ],
 };
