@@ -1,5 +1,9 @@
 import '@testing-library/jest-dom';
 
+// Load .env.test so that NEXT_PUBLIC_* vars are available in Jest
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('dotenv').config({ path: require('path').resolve(process.cwd(), '.env.test') });
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require('whatwg-fetch');
 
