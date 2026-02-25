@@ -33,10 +33,7 @@ function buildClient(
 ) {
   const selectChain = {
     eq: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue({
-      data: role,
-      error: roleError,
-    }),
+    single: jest.fn().mockResolvedValue({ data: role, error: roleError } as any),
   };
 
   const fromChain = {
@@ -45,10 +42,7 @@ function buildClient(
 
   return {
     auth: {
-      getUser: jest.fn().mockResolvedValue({
-        data: { user },
-        error: authError,
-      }),
+      getUser: jest.fn().mockResolvedValue({ data: { user }, error: authError } as any),
     },
     from: jest.fn().mockReturnValue(fromChain),
   };
@@ -57,7 +51,6 @@ function buildClient(
 // ─── Internal: get the mocked createClient function ──────────────────────────
 
 function getMockedCreateClient(): jest.Mock {
-  // jest.requireMock always returns the mock module (even in ESM transform mode)
   const mod = jest.requireMock('@/lib/supabase/server') as {
     createClient: jest.Mock;
   };
@@ -66,40 +59,18 @@ function getMockedCreateClient(): jest.Mock {
 
 // ─── Mock helpers ─────────────────────────────────────────────────────────────
 
-/**
- * Makes createClient() resolve with an ADMIN-authenticated Supabase client.
- */
 export function mockAdminSession(overrides: Partial<MockSupabaseUser> = {}): void {
-  const user: MockSupabaseUser = {
-    id: 'admin-user-id',
-    email: 'admin@kira.local',
-    ...overrides,
-  };
-  getMockedCreateClient().mockResolvedValue(
-    buildClient(user, null, { role: 'ADMIN' }, null)
-  );
+  const user: MockSupabaseUser = { id: 'admin-user-id', email: 'admin@kira.local', ...overrides };
+  getMockedCreateClient().mockResolvedValue(buildClient(user, null, { role: 'ADMIN' }, null) as any);
 }
 
-/**
- * Makes createClient() resolve with a plain USER-authenticated Supabase client.
- */
 export function mockUserSession(overrides: Partial<MockSupabaseUser> = {}): void {
-  const user: MockSupabaseUser = {
-    id: 'plain-user-id',
-    email: 'user@kira.local',
-    ...overrides,
-  };
-  getMockedCreateClient().mockResolvedValue(
-    buildClient(user, null, { role: 'USER' }, null)
-  );
+  const user: MockSupabaseUser = { id: 'plain-user-id', email: 'user@kira.local', ...overrides };
+  getMockedCreateClient().mockResolvedValue(buildClient(user, null, { role: 'USER' }, null) as any);
 }
 
-/**
- * Makes createClient() resolve with a Supabase client that has no session
- * (getUser returns null user + an error).
- */
 export function mockNoSession(): void {
   getMockedCreateClient().mockResolvedValue(
-    buildClient(null, new Error('Not authenticated'), null, null)
+    buildClient(null, new Error('Not authenticated'), null, null) as any
   );
 }

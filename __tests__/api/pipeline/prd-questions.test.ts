@@ -10,11 +10,7 @@
 
 import { jest } from '@jest/globals';
 
-// ─── Shared mock for Anthropic messages.create ───────────────────────────────
-
-const mockAnthropicCreate = jest.fn();
-
-// ─── Module mocks (must be declared before imports) ──────────────────────────
+// ─── Module mocks ─────────────────────────────────────────────────────────────
 
 // Mock Supabase server client — controlled per-test via helpers
 jest.mock('@/lib/supabase/server', () => ({
@@ -26,23 +22,41 @@ jest.mock('next/headers', () => ({
   cookies: jest.fn().mockResolvedValue({
     getAll: () => [],
     set: jest.fn(),
-  }),
+  } as any),
 }));
 
-// Mock Anthropic SDK — `new Anthropic()` returns an object with messages.create
+// Mock Anthropic SDK.
+// The factory is self-contained (no external variable references) to avoid
+// ESM hoisting issues. We access the create mock via jest.requireMock() later.
 jest.mock('@anthropic-ai/sdk', () => ({
+  __esModule: true,
   default: jest.fn().mockImplementation(() => ({
     messages: {
-      create: mockAnthropicCreate,
+      create: jest.fn(),
     },
   })),
 }));
 
-// ─── Imports (after mocks) ───────────────────────────────────────────────────
+// ─── Imports ─────────────────────────────────────────────────────────────────
 
 import { POST } from '@/app/api/pipeline/prd-questions/route';
 import { mockAdminSession, mockNoSession } from '@/__tests__/helpers/auth';
 import { mockRequest } from '@/__tests__/helpers/fetch';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Returns the `messages.create` mock from the currently-instantiated
+ * Anthropic mock. Must be called AFTER POST() so that `new Anthropic()`
+ * has been called inside the route handler.
+ *
+ * For TC-3 we call it BEFORE POST by calling it inside the mockImplementation.
+ */
+function getAnthropicMock() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mod = jest.requireMock('@anthropic-ai/sdk') as { default: jest.MockedClass<any> };
+  return mod.default;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -57,7 +71,8 @@ Integracja z kalendarzem i powiadomieniami e-mail jest wymagana.
 
 describe('POST /api/pipeline/prd-questions', () => {
   beforeEach(() => {
-    mockAnthropicCreate.mockReset();
+    // Reset instance tracking between tests so mock.results stays clean
+    getAnthropicMock().mockClear();
   });
 
   // ── TC-1: 401 Unauthorized (no session) ────────────────────────────────────
@@ -86,7 +101,7 @@ describe('POST /api/pipeline/prd-questions', () => {
     const req = mockRequest({
       method: 'POST',
       url: 'http://localhost/api/pipeline/prd-questions',
-      body: { prd_text: 'Za krótkie PRD' }, // < 50 chars
+      body: { prd_text: 'Za krótkie PRD' }, // << 50 chars
     });
 
     const res = await POST(req);
@@ -101,23 +116,34 @@ describe('POST /api/pipeline/prd-questions', () => {
   it('TC-3: returns 200 with questions array when session is admin and PRD is valid', async () => {
     mockAdminSession();
 
-    const mockQuestions = {
+    const mockQuestionsResponse = {
       questions: [
         { id: 'q1', text: 'Kto jest głównym użytkownikiem?', type: 'text', required: true },
         {
           id: 'q2',
-          text: 'Który zakres jest priorytetem?',
+          text: 'Który zakres jest priorytetem MVP?',
           type: 'choice',
           options: ['MVP', 'Pełna wersja', 'Faza testów'],
           required: true,
         },
-        { id: 'q3', text: 'Jakie są kluczowe przepływy użytkownika?', type: 'text', required: true },
+        {
+          id: 'q3',
+          text: 'Jakie są kluczowe przepływy użytkownika?',
+          type: 'text',
+          required: true,
+        },
       ],
     };
 
-    mockAnthropicCreate.mockResolvedValue({
-      content: [{ type: 'text', text: JSON.stringify(mockQuestions) }],
-    });
+    // Set up the mock Anthropic constructor to return an instance
+    // whose messages.create resolves with the expected AI response
+    getAnthropicMock().mockImplementationOnce(() => ({
+      messages: {
+        create: jest.fn().mockResolvedValue({
+          content: [{ type: 'text', text: JSON.stringify(mockQuestionsResponse) }],
+        } as any),
+      },
+    }));
 
     const req = mockRequest({
       method: 'POST',
