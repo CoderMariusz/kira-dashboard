@@ -9,7 +9,7 @@
  *  TC-4  422 — self-deletion blocked
  *  TC-5  404 — target user not found in user_roles
  *  TC-6  422 — deleting last ADMIN blocked
- *  TC-7  200 — happy path: user removed from user_roles
+ *  TC-7  200 — happy path: user removed from user_roles only (Auth account stays)
  *  TC-8  500 — delete query error
  */
 
@@ -38,7 +38,6 @@ jest.mock('@/lib/supabase/server', () => ({ createClient: jest.fn() }))
 // ─── Admin client mock ────────────────────────────────────────────────────────
 
 const mockMaybeSingle = jest.fn()
-const mockCountSelect = jest.fn()
 const mockDeleteEq = jest.fn()
 const mockAuthDeleteUser = jest.fn()
 
@@ -134,18 +133,19 @@ describe('DELETE /api/users/[id]', () => {
     expect(res.status).toBe(404)
   })
 
-  // TC-7: happy path (HELPER user)
+  // TC-7: happy path — Auth account stays (only revoke from user_roles per spec)
 
-  it('TC-7: returns 200 when HELPER user deleted from user_roles', async () => {
+  it('TC-7: returns 200 with { success: true } and does NOT delete Auth account', async () => {
     mockAdminSession({ id: ADMIN_ID })
     mockMaybeSingle.mockResolvedValue({ data: { role: 'HELPER' }, error: null })
     mockDeleteEq.mockResolvedValue({ error: null })
-    mockAuthDeleteUser.mockResolvedValue({ error: null })
     const req = mockRequest({ method: 'DELETE' })
     const res = await DELETE(req, makeParams(TARGET_ID))
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.ok).toBe(true)
+    expect(body.success).toBe(true)
+    // Critical: Supabase Auth account stays — only user_roles row removed
+    expect(mockAuthDeleteUser).not.toHaveBeenCalled()
   })
 
   // TC-8: delete error

@@ -9,7 +9,7 @@
  *  TC-4  422 — self-modification blocked
  *  TC-5  404 — target user not found in user_roles
  *  TC-6  422 — demoting last ADMIN blocked
- *  TC-7  200 — happy path: role updated
+ *  TC-7  200 — happy path: { success: true, user: UserWithRole }
  *  TC-8  500 — update query error
  */
 
@@ -37,10 +37,9 @@ jest.mock('@/lib/supabase/server', () => ({ createClient: jest.fn() }))
 
 // ─── Admin client mock ────────────────────────────────────────────────────────
 
-// We track calls per table query via a shared control object
 const mockMaybeSingle = jest.fn()
-const mockCountHead = jest.fn()
 const mockUpdate = jest.fn()
+const mockGetUserById = jest.fn()
 
 jest.mock('@/lib/supabase/admin', () => ({
   createAdminClient: jest.fn(() => ({
@@ -48,7 +47,6 @@ jest.mock('@/lib/supabase/admin', () => ({
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           maybeSingle: jest.fn().mockImplementation(() => mockMaybeSingle()),
-          // for count queries:
         }),
         count: undefined,
       }),
@@ -56,6 +54,11 @@ jest.mock('@/lib/supabase/admin', () => ({
         eq: jest.fn().mockImplementation(() => mockUpdate()),
       }),
     })),
+    auth: {
+      admin: {
+        getUserById: jest.fn((...args: any[]) => mockGetUserById(...args)),
+      },
+    },
   })),
 }))
 
@@ -138,17 +141,27 @@ describe('PATCH /api/users/[id]/role', () => {
     expect(res.status).toBe(404)
   })
 
-  // TC-7: happy path
+  // TC-7: happy path — returns { success: true, user: UserWithRole } per spec
 
-  it('TC-7: returns 200 when role updated successfully', async () => {
+  it('TC-7: returns 200 with { success: true, user: UserWithRole }', async () => {
     mockAdminSession({ id: ADMIN_ID })
-    mockMaybeSingle.mockResolvedValue({ data: { role: 'HELPER' }, error: null })
+    // 1st maybeSingle: target lookup; 2nd: refetch after update
+    mockMaybeSingle
+      .mockResolvedValueOnce({ data: { role: 'HELPER' }, error: null })
+      .mockResolvedValueOnce({ data: { role: 'HELPER_PLUS', invited_at: null, invited_by: null }, error: null })
     mockUpdate.mockResolvedValue({ error: null })
+    mockGetUserById.mockResolvedValue({ data: { user: { email: 'target@kira.local' } }, error: null })
     const req = mockRequest({ method: 'PATCH', body: { role: 'HELPER_PLUS' } })
     const res = await PATCH(req, makeParams(TARGET_ID))
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.ok).toBe(true)
+    expect(body.success).toBe(true)
+    expect(body.user).toBeDefined()
+    expect(body.user.id).toBe(TARGET_ID)
+    expect(body.user).toHaveProperty('email')
+    expect(body.user).toHaveProperty('role')
+    expect(body.user).toHaveProperty('invited_at')
+    expect(body.user).toHaveProperty('invited_by_email')
   })
 
   // TC-8: update error
