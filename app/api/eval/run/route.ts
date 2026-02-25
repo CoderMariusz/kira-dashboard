@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { exec } from 'child_process'
 import { randomUUID } from 'crypto'
 import { evalStore, cleanupOldRuns } from '@/lib/eval-store'
+import { requireAdmin } from '@/lib/auth/requireRole'
 
 const EVAL_TIMEOUT_MS = 5 * 60 * 1000
 const MAX_BUFFER_BYTES = 50 * 1024 * 1024
@@ -74,6 +75,10 @@ function runEvalAsync(runId: string, command: string): void {
 }
 
 export async function POST(): Promise<Response> {
+  // Auth: only ADMIN can trigger eval runs
+  const authResult = await requireAdmin()
+  if (authResult instanceof Response) return authResult
+
   const bridgeDir = process.env['BRIDGE_DIR']
 
   if (!bridgeDir) {
