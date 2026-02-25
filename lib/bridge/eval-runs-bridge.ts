@@ -121,7 +121,7 @@ cur.execute("""
 task_results = []
 for r in cur.fetchall():
   task_results.append({"id":r["id"],"run_id":r["run_id"],"task_id":r["task_id"],"actual_output":r["actual_output"],"passed":bool(r["passed"]),"diff_score":float(r["diff_score"]),"created_at":r["created_at"] or "","task_prompt":r["task_prompt"],"task_category":r["task_category"]})
-cur.execute("SELECT id FROM eval_runs WHERE started_at<(SELECT started_at FROM eval_runs WHERE id=?) AND id IS NOT NULL ORDER BY started_at DESC LIMIT 1", (${JSON.stringify(safe)},))
+cur.execute("SELECT id FROM eval_runs WHERE started_at<(SELECT started_at FROM eval_runs WHERE id=?) AND id IS NOT NULL AND status = 'completed' ORDER BY started_at DESC LIMIT 1", (${JSON.stringify(safe)},))
 prev_row = cur.fetchone()
 prev_run_id = prev_row["id"] if prev_row else None
 prev_task_results = []
