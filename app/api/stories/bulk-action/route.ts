@@ -17,6 +17,9 @@ const CLI_TIMEOUT_MS = 10_000
 const SLEEP_MS = 200
 
 const BRIDGE_DIR = '/Users/mariuszkrawczyk/codermariusz/kira'
+const BRIDGE_CLI_CMD =
+  process.env.BRIDGE_CLI_CMD ??
+  `cd "${BRIDGE_DIR}" && source .venv/bin/activate && python -m bridge.cli`
 
 interface BulkResult {
   id: string
@@ -150,11 +153,11 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       if (action === 'advance') {
         const status = payloadObj['status'] as string
-        command = `cd "${BRIDGE_DIR}" && source .venv/bin/activate && python -m bridge.cli advance ${storyId} --to ${status} --project kira-dashboard`
+        command = `${BRIDGE_CLI_CMD} advance ${storyId} --to ${status} --project kira-dashboard`
       } else {
         // assign_model
         const model = payloadObj['model'] as string
-        command = `cd "${BRIDGE_DIR}" && source .venv/bin/activate && python -m bridge.cli start-story ${storyId} --model ${model} --worker bulk --project kira-dashboard`
+        command = `${BRIDGE_CLI_CMD} start-story ${storyId} --model ${model} --worker bulk --project kira-dashboard`
       }
 
       const output = execSync(command, {
