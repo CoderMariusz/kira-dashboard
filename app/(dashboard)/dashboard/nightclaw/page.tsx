@@ -21,6 +21,7 @@
  * Tab URL state: ?tab=overview|digest|research|stats
  */
 
+import { Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useNightClawDigest } from '@/hooks/useNightClawDigest'
 import { useNightClawHistory } from '@/hooks/useNightClawHistory'
@@ -306,9 +307,9 @@ function OverviewTab({ summary, isLoading, error, refresh, historyError, lastRun
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Page Content (uses useSearchParams — must be wrapped in Suspense) ────────
 
-export default function NightClawPage() {
+function NightClawPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -428,5 +429,21 @@ export default function NightClawPage() {
       </div>
 
     </div>
+  )
+}
+
+// ─── Page export — wraps content in Suspense for useSearchParams ──────────────
+
+export default function NightClawPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ padding: '20px', color: COLORS.muted, fontSize: '13px' }}>
+          Ładowanie NightClaw…
+        </div>
+      }
+    >
+      <NightClawPageContent />
+    </Suspense>
   )
 }
