@@ -30,7 +30,8 @@ interface StatsResponse {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const BRIDGE_DB = '/Users/mariuszkrawczyk/codermariusz/kira/data/bridge.db'
+const BRIDGE_DB =
+  process.env.BRIDGE_DB_PATH ?? '/Users/mariuszkrawczyk/codermariusz/kira/data/bridge.db'
 const CLI_TIMEOUT = 15_000
 const CACHE_HEADER = 's-maxage=30, stale-while-revalidate=60'
 
