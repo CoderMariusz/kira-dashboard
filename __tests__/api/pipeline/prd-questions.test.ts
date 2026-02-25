@@ -18,12 +18,17 @@ jest.mock('@/lib/supabase/server', () => ({
 }));
 
 // Mock next/headers (cookies) — required by createClient even when mocked above
-jest.mock('next/headers', () => ({
-  cookies: jest.fn().mockResolvedValue({
+jest.mock('next/headers', () => {
+  const setMock = jest.fn() as jest.Mock<any>;
+  const cookiesMock = jest.fn() as jest.Mock<any>;
+  cookiesMock.mockResolvedValue({
     getAll: () => [],
-    set: jest.fn(),
-  }),
-}));
+    set: setMock,
+  });
+  return {
+    cookies: cookiesMock,
+  };
+});
 
 // Mock Anthropic SDK.
 // The factory is self-contained (no external variable references) to avoid
@@ -54,7 +59,7 @@ import { mockRequest } from '@/__tests__/helpers/fetch';
  */
 function getAnthropicMock() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mod = jest.requireMock('@anthropic-ai/sdk') as { default: jest.MockedClass<any> };
+  const mod = jest.requireMock('@anthropic-ai/sdk') as { default: jest.Mock<any> };
   return mod.default;
 }
 
@@ -137,11 +142,13 @@ describe('POST /api/pipeline/prd-questions', () => {
 
     // Set up the mock Anthropic constructor to return an instance
     // whose messages.create resolves with the expected AI response
-    getAnthropicMock().mockImplementationOnce(() => ({
+    const createMock = jest.fn() as jest.Mock<any>;
+    createMock.mockResolvedValue({
+      content: [{ type: 'text', text: JSON.stringify(mockQuestionsResponse) }],
+    });
+    (getAnthropicMock() as jest.Mock<any>).mockImplementationOnce(() => ({
       messages: {
-        create: jest.fn().mockResolvedValue({
-          content: [{ type: 'text', text: JSON.stringify(mockQuestionsResponse) }],
-        }),
+        create: createMock,
       },
     }));
 

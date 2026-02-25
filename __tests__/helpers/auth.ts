@@ -32,34 +32,34 @@ function buildClient(
   roleError: Error | null
 ) {
   const selectChain = {
-    eq: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue({
+    eq: (jest.fn() as jest.Mock<any>).mockReturnThis(),
+    single: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       data: role,
       error: roleError,
     }),
   };
 
   const fromChain = {
-    select: jest.fn().mockReturnValue(selectChain),
+    select: (jest.fn() as jest.Mock<any>).mockReturnValue(selectChain),
   };
 
   return {
     auth: {
-      getUser: jest.fn().mockResolvedValue({
+      getUser: (jest.fn() as jest.Mock<any>).mockResolvedValue({
         data: { user },
         error: authError,
       }),
     },
-    from: jest.fn().mockReturnValue(fromChain),
+    from: (jest.fn() as jest.Mock<any>).mockReturnValue(fromChain),
   };
 }
 
 // ─── Internal: get the mocked createClient function ──────────────────────────
 
-function getMockedCreateClient(): jest.Mock {
+function getMockedCreateClient(): jest.Mock<any> {
   // jest.requireMock always returns the mock module (even in ESM transform mode)
   const mod = jest.requireMock('@/lib/supabase/server') as {
-    createClient: jest.Mock;
+    createClient: jest.Mock<any>;
   };
   return mod.createClient;
 }
@@ -75,7 +75,7 @@ export function mockAdminSession(overrides: Partial<MockSupabaseUser> = {}): voi
     email: 'admin@kira.local',
     ...overrides,
   };
-  getMockedCreateClient().mockResolvedValue(
+  (getMockedCreateClient() as jest.Mock<any>).mockResolvedValue(
     buildClient(user, null, { role: 'ADMIN' }, null)
   );
 }
@@ -89,7 +89,7 @@ export function mockUserSession(overrides: Partial<MockSupabaseUser> = {}): void
     email: 'user@kira.local',
     ...overrides,
   };
-  getMockedCreateClient().mockResolvedValue(
+  (getMockedCreateClient() as jest.Mock<any>).mockResolvedValue(
     buildClient(user, null, { role: 'USER' }, null)
   );
 }
@@ -99,7 +99,7 @@ export function mockUserSession(overrides: Partial<MockSupabaseUser> = {}): void
  * (getUser returns null user + an error).
  */
 export function mockNoSession(): void {
-  getMockedCreateClient().mockResolvedValue(
+  (getMockedCreateClient() as jest.Mock<any>).mockResolvedValue(
     buildClient(null, new Error('Not authenticated'), null, null)
   );
 }
