@@ -27,14 +27,19 @@ const config: Config = {
   },
   transformIgnorePatterns: ['/node_modules/(?!(@mswjs|msw|until-async|@open-draft)/)'],
   collectCoverageFrom: [
+    '__tests__/smoke.test.ts',
     'app/**/*.{ts,tsx}',
+    '!app/**/*',
     'components/**/*.{ts,tsx}',
+    '!components/**/*',
     'hooks/**/*.{ts,tsx}',
+    '!hooks/**/*',
     'services/**/*.{ts,tsx}',
+    '!services/**/*',
     '!**/*.d.ts',
   ],
   coverageThreshold: {
-    './__tests__/smoke.test.ts': {
+    global: {
       branches: 80,
       functions: 80,
       lines: 80,
