@@ -3,8 +3,9 @@
 // components/eval/EvalTab.tsx
 // Główny kontener zakładki Eval.
 // Wywołuje hooki useEval() i useRuns(), przekazuje dane do paneli.
+// STORY-7.8: dodano RunHistoryTimeline + RunDetailPanel pod istniejącymi panelami.
 
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { CircleHelp } from 'lucide-react'
 import { useEval } from '@/hooks/useEval'
 import { useRuns } from '@/hooks/useRuns'
@@ -16,6 +17,8 @@ import {
 import EvalFrameworkPanel from './EvalFrameworkPanel'
 import CostTrackerPanel from './CostTrackerPanel'
 import EvalInfoPanel from './EvalInfoPanel'
+import RunHistoryTimeline from './RunHistoryTimeline'
+import RunDetailPanel from './RunDetailPanel'
 
 function EvalTabContent() {
   const {
@@ -27,6 +30,13 @@ function EvalTabContent() {
   } = useEval()
 
   const { runs, loading: runsLoading } = useRuns()
+
+  // STORY-7.8 — selected run state for history timeline + detail panel
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
+
+  const handleSelectRun = (runId: string) => {
+    setSelectedRunId((prev) => (prev === runId ? null : runId))
+  }
 
   return (
     <div
@@ -77,6 +87,7 @@ function EvalTabContent() {
         </Popover>
       </div>
 
+      {/* Existing panels — DO NOT MODIFY */}
       <EvalInfoPanel />
 
       <EvalFrameworkPanel
@@ -87,13 +98,60 @@ function EvalTabContent() {
         isOffline={evalOffline}
       />
       <CostTrackerPanel runs={runs} isLoading={runsLoading} />
+
+      {/* ── STORY-7.8: Run History section ───────────────────────────────── */}
+      {/* Responsive layout:
+          Desktop (≥1024px): RunHistoryTimeline 300px left, RunDetailPanel flex-1 right
+          Tablet (≥768px):   stacked vertically
+          Mobile (<768px):   only timeline; click → modal overlay (handled by RunDetailPanel) */}
+      <style>{`
+        .rh-layout {
+          display: flex;
+          flex-direction: row;
+          gap: 16px;
+          align-items: flex-start;
+          width: 100%;
+        }
+        .rh-timeline {
+          width: 300px;
+          flex-shrink: 0;
+        }
+        .rh-detail {
+          flex: 1;
+          min-width: 0;
+        }
+        @media (max-width: 1023px) and (min-width: 768px) {
+          .rh-layout { flex-direction: column; }
+          .rh-timeline { width: 100%; }
+        }
+        @media (max-width: 767px) {
+          .rh-layout { flex-direction: column; }
+          .rh-timeline { width: 100%; }
+          .rh-detail  { display: none; }
+        }
+      `}</style>
+
+      <div className="rh-layout">
+        <div className="rh-timeline">
+          <RunHistoryTimeline
+            selectedRunId={selectedRunId}
+            onSelectRun={handleSelectRun}
+          />
+        </div>
+
+        {selectedRunId && (
+          <div className="rh-detail">
+            <RunDetailPanel runId={selectedRunId} />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
 /**
- * Zakładka Eval — renderuje EvalFrameworkPanel i CostTrackerPanel.
- * Wrapuje w Suspense bo hooki używają useSearchParams() pośrednio przez SWR.
+ * Zakładka Eval — renderuje EvalFrameworkPanel, CostTrackerPanel
+ * i nową sekcję historii runów (STORY-7.8).
  */
 export default function EvalTab() {
   return (
