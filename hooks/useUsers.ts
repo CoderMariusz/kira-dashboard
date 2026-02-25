@@ -66,23 +66,20 @@ export function useUsers(): UseUsersReturn {
   // ── updateRole ────────────────────────────────────────────────────────────
 
   async function updateRole(userId: string, role: Role): Promise<void> {
-    // Snapshot for rollback (deep copy to avoid reference mutations)
-    const previous = data ? [...data] : undefined
+    // Deep-copy snapshot for rollback before any optimistic changes
+    const previous = data ? data.map((u) => ({ ...u })) : undefined
 
-    // Optimistic update
-    await mutate(
-      (current) =>
-        current
-          ? current.map((u) => (u.id === userId ? { ...u, role } : u))
-          : current,
-      false
-    )
+    // Optimistic update — set new data without revalidating
+    const optimistic = previous
+      ? previous.map((u) => (u.id === userId ? { ...u, role } : u))
+      : undefined
+    mutate(optimistic, { revalidate: false })
 
     try {
       await UserService.updateRole(userId, role)
     } catch (err) {
-      // Rollback to snapshot — do NOT revalidate (would cause extra fetch)
-      await mutate(previous, false)
+      // Rollback to snapshot — no revalidate to avoid extra fetch
+      mutate(previous, { revalidate: false })
       throw err
     }
   }
@@ -90,30 +87,27 @@ export function useUsers(): UseUsersReturn {
   // ── deleteUser ────────────────────────────────────────────────────────────
 
   async function deleteUser(userId: string): Promise<void> {
-    // Snapshot for rollback (deep copy to avoid reference mutations)
-    const previous = data ? [...data] : undefined
+    // Deep-copy snapshot for rollback before any optimistic changes
+    const previous = data ? data.map((u) => ({ ...u })) : undefined
 
-    // Optimistic update
-    await mutate(
-      (current) =>
-        current ? current.filter((u) => u.id !== userId) : current,
-      false
-    )
+    // Optimistic update — remove user without revalidating
+    const optimistic = previous ? previous.filter((u) => u.id !== userId) : undefined
+    mutate(optimistic, { revalidate: false })
 
     try {
       await UserService.deleteUser(userId)
     } catch (err) {
-      // Rollback to snapshot — do NOT revalidate (would cause extra fetch)
-      await mutate(previous, false)
+      // Rollback to snapshot — no revalidate to avoid extra fetch
+      mutate(previous, { revalidate: false })
       throw err
     }
   }
 
   // ── inviteUser ────────────────────────────────────────────────────────────
 
-  async function inviteUser(data: InviteUserRequest): Promise<void> {
-    await UserService.inviteUser(data)
-    // Revalidate after successful invite
+  async function inviteUser(inviteData: InviteUserRequest): Promise<void> {
+    await UserService.inviteUser(inviteData)
+    // Revalidate after successful invite to get fresh server data
     await mutate()
   }
 
