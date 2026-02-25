@@ -13,10 +13,10 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { readFile } from 'fs/promises'
+import { readFile, writeFile } from 'fs/promises'
 import { createHash } from 'crypto'
-import { requireAuth } from '@/lib/auth/requireRole'
-import type { RequireAuthResult } from '@/lib/auth/requireRole'
+import { requireAuth, requireAdmin } from '@/lib/auth/requireRole'
+import type { RequireAuthResult, RequireAdminResult } from '@/lib/auth/requireRole'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -73,6 +73,11 @@ const FILE_LESSONS       = `${KIRA_DIR}/.kira/LESSONS_LEARNED.md`
 
 /** Type guard: auth result is an error response */
 function isErrorResponse(result: RequireAuthResult): result is NextResponse {
+  return result instanceof Response
+}
+
+/** Type guard: admin auth result is an error response */
+function isAdminErrorResponse(result: RequireAdminResult): result is NextResponse {
   return result instanceof Response
 }
 
@@ -319,4 +324,144 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   return NextResponse.json(response)
+}
+
+// ─── POST /api/patterns ───────────────────────────────────────────────────────
+// STORY-8.2 — Append pattern entries to patterns.md or anti-patterns.md
+
+interface PostPatternBody {
+  type: 'PATTERN' | 'ANTI_PATTERN'
+  category: string
+  text: string
+  model?: string
+  domain?: string
+  date?: string
+  related_stories?: string[]
+}
+
+export async function POST(req: Request): Promise<Response> {
+  // 1. Admin auth check
+  const authResult = await requireAdmin(req)
+  if (isAdminErrorResponse(authResult)) return authResult
+
+  // 2. Parse and validate body
+  let body: PostPatternBody
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json(
+      { error: "Nieprawidłowy format JSON" },
+      { status: 400 }
+    )
+  }
+
+  // 3. Validate required fields
+  if (!body.type) {
+    return NextResponse.json(
+      { error: "Pole 'type' jest wymagane" },
+      { status: 400 }
+    )
+  }
+  if (body.type !== 'PATTERN' && body.type !== 'ANTI_PATTERN') {
+    return NextResponse.json(
+      { error: "Pole 'type' musi być 'PATTERN' lub 'ANTI_PATTERN'" },
+      { status: 400 }
+    )
+  }
+  if (!body.category) {
+    return NextResponse.json(
+      { error: "Pole 'category' jest wymagane" },
+      { status: 400 }
+    )
+  }
+  if (!body.text) {
+    return NextResponse.json(
+      { error: "Pole 'text' jest wymagane" },
+      { status: 400 }
+    )
+  }
+  if (body.text.length < 3) {
+    return NextResponse.json(
+      { error: "Pole 'text' musi mieć min. 3 znaki" },
+      { status: 400 }
+    )
+  }
+  if (body.text.length > 500) {
+    return NextResponse.json(
+      { error: "Pole 'text' może mieć max. 500 znaków" },
+      { status: 400 }
+    )
+  }
+
+  // 4. Determine target file
+  const targetFile = body.type === 'PATTERN' ? FILE_PATTERNS : FILE_ANTI_PATTERNS
+  const fileHeader = body.type === 'PATTERN'
+    ? '# Patterns — Co działa ✅\n\n'
+    : '# Anti-patterns — Czego nie robić ❌\n\n'
+
+  // 5. Generate date (default: today)
+  const date = body.date || new Date().toISOString().split('T')[0]
+
+  // 6. Build markdown line
+  let entry = `- [${date}]`
+  if (body.model) {
+    entry += ` [${body.model}]`
+  }
+  if (body.domain) {
+    entry += ` [${body.domain}]`
+  }
+  entry += ` — ${body.text}`
+
+  // 7. Add related stories if present
+  if (body.related_stories && body.related_stories.length > 0) {
+    entry += `\n  Related: ${body.related_stories.join(', ')}`
+  }
+
+  // 8. Check if file exists and append to section
+  try {
+    const existingContent = await readFile(targetFile, 'utf-8')
+
+    // Find the section for this category
+    const sectionRegex = new RegExp(`(^|\n)##\\s+${body.category}\\b`)
+    const sectionMatch = sectionRegex.exec(existingContent)
+
+    if (sectionMatch) {
+      // Section exists - insert after the section header, before next section or end
+      const sectionStart = sectionMatch.index + sectionMatch[0].length
+      const nextSectionMatch = existingContent.slice(sectionStart).match(/\n##\s+/)
+
+      let newContent: string
+      if (nextSectionMatch) {
+        // Insert before next section
+        const insertPosition = sectionStart + nextSectionMatch.index!
+        newContent = existingContent.slice(0, insertPosition) + '\n' + entry + existingContent.slice(insertPosition)
+      } else {
+        // Append at end of file
+        newContent = existingContent + '\n' + entry
+      }
+
+      await writeFile(targetFile, newContent, 'utf-8')
+    } else {
+      // Section doesn't exist - append new section at end
+      const sectionHeader = `\n## ${body.category}\n${entry}`
+      await writeFile(targetFile, existingContent + sectionHeader, 'utf-8')
+    }
+  } catch (err: unknown) {
+    const fsErr = err as NodeJS.ErrnoException
+    if (fsErr.code === 'ENOENT') {
+      // File doesn't exist - create it with header and section
+      const newContent = fileHeader + `## ${body.category}\n${entry}`
+      await writeFile(targetFile, newContent, 'utf-8')
+    } else {
+      return NextResponse.json(
+        { error: `Błąd zapisu pliku: ${fsErr.message}` },
+        { status: 500 }
+      )
+    }
+  }
+
+  return NextResponse.json(
+    { success: true, entry },
+    { status: 201 }
+  )
 }
