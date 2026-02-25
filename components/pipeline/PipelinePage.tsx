@@ -15,6 +15,8 @@ import PipelinePanel from './PipelinePanel'
 import ActivityFeed from './ActivityFeed'
 import PipelineStoryModal from './PipelineStoryModal'
 import OfflineBanner from './OfflineBanner'
+import ProjectSwitcher from './ProjectSwitcher'
+import NewProjectWizard from './NewProjectWizard'
 import type { Story } from '@/types/bridge'
 
 /**
@@ -43,6 +45,7 @@ function PipelinePageInner() {
   } = useRuns()
 
   const [selectedStory, setSelectedStory] = useState<Story | null>(null)
+  const [showWizard, setShowWizard] = useState(false)
 
   const handleRefresh = useCallback(() => {
     // SWR handles auto-refresh via refreshInterval: 30000 in useRuns hook
@@ -73,6 +76,22 @@ function PipelinePageInner() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* STORY-6.7: Project switcher header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 0 12px 0',
+          flexShrink: 0,
+        }}
+      >
+        <ProjectSwitcher onNewProject={() => setShowWizard(true)} />
+      </div>
+
+      {/* STORY-6.7: New Project Wizard modal */}
+      <NewProjectWizard isOpen={showWizard} onClose={() => setShowWizard(false)} />
+
       {/* AC-10: Offline Mode banner — shows when Bridge is unavailable and data comes from Supabase */}
       {isOfflineMode && <OfflineBanner syncedAt={syncedAt} />}
 

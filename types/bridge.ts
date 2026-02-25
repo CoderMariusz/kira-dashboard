@@ -245,6 +245,37 @@ export interface ProjectsResponse {
   projects: Project[]
 }
 
+// ─── Project Stats (STORY-6.7) ─────────────────────────────────────────────
+
+/** Per-project statistics returned by GET /api/projects/stats. */
+export interface ProjectStat {
+  /** Unique project key, e.g. "kira-dashboard". */
+  key: string
+  /** Display name, e.g. "Kira Dashboard". */
+  name: string
+  /** Whether this is the currently active project. */
+  is_current: boolean
+  /** Total number of stories. */
+  total: number
+  /** Number of DONE stories. */
+  done: number
+  /** Number of IN_PROGRESS stories. */
+  in_progress: number
+  /** Number of REVIEW stories. */
+  review: number
+  /** Number of BLOCKED stories. */
+  blocked: number
+  /** Completion percentage 0–100. */
+  completion_pct: number
+}
+
+/** Response from GET /api/projects/stats. */
+export interface StatsResponse {
+  projects: ProjectStat[]
+  fetched_at: string
+  offline?: boolean
+}
+
 // ─── Stan offline ──────────────────────────────────────────────────────────
 
 /** Wspólny stan błędu/offline zwracany przez hooki gdy Bridge API niedostępne. */
