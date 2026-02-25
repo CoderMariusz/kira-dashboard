@@ -2,43 +2,30 @@
 
 /**
  * app/(dashboard)/dashboard/eval/page.tsx
- * STORY-7.6 — Dedicated Eval / Regression Testing page.
+ * STORY-7.6 -- Eval page with Golden Tasks section.
  *
  * Route: /dashboard/eval
  *
- * Role-based access:
- * - ADMIN: full CRUD controls in GoldenTasksManager
- * - HELPER / HELPER_PLUS: read-only view
- * - Unauthenticated: handled by proxy.ts middleware (redirect to /login)
+ * Sections:
+ *   - EvalFrameworkPanel (UNCHANGED)
+ *   - Golden Tasks: CategoryFilter + EvalTasksTable + EvalTaskDrawer + DeleteTaskModal
+ *
+ * RBAC: ADMIN = full CRUD; HELPER/HELPER_PLUS = read-only
  */
 
 import { Suspense, useState } from 'react'
 import { useEval } from '@/hooks/useEval'
 import { useRuns } from '@/hooks/useRuns'
+import { useUserRole } from '@/hooks/useUserRole'
 import EvalFrameworkPanel from '@/components/eval/EvalFrameworkPanel'
-import dynamic from 'next/dynamic'
+import CategoryFilter from '@/components/eval/CategoryFilter'
+import EvalTasksTable from '@/components/eval/EvalTasksTable'
+import EvalTaskDrawer from '@/components/eval/EvalTaskDrawer'
+import DeleteTaskModal from '@/components/eval/DeleteTaskModal'
+import { useEvalTasks } from '@/lib/eval/services'
+import type { EvalTask } from '@/lib/eval/types'
 
-const GoldenTasksManager = dynamic(
-  () => import('@/components/eval/GoldenTasksManager'),
-  {
-    loading: () => (
-      <div style={{
-        background: '#1a1728',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '10px',
-        padding: '32px',
-        textAlign: 'center',
-        color: '#8b8ba7',
-        fontSize: '13px',
-      }}>
-        Ładowanie Golden Tasks...
-      </div>
-    ),
-    ssr: false,
-  }
-)
-
-// ─── Info Popover ────────────────────────────────────────────────────────────
+// -- Info Popover -------------------------------------------------------------
 
 function InfoPopover({ open, onClose }: { open: boolean; onClose: () => void }) {
   if (!open) return null
@@ -53,14 +40,17 @@ function InfoPopover({ open, onClose }: { open: boolean; onClose: () => void }) 
         role="tooltip"
         style={{
           position: 'absolute',
-          top: '100%', right: 0, marginTop: '8px',
+          top: '100%',
+          right: 0,
+          marginTop: '8px',
           background: '#1a1728',
           border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '10px',
           padding: '16px 18px',
           width: '320px',
           zIndex: 20,
-          fontSize: '13px', color: '#e6edf3',
+          fontSize: '13px',
+          color: '#e6edf3',
           lineHeight: 1.6,
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}
@@ -69,18 +59,17 @@ function InfoPopover({ open, onClose }: { open: boolean; onClose: () => void }) 
           Eval / Regression Testing
         </h4>
         <p style={{ margin: '0 0 10px', color: '#8b8ba7', fontSize: '12px' }}>
-          Moduł ewaluacji pipeline. Testuje modele AI na zestawie golden tasks —
-          predefinowanych przypadków z oczekiwanym wynikiem.
+          Modul ewaluacji pipeline. Testuje modele AI na zestawie golden tasks.
         </p>
         <ul style={{ margin: 0, paddingLeft: '16px', color: '#8b8ba7', fontSize: '12px' }}>
           <li style={{ marginBottom: '4px' }}>
-            <strong style={{ color: '#e6edf3' }}>Eval Framework</strong> — historia runów, pass rate per kategoria
+            <strong style={{ color: '#e6edf3' }}>Eval Framework</strong> -- historia runow, pass rate per kategoria
           </li>
           <li style={{ marginBottom: '4px' }}>
-            <strong style={{ color: '#e6edf3' }}>Golden Tasks</strong> — zestaw testów referencyjnych
+            <strong style={{ color: '#e6edf3' }}>Golden Tasks</strong> -- zestaw testow referencyjnych
           </li>
           <li>
-            <strong style={{ color: '#e6edf3' }}>ADMIN</strong> może dodawać, edytować i usuwać golden tasks
+            <strong style={{ color: '#e6edf3' }}>ADMIN</strong> moze dodawac, edytowac i usuwac golden tasks
           </li>
         </ul>
       </div>
@@ -88,7 +77,91 @@ function InfoPopover({ open, onClose }: { open: boolean; onClose: () => void }) 
   )
 }
 
-// ─── Main page content ───────────────────────────────────────────────────────
+// -- Golden Tasks Section -----------------------------------------------------
+
+function GoldenTasksSection() {
+  const { isAdmin } = useUserRole()
+  const [category, setCategory] = useState('ALL')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [editTask, setEditTask] = useState<EvalTask | null>(null)
+  const [deleteTask, setDeleteTask] = useState<EvalTask | null>(null)
+
+  const { mutate } = useEvalTasks()
+
+  function openAdd() {
+    setEditTask(null)
+    setDrawerOpen(true)
+  }
+
+  function openEdit(task: EvalTask) {
+    setEditTask(task)
+    setDrawerOpen(true)
+  }
+
+  function closeDrawer() {
+    setDrawerOpen(false)
+    setEditTask(null)
+  }
+
+  return (
+    <section>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#e6edf3' }}>
+          Golden Tasks
+        </h2>
+        {isAdmin && (
+          <button
+            onClick={openAdd}
+            aria-label="Dodaj golden task"
+            style={{
+              background: 'linear-gradient(135deg, #7c3aed, #3b82f6)',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#fff',
+              fontSize: '12px',
+              fontWeight: 600,
+              padding: '8px 16px',
+              cursor: 'pointer',
+            }}
+          >
+            + Dodaj task
+          </button>
+        )}
+      </div>
+
+      <CategoryFilter selected={category} onChange={setCategory} />
+
+      <EvalTasksTable
+        category={category}
+        onEdit={openEdit}
+        onDelete={(task) => setDeleteTask(task)}
+        onAdd={openAdd}
+      />
+
+      <EvalTaskDrawer
+        open={drawerOpen}
+        task={editTask}
+        onClose={closeDrawer}
+        mutate={mutate}
+      />
+
+      <DeleteTaskModal
+        task={deleteTask}
+        onCancel={() => setDeleteTask(null)}
+        mutate={mutate}
+      />
+    </section>
+  )
+}
+
+// -- Main page content --------------------------------------------------------
 
 function EvalPageContent() {
   const [infoOpen, setInfoOpen] = useState(false)
@@ -104,23 +177,25 @@ function EvalPageContent() {
   useRuns()
 
   return (
-    <div style={{ background: '#13111c', minHeight: '100%' }}>
-      {/* Page header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: '20px',
-        position: 'relative',
-      }}>
+    <div style={{ background: '#13111c', minHeight: '100%', padding: '0' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '20px',
+          position: 'relative',
+        }}
+      >
         <div>
           <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#e6edf3' }}>
             Eval / Regression Testing
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#8b8ba7' }}>
-            Pipeline quality monitoring &amp; golden task management
+            Pipeline quality monitoring & golden task management
           </p>
         </div>
 
-        {/* Info button */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setInfoOpen((v) => !v)}
@@ -130,21 +205,26 @@ function EvalPageContent() {
               background: infoOpen ? 'rgba(255,255,255,0.08)' : 'transparent',
               border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: '50%',
-              width: '32px', height: '32px',
-              color: '#8b8ba7', fontSize: '14px', fontWeight: 700,
+              width: '32px',
+              height: '32px',
+              color: '#8b8ba7',
+              fontSize: '14px',
+              fontWeight: 700,
               cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               transition: 'background 0.15s',
             }}
           >
-            ❓
+            ?
           </button>
           <InfoPopover open={infoOpen} onClose={() => setInfoOpen(false)} />
         </div>
       </div>
 
-      {/* Content */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* EvalFrameworkPanel -- UNCHANGED */}
         <EvalFrameworkPanel
           scores={scores}
           overallScore={overallScore}
@@ -152,21 +232,25 @@ function EvalPageContent() {
           isLoading={evalLoading}
           isOffline={evalOffline}
         />
-        <GoldenTasksManager />
+
+        {/* Golden Tasks section */}
+        <GoldenTasksSection />
       </div>
     </div>
   )
 }
 
-// ─── Page export ─────────────────────────────────────────────────────────────
+// -- Page export --------------------------------------------------------------
 
 export default function EvalPage() {
   return (
-    <Suspense fallback={
-      <div style={{ padding: '20px', color: '#4b4569', fontSize: '13px' }}>
-        Ładowanie Eval...
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div style={{ padding: '20px', color: '#4b4569', fontSize: '13px' }}>
+          Ladowanie Eval...
+        </div>
+      }
+    >
       <EvalPageContent />
     </Suspense>
   )
