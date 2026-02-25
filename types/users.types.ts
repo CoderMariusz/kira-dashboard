@@ -10,3 +10,12 @@ export interface UserRow {
   role: Role;          // 'ADMIN' | 'HELPER_PLUS' | 'HELPER'
   created_at: string;  // ISO 8601 string: "2026-02-19T10:00:00Z"
 }
+
+/** Wiersz tabeli user_roles (baza danych) — STORY-10.1 */
+export interface UserRoleRow {
+  user_id: string;           // UUID — Supabase auth user id
+  role: Role;                // 'ADMIN' | 'HELPER_PLUS' | 'HELPER'
+  created_at: string;        // ISO 8601 string
+  invited_by: string | null; // UUID osoby zapraszającej (null dla początkowych adminów)
+  invited_at: string;        // ISO 8601 string — data zaproszenia
+}
