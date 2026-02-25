@@ -47,3 +47,29 @@ export interface CreateFromPrdResponse {
   stories_count: number
   bridge_output: string
 }
+
+// ─── Bulk Actions (POST /api/stories/bulk-action) — STORY-6.8 ─────────────────
+
+export type BulkAdvanceStatus = 'REVIEW' | 'DONE' | 'MERGE' | 'REFACTOR'
+export type BulkAssignModel = 'kimi' | 'glm' | 'sonnet' | 'codex' | 'haiku' | 'opus'
+
+export interface BulkActionRequest {
+  story_ids: string[]
+  action: 'advance' | 'assign_model'
+  payload?: {
+    status?: BulkAdvanceStatus
+    model?: BulkAssignModel
+  }
+}
+
+export interface BulkActionResult {
+  id: string
+  success: boolean
+  error?: string
+}
+
+export interface BulkActionResponse {
+  results: BulkActionResult[]
+  success_count: number
+  failure_count: number
+}

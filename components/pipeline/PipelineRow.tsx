@@ -3,7 +3,9 @@
 // components/pipeline/PipelineRow.tsx
 // Single story row in the Pipeline panel.
 // v2 (STORY-2.7): justUpdated flash highlight, isOptimistic indicator, onStart button.
+// v3 (STORY-6.8): Bulk selection checkbox with hover-reveal.
 
+import { useState } from 'react'
 import type { Story, StoryStatus } from '@/types/bridge'
 
 type StatusStyle = { bg: string; color: string; border?: string; label: string }
@@ -40,6 +42,13 @@ interface PipelineRowProps {
   isOptimistic?: boolean
   /** Opcjonalny handler "▶ Start" — widoczny dla READY/TODO stories (AC-7) */
   onStart?: () => void
+  // STORY-6.8 — bulk selection
+  /** true gdy row jest zaznaczony (checkbox checked) */
+  isSelected?: boolean
+  /** Callback do toggle selekcji — przyjmuje story.id */
+  onToggleSelect?: (id: string) => void
+  /** true gdy bulk mode aktywny (isSelecting) lub hover — pokazuje checkbox */
+  showCheckbox?: boolean
 }
 
 export default function PipelineRow({
@@ -48,14 +57,26 @@ export default function PipelineRow({
   justUpdated = false,
   isOptimistic = false,
   onStart,
+  isSelected = false,
+  onToggleSelect,
+  showCheckbox = false,
 }: PipelineRowProps) {
   const st: StatusStyle = STATUS_STYLES[story.status] ?? DEFAULT_STYLE
   const timeAgo = formatTimeAgo(story.started_at)
 
+  // Hover state for checkbox reveal (AC-1)
+  const [hovered, setHovered] = useState(false)
+
   // Flash highlight po SSE update — tło #2d1b4a przez 600ms (AC-6)
   // Jeśli optimistic — dodaj lekki opacity efekt
-  const rowBg = justUpdated ? '#2d1b4a' : '#13111c'
+  // Jeśli selected — tło #1e1b38 z border-left (AC-2)
+  const rowBg = isSelected ? '#1e1b38' : justUpdated ? '#2d1b4a' : '#13111c'
   const rowOpacity = isOptimistic ? 0.7 : 1.0
+  const rowBorderColor = isSelected ? '#818cf8' : hovered ? '#2a2540' : 'transparent'
+  const rowBorderLeft = isSelected ? '2px solid #818cf8' : undefined
+
+  // Checkbox visible when: hover OR any story selected (showCheckbox=true = isSelecting)
+  const checkboxVisible = showCheckbox || hovered || isSelected
 
   return (
     <div
@@ -64,6 +85,8 @@ export default function PipelineRow({
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
       aria-label={`Story ${story.id}: ${story.title}${isOptimistic ? ' (przetwarzanie...)' : ''}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -73,16 +96,66 @@ export default function PipelineRow({
         padding: '8px 11px',
         marginBottom: '5px',
         cursor: 'pointer',
-        transition: 'background-color 0.6s ease, border-color 0.15s, opacity 0.3s',
-        border: '1px solid transparent',
+        transition: 'background-color 0.1s ease, border-color 0.15s, opacity 0.3s',
+        border: `1px solid ${rowBorderColor}`,
+        borderLeft: rowBorderLeft ?? `1px solid ${rowBorderColor}`,
         outline: 'none',
         opacity: rowOpacity,
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = '#2a2540' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'transparent' }}
       onFocus={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = '#818cf8' }}
-      onBlur={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'transparent' }}
+      onBlur={(e) => {
+        if (!isSelected) {
+          (e.currentTarget as HTMLDivElement).style.borderColor = 'transparent'
+        }
+      }}
     >
+      {/* Checkbox — AC-1: hover-reveal, AC-2: permanent when any selected */}
+      {onToggleSelect && (
+        <input
+          type="checkbox"
+          role="checkbox"
+          aria-checked={isSelected}
+          aria-label={`Zaznacz ${story.id}`}
+          checked={isSelected}
+          tabIndex={0}
+          onChange={(e) => {
+            e.stopPropagation()
+            onToggleSelect(story.id)
+          }}
+          onClick={(e) => {
+            // EC-2: stop propagation to prevent row click opening modal
+            e.stopPropagation()
+          }}
+          onKeyDown={(e) => {
+            // Space toggles checkbox — keyboard accessibility
+            if (e.key === ' ') {
+              e.stopPropagation()
+            }
+          }}
+          style={{
+            width: '16px',
+            height: '16px',
+            flexShrink: 0,
+            appearance: 'none',
+            WebkitAppearance: 'none',
+            border: `1.5px solid ${isSelected ? '#818cf8' : '#3b3d7a'}`,
+            borderRadius: '4px',
+            background: isSelected ? '#818cf8' : 'transparent',
+            cursor: 'pointer',
+            transition: 'all 150ms ease',
+            opacity: checkboxVisible ? 1 : 0,
+            pointerEvents: checkboxVisible ? 'auto' : 'none',
+            position: 'relative',
+            backgroundImage: isSelected
+              ? `url("data:image/svg+xml,%3Csvg viewBox='0 0 12 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 5l3.5 4L11 1' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`
+              : 'none',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            backgroundSize: '9px',
+          }}
+        />
+      )}
+
       {/* Story ID */}
       <div style={{
         fontSize: '11px',
