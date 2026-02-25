@@ -8,7 +8,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** Dozwolone wartości statusów (pusta string = "wszystkie") */
-const VALID_STATUSES = ['', 'IN_PROGRESS', 'REVIEW', 'REFACTOR', 'DONE', 'MERGE', 'BLOCKED'] as const
+export const VALID_STATUSES = ['', 'IN_PROGRESS', 'REVIEW', 'REFACTOR', 'DONE', 'MERGE', 'BLOCKED'] as const
 
 /**
  * Stan filtrów pipeline.
