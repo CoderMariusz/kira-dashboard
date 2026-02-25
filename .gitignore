@@ -52,3 +52,9 @@ test-results/
 
 playwright-report/
 test-results/
+
+# SQLite DB files (Bridge)
+*.db
+*.db-shm
+*.db-wal
+data/bridge.db
