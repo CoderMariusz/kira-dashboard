@@ -2,7 +2,7 @@
 
 /**
  * app/(dashboard)/dashboard/nightclaw/page.tsx
- * STORY-9.6 — NightClaw Digest page
+ * STORY-9.6 + STORY-9.7 — NightClaw Digest page
  *
  * Route: /dashboard/nightclaw
  *
@@ -26,6 +26,8 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useNightClawDigest } from '@/hooks/useNightClawDigest'
 import { useNightClawHistory } from '@/hooks/useNightClawHistory'
 import type { DigestSummary } from '@/types/nightclaw'
+import DigestViewer from '@/components/nightclaw/DigestViewer'
+import RunCalendar from '@/components/nightclaw/RunCalendar'
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const COLORS = {
@@ -321,8 +323,16 @@ function NightClawPageContent() {
   const isLoading = digestLoading || historyLoading
 
   const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  const selectedDate = searchParams.get('date') ?? today
 
   const lastEntry = history?.entries[0]
+
+  function handleDateSelect(date: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('date', date)
+    params.set('tab', 'digest')
+    router.push(`/dashboard/nightclaw?${params.toString()}`)
+  }
 
   function handleTabChange(tab: Tab) {
     const params = new URLSearchParams(searchParams.toString())
@@ -412,8 +422,9 @@ function NightClawPageContent() {
           />
         )}
         {activeTab === 'digest' && (
-          <div style={{ color: COLORS.muted, padding: '24px 0', fontSize: '14px' }}>
-            Digest — implementacja w STORY-9.7
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '24px', alignItems: 'start' }}>
+            <DigestViewer key={selectedDate} initialDate={selectedDate} />
+            <RunCalendar selectedDate={selectedDate} onDateSelect={handleDateSelect} />
           </div>
         )}
         {activeTab === 'research' && (

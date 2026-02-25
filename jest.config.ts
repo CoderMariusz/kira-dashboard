@@ -6,6 +6,11 @@ const config: Config = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    // server-only stub for tests
+    '^server-only$': '<rootDir>/__mocks__/server-only.ts',
+    // react-markdown and rehype-highlight are ESM-only; map to manual mocks
+    '^react-markdown$': '<rootDir>/__mocks__/react-markdown.tsx',
+    '^rehype-highlight$': '<rootDir>/__mocks__/rehype-highlight.ts',
   },
   modulePathIgnorePatterns: ['<rootDir>/archive/'],
   testPathIgnorePatterns: [
