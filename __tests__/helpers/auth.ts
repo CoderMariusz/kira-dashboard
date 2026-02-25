@@ -23,6 +23,9 @@ export interface MockUserRole {
   role: 'ADMIN' | 'USER' | 'VIEWER';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FakeSupabaseClient = any;
+
 // ─── Internal: build a fake Supabase client ───────────────────────────────────
 
 function buildClient(
@@ -30,19 +33,23 @@ function buildClient(
   authError: Error | null,
   role: MockUserRole | null,
   roleError: Error | null
-) {
+): FakeSupabaseClient {
+  const singleMock = jest.fn(() => Promise.resolve({ data: role, error: roleError }));
+
   const selectChain = {
     eq: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue({ data: role, error: roleError } as any),
+    single: singleMock,
   };
 
   const fromChain = {
     select: jest.fn().mockReturnValue(selectChain),
   };
 
+  const getUserMock = jest.fn(() => Promise.resolve({ data: { user }, error: authError }));
+
   return {
     auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user }, error: authError } as any),
+      getUser: getUserMock,
     },
     from: jest.fn().mockReturnValue(fromChain),
   };
@@ -61,16 +68,16 @@ function getMockedCreateClient(): jest.Mock {
 
 export function mockAdminSession(overrides: Partial<MockSupabaseUser> = {}): void {
   const user: MockSupabaseUser = { id: 'admin-user-id', email: 'admin@kira.local', ...overrides };
-  getMockedCreateClient().mockResolvedValue(buildClient(user, null, { role: 'ADMIN' }, null) as any);
+  getMockedCreateClient().mockImplementation(() => Promise.resolve(buildClient(user, null, { role: 'ADMIN' }, null)));
 }
 
 export function mockUserSession(overrides: Partial<MockSupabaseUser> = {}): void {
   const user: MockSupabaseUser = { id: 'plain-user-id', email: 'user@kira.local', ...overrides };
-  getMockedCreateClient().mockResolvedValue(buildClient(user, null, { role: 'USER' }, null) as any);
+  getMockedCreateClient().mockImplementation(() => Promise.resolve(buildClient(user, null, { role: 'USER' }, null)));
 }
 
 export function mockNoSession(): void {
-  getMockedCreateClient().mockResolvedValue(
-    buildClient(null, new Error('Not authenticated'), null, null) as any
+  getMockedCreateClient().mockImplementation(() =>
+    Promise.resolve(buildClient(null, new Error('Not authenticated'), null, null))
   );
 }

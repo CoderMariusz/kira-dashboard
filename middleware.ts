@@ -21,8 +21,8 @@ export const config = {
      *  - _next/image (image optimisation)
      *  - favicon.ico, sitemap.xml, robots.txt, manifest.*
      *  - /login (public auth page)
-     *  - /api/auth/logout (POST to logout — no session needed)
      *
+     * Note: /api/auth/logout is NOT excluded (it requires session check for security).
      * This covers /dashboard/eval automatically (AC-1).
      */
     '/((?!_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|manifest\\..+|login).*)',
