@@ -37,5 +37,12 @@ test.describe('Dashboard smoke', () => {
     await expect(page).not.toHaveURL('/login')
     await expect(page).not.toHaveURL('/403')
     await expect(page.locator('main').first()).toBeVisible()
+
+    // AC-3: at least one pipeline element (epic card, story card, or heading) must be visible
+    const pipelineContent = page.locator(
+      '[data-testid="epic-card"], [data-testid="story-card"], .epic, .story, h2, h3'
+    )
+    const count = await pipelineContent.count()
+    expect(count, 'Expected at least one pipeline element (epic/story card or heading)').toBeGreaterThan(0)
   })
 })

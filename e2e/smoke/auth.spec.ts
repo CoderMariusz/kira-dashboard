@@ -22,6 +22,10 @@ test.describe('Auth smoke', () => {
   test('login with test credentials redirects to app', async ({ page }) => {
     if (!TEST_PASSWORD) test.skip()
 
+    // AC-2: track console errors
+    const errors: string[] = []
+    page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()) })
+
     await page.goto('/login', { waitUntil: 'domcontentloaded' })
     await page.locator('input[type="email"], input[name="email"]').fill(TEST_EMAIL)
     await page.locator('input[type="password"]').fill(TEST_PASSWORD)
@@ -35,5 +39,8 @@ test.describe('Auth smoke', () => {
     await expect(
       page.locator('nav, aside, [data-testid="sidebar"]').first()
     ).toBeVisible({ timeout: 10_000 })
+
+    // AC-2: no JS console errors during login flow
+    expect(errors).toHaveLength(0)
   })
 })
