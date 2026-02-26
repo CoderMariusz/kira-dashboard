@@ -177,6 +177,7 @@ describe('POST /api/stories/[id]/advance', () => {
     expect(body.ok).toBe(true)
     expect(body.mode).toBe('local')
     expect(mockRunBridgeCLI).toHaveBeenCalled()
+    expect(mockRunBridgeCLI).toHaveBeenCalledWith(expect.stringContaining('--to'))
   })
 
   // TC-7: queue mode (no BRIDGE_DIR) → Supabase insert

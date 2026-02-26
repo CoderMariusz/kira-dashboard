@@ -81,7 +81,7 @@ export async function POST(
 
   if (bridgeDir) {
     // Mode 1: Local Bridge CLI (instant execution)
-    const command = `cd "${bridgeDir}" && source .venv/bin/activate && python -m bridge.cli advance ${id} ${statusValue} --project kira-dashboard`
+    const command = `cd "${bridgeDir}" && source .venv/bin/activate && python -m bridge.cli advance ${id} --to ${statusValue} --project kira-dashboard`
     const result = await runBridgeCLI(command)
 
     if (!result.ok) {
