@@ -1,0 +1,85 @@
+{
+  "name": "kira-dashboard Branch Protection Rules",
+  "description": "Branch protection configuration for CI/CD pipeline (EPIC-11)",
+  "rules": [
+    {
+      "branch": "main",
+      "protection": {
+        "required_pull_request_reviews": {
+          "required_approving_review_count": 1,
+          "dismiss_stale_reviews": true,
+          "require_code_owner_reviews": false
+        },
+        "required_status_checks": {
+          "strict": true,
+          "contexts": [
+            "lint",
+            "test",
+            "typecheck",
+            "e2e"
+          ]
+        },
+        "enforce_admins": false,
+        "restrictions": null,
+        "allow_force_pushes": false,
+        "allow_deletions": false,
+        "required_linear_history": true,
+        "required_signatures": false
+      }
+    }
+  ],
+  "required_secrets": [
+    {
+      "name": "VERCEL_TOKEN",
+      "description": "Vercel API token for deployments",
+      "used_in": ["preview-deploy.yml", "production-deploy.yml"]
+    },
+    {
+      "name": "VERCEL_ORG_ID",
+      "description": "Vercel organization ID from .vercel/project.json",
+      "used_in": ["preview-deploy.yml", "production-deploy.yml"]
+    },
+    {
+      "name": "VERCEL_PROJECT_ID",
+      "description": "Vercel project ID from .vercel/project.json",
+      "used_in": ["preview-deploy.yml", "production-deploy.yml"]
+    },
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_URL",
+      "description": "Supabase project URL",
+      "used_in": ["ci.yml", "e2e.yml"]
+    },
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "description": "Supabase anonymous key (public)",
+      "used_in": ["ci.yml", "e2e.yml"]
+    },
+    {
+      "name": "SUPABASE_SERVICE_KEY",
+      "description": "Supabase service role key (private)",
+      "used_in": ["e2e.yml"]
+    },
+    {
+      "name": "TEST_USER_EMAIL",
+      "description": "E2E test user email (test@kira.dev)",
+      "used_in": ["e2e.yml"]
+    },
+    {
+      "name": "TEST_USER_PASSWORD",
+      "description": "E2E test user password",
+      "used_in": ["e2e.yml"]
+    }
+  ],
+  "gitignore_rules": [
+    ".env",
+    ".env.local",
+    ".env.*.local",
+    ".vercel"
+  ],
+  "notes": [
+    "NEVER commit .env.local to git — it contains sensitive keys",
+    ".vercel/project.json is safe to commit (contains only IDs, no secrets)",
+    "SUPABASE_SERVICE_KEY is private — never prefix with NEXT_PUBLIC_",
+    "NEXT_PUBLIC_* variables are public and visible in browser bundle"
+  ]
+}
