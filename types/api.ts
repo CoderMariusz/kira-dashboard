@@ -99,3 +99,24 @@ export interface SyncRunsResponse {
   data: BridgeSyncRun[]
   total: number
 }
+
+// ─── Epics API types (STORY-12.8) ────────────────────────────────────────
+
+/** Epic with calculated progress percentage. Returned by GET /api/epics. */
+export interface EpicWithProgress {
+  project_id: string
+  id: string
+  title: string
+  file_path: string
+  status: string
+  total_stories: number
+  done_stories: number
+  created_at: string | null
+  synced_at: string
+  progress: number
+}
+
+/** Response shape for GET /api/epics */
+export interface EpicsResponse {
+  data: EpicWithProgress[]
+}
