@@ -26,6 +26,13 @@ export default function StoryDetailPage() {
   const { story, isLoading, isNotFound, isOffline, refresh } = useStory(storyId)
   const { startStory, advanceStory, loading: actionLoading, error: actionError } = useStoryActions()
 
+  // Wyświetl toast błędu akcji — MUST be before any early returns (React hooks rule)
+  useEffect(() => {
+    if (actionError) {
+      toastError(actionError)
+    }
+  }, [actionError])
+
   // Inline 404 z ID story (not-found.tsx nie ma dostępu do params)
   if (isNotFound) {
     return (
@@ -39,13 +46,6 @@ export default function StoryDetailPage() {
       </div>
     )
   }
-
-  // Wyświetl toast błędu akcji
-  useEffect(() => {
-    if (actionError) {
-      toastError(actionError)
-    }
-  }, [actionError])
 
   return (
     <div style={{

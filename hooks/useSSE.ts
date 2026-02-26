@@ -130,6 +130,7 @@ export function useSSE(url: string): UseSSEReturn {
 
         // Zaplanuj reconnect po RECONNECT_DELAY_MS
         reconnectTimerRef.current = setTimeout(() => {
+          // eslint-disable-next-line -- connectSSE is defined via useCallback earlier in scope
           if (isMountedRef.current) connectSSE()
         }, RECONNECT_DELAY_MS)
       } else {

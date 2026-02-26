@@ -138,6 +138,7 @@ export function useLivePipeline(): UseLivePipelineReturn {
       if (!storyId || !newStatus) return
 
       // EC-5: Nieznany storyId — map nie znajdzie, zwróci tablicę bez zmian
+      // eslint-disable-next-line -- functional setState in event handler, not effect
       setLocalStories((prev) => {
         if (!prev) return prev
         return prev.map((s) =>

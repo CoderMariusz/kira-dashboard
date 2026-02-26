@@ -12,6 +12,19 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Scripts use Node.js require() style
+    "scripts/**",
+    "apply-migration.js",
+    // Test setup uses require() style
+    "jest.setup.ts",
+    // Test files
+    "__tests__/**",
+    "*.test.ts",
+    "*.test.tsx",
+    // Archive - old code
+    "archive/**",
+    // Legacy home API - different coding style
+    "app/api/home/**",
   ]),
 ]);
 
