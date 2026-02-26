@@ -8,6 +8,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -111,7 +112,6 @@ export function parsePatternsFile(
   const records: PatternRecord[] = [];
 
   let currentCategory = 'General';
-  let idCounter = 0;
 
   for (const rawLine of content.split('\n')) {
     const line = rawLine.trim();
@@ -121,7 +121,6 @@ export function parsePatternsFile(
     const categoryMatch = line.match(/^##\s+(.+)$/);
     if (categoryMatch?.[1]) {
       currentCategory = categoryMatch[1].trim();
-      idCounter = 0; // reset per category for stable IDs
       continue;
     }
 
@@ -156,9 +155,11 @@ export function parsePatternsFile(
 
     if (!text) continue;
 
-    idCounter++;
     const catSlug = slugify(currentCategory);
-    const id = `${type === 'PATTERN' ? 'pat' : 'anti'}-${catSlug}-${idCounter}`;
+    const id =
+      (type === 'PATTERN' ? 'pat' : 'anti') +
+      '-' +
+      crypto.createHash('sha256').update(currentCategory + text).digest('hex').slice(0, 8);
 
     records.push({
       id,
@@ -177,6 +178,18 @@ export function parsePatternsFile(
   }
 
   return records;
+}
+
+// ─── Lesson Deduplication ─────────────────────────────────────────────────────
+
+/**
+ * Deduplicate lessons by ID (last occurrence wins).
+ * Handles duplicate IDs in source files (e.g., ANTI-002, ANTI-003).
+ */
+export function deduplicateLessons<T extends { id: string }>(lessons: T[]): T[] {
+  const lessonsMap = new Map<string, T>();
+  for (const l of lessons) lessonsMap.set(l.id, l);
+  return [...lessonsMap.values()];
 }
 
 // ─── Lesson Parser ────────────────────────────────────────────────────────────
@@ -300,9 +313,7 @@ async function main() {
   const allLessons = parseLessonsFile(path.join(KIRA_DIR, 'LESSONS_LEARNED.md'));
 
   // Deduplicate by ID (last occurrence wins — handles duplicate IDs in source)
-  const lessonsMap = new Map<string, LessonRecord>();
-  for (const l of allLessons) lessonsMap.set(l.id, l);
-  const lessons = [...lessonsMap.values()];
+  const lessons = deduplicateLessons(allLessons);
 
   if (lessons.length > 0) {
     const dupes = allLessons.length - lessons.length;
