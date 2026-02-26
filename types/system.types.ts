@@ -29,6 +29,9 @@ export interface BridgeStatus {
   lastError: BridgeLastError | null
 }
 
+/** Alias for BridgeStatus (used in specs) */
+export type BridgeHealth = BridgeStatus
+
 // ─── System Status Response ───────────────────────────────────────────────────
 
 export interface SystemStatusResponse {
