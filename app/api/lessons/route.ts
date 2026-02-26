@@ -1,8 +1,8 @@
 /**
  * app/api/lessons/route.ts
- * STORY-8.2 — POST /api/lessons
+ * STORY-12.11 — POST /api/lessons (Supabase migration)
  *
- * Appends lesson entries to LESSONS_LEARNED.md in markdown format.
+ * Inserts a new lesson into kira_lessons table with auto-generated OPS-XXX id.
  *
  * Auth: requireAdmin — 401 for unauthenticated, 403 for non-admin.
  */
@@ -11,165 +11,67 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { appendFile, writeFile, access } from 'fs/promises'
+import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/requireRole'
-import type { RequireAdminResult } from '@/lib/auth/requireRole'
 
-// ─── File paths ───────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const KIRA_DIR = '/Users/mariuszkrawczyk/codermariusz/kira/.kira'
-const LESSONS_FILE = `${KIRA_DIR}/LESSONS_LEARNED.md`
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Type guard: admin auth result is an error response */
-function isAdminErrorResponse(result: RequireAdminResult): result is NextResponse {
-  return result instanceof Response
-}
-
-interface PostLessonBody {
-  id: string
-  title: string
-  severity: 'info' | 'warning' | 'critical'
-  category: string
-  body: string
-  root_cause?: string
-  fix?: string
-  lesson: string
-  tags?: string[]
-  date?: string
-}
+const HEADERS = { 'Cache-Control': 'no-store' } as const
 
 // ─── POST /api/lessons ───────────────────────────────────────────────────────
 
-export async function POST(req: Request): Promise<Response> {
-  // 1. Admin auth check
-  const authResult = await requireAdmin(req)
-  if (isAdminErrorResponse(authResult)) return authResult
+export async function POST(request: Request): Promise<Response> {
+  // AC-5: Admin auth check
+  const auth = await requireAdmin()
+  if (auth instanceof Response) return auth
 
-  // 2. Parse and validate body
-  let body: PostLessonBody
-  try {
-    body = await req.json()
-  } catch {
+  const body = await request.json()
+  const { title, severity, description, root_cause, fix, story_id, tags } = body
+
+  // Validation
+  if (!title || !description) {
     return NextResponse.json(
-      { error: "Nieprawidłowy format JSON" },
-      { status: 400 }
+      { error: 'Missing title or description' },
+      { status: 400, headers: HEADERS }
     )
   }
 
-  // 3. Validate required fields
-  if (!body.id) {
-    return NextResponse.json(
-      { error: "Pole 'id' jest wymagane" },
-      { status: 400 }
-    )
-  }
-  if (!body.title) {
-    return NextResponse.json(
-      { error: "Pole 'title' jest wymagane" },
-      { status: 400 }
-    )
-  }
-  if (body.title.length < 3) {
-    return NextResponse.json(
-      { error: "Pole 'title' musi mieć min. 3 znaki" },
-      { status: 400 }
-    )
-  }
-  if (body.title.length > 200) {
-    return NextResponse.json(
-      { error: "Pole 'title' może mieć max. 200 znaków" },
-      { status: 400 }
-    )
-  }
-  if (!body.severity) {
-    return NextResponse.json(
-      { error: "Pole 'severity' jest wymagane" },
-      { status: 400 }
-    )
-  }
-  if (!['info', 'warning', 'critical'].includes(body.severity)) {
-    return NextResponse.json(
-      { error: "Pole 'severity' musi być 'info', 'warning' lub 'critical'" },
-      { status: 400 }
-    )
-  }
-  if (!body.category) {
-    return NextResponse.json(
-      { error: "Pole 'category' jest wymagane" },
-      { status: 400 }
-    )
-  }
-  if (!body.body) {
-    return NextResponse.json(
-      { error: "Pole 'body' jest wymagane" },
-      { status: 400 }
-    )
-  }
-  if (!body.lesson) {
-    return NextResponse.json(
-      { error: "Pole 'lesson' jest wymagane" },
-      { status: 400 }
-    )
-  }
-  if (body.lesson.length < 10) {
-    return NextResponse.json(
-      { error: "Pole 'lesson' musi mieć min. 10 znaków" },
-      { status: 400 }
-    )
-  }
+  const supabase = await createClient()
 
-  // 4. Generate date (default: today)
-  const date = body.date || new Date().toISOString().split('T')[0]
+  // Auto-generate next OPS-XXX id
+  const { data: lastLesson } = await supabase
+    .from('kira_lessons')
+    .select('id')
+    .like('id', 'OPS-%')
+    .order('id', { ascending: false })
+    .limit(1)
+    .single()
 
-  // 5. Build markdown block
-  const tagsStr = body.tags && body.tags.length > 0 ? body.tags.join(', ') : ''
+  const lastNum = lastLesson ? parseInt(lastLesson.id.replace('OPS-', '')) : 0
+  const nextId = `OPS-${String(lastNum + 1).padStart(3, '0')}`
 
-  const lessonBlock = `### ${body.id}: ${body.title}
+  const { error } = await supabase.from('kira_lessons').insert({
+    id: nextId,
+    project_id: 'kira-dashboard',
+    title,
+    severity: severity ?? 'MEDIUM',
+    description,
+    root_cause: root_cause ?? null,
+    fix: fix ?? null,
+    story_id: story_id ?? null,
+    tags: tags ?? [],
+    date: new Date().toISOString().split('T')[0],
+  })
 
-**Severity:** ${body.severity}
-**Tags:** ${tagsStr || 'none'}
-**Date:** ${date}
-
-${body.body}
-
-**Root cause:** ${body.root_cause || 'TBD'}
-
-**Fix:** ${body.fix || 'TBD'}
-
-**Lesson:** ${body.lesson}
-
----
-`
-
-  // 6. Check if file exists, then append or create
-  let fileExists = false
-  try {
-    await access(LESSONS_FILE)
-    fileExists = true
-  } catch {
-    fileExists = false
-  }
-
-  try {
-    if (fileExists) {
-      await appendFile(LESSONS_FILE, '\n' + lessonBlock, 'utf-8')
-    } else {
-      // File doesn't exist - create it with header
-      const header = `# LESSONS_LEARNED.md — Kira Bridge\n\n## 1. BUGS WE HIT\n\n`
-      await writeFile(LESSONS_FILE, header + lessonBlock, 'utf-8')
-    }
-  } catch (err: unknown) {
-    const fsErr = err as NodeJS.ErrnoException
+  if (error) {
     return NextResponse.json(
-      { error: `Błąd zapisu pliku: ${fsErr.message}` },
-      { status: 500 }
+      { error: error.message },
+      { status: 500, headers: HEADERS }
     )
   }
 
   return NextResponse.json(
-    { success: true },
-    { status: 201 }
+    { id: nextId, ok: true },
+    { status: 201, headers: HEADERS }
   )
 }
