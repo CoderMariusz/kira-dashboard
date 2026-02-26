@@ -18,6 +18,8 @@ const config: Config = {
     '<rootDir>/.next/',
     '<rootDir>/tests/',
     '<rootDir>/archive/',
+    // Playwright E2E tests — run via `npx playwright test`, not Jest
+    '<rootDir>/e2e/',
   ],
   testMatch: ['**/?(*.)+(spec|test).[tj]s?(x)'],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],

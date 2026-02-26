@@ -1,26 +1,23 @@
 name: E2E Tests
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_run:
+    workflows: ["Preview Deploy"]
+    types: [completed]
 
 jobs:
   e2e:
     name: Playwright E2E Smoke Tests
+    # Only run if preview deploy succeeded (AC-1)
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-      TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-      NEXTAUTH_URL: http://localhost:3000
-      NODE_ENV: production
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -34,25 +31,70 @@ jobs:
       - name: Install Playwright browsers (chromium only)
         run: npx playwright install --with-deps chromium
 
-      - name: Build Next.js app
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      - name: Download preview URL artifact
+        id: download-artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }},
+            });
+            const matchArtifact = artifacts.data.artifacts.find(a => a.name === 'preview-url');
+            if (!matchArtifact) {
+              core.setOutput('artifact-found', 'false');
+              return;
+            }
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: matchArtifact.id,
+              archive_format: 'zip',
+            });
+            const fs = require('fs');
+            fs.writeFileSync('preview-url.zip', Buffer.from(download.data));
+            core.setOutput('artifact-found', 'true');
 
-      - name: Start Next.js production server
-        run: npx next start &
-        env:
-          PORT: 3000
+      - name: Extract preview URL
+        id: preview-url
+        run: |
+          PREVIEW_URL=""
 
-      - name: Wait for server to be ready
-        run: npx wait-on tcp:3000 --timeout 60000
+          # Try to extract URL from downloaded artifact
+          if [ -f preview-url.zip ]; then
+            unzip -o preview-url.zip -d url-dir 2>/dev/null || true
+            if [ -f url-dir/preview-url.txt ] && [ -s url-dir/preview-url.txt ]; then
+              PREVIEW_URL=$(cat url-dir/preview-url.txt | tr -d '[:space:]')
+              echo "Source: artifact — $PREVIEW_URL"
+            fi
+          fi
 
-      - name: Run Playwright E2E smoke tests
-        run: npx playwright test --reporter=github
+          # Fallback: construct deterministic Vercel preview URL from branch name (EC-4)
+          if [ -z "$PREVIEW_URL" ]; then
+            BRANCH="${{ github.event.workflow_run.head_branch }}"
+            # Vercel slugifies branch names: lowercase, replace / and _ with -, truncate at 63 chars
+            SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[\/\_]/-/g' | cut -c1-63)
+            PREVIEW_URL="https://kira-dashboard-git-${SLUG}-codermariuszs-projects.vercel.app"
+            echo "Source: fallback pattern — $PREVIEW_URL"
+          fi
+
+          echo "url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+      - name: Wait for preview URL to be ready
+        run: |
+          PREVIEW_URL="${{ steps.preview-url.outputs.url }}"
+          echo "Waiting for $PREVIEW_URL to be ready..."
+          # EC-1: preview URL may not be immediately accessible
+          npx wait-on --timeout 120000 "$PREVIEW_URL" || echo "wait-on timed out, proceeding anyway"
+
+      - name: Run E2E smoke tests
+        run: npx playwright test e2e/smoke/
         env:
           CI: true
-          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          PLAYWRIGHT_BASE_URL: ${{ steps.preview-url.outputs.url }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
 
       - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v4
