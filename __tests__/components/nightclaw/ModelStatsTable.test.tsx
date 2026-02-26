@@ -101,7 +101,7 @@ describe('ModelStatsTable', () => {
   it('shows red circle badge for success_rate < 0.80', () => {
     mockUseNightClawDigest.mockReturnValue({ data: MOCK_DIGEST_DATA, isLoading: false, error: undefined, refresh: jest.fn() })
     render(<ModelStatsTable />, { wrapper: createWrapper() })
-    expect(screen.getByTestId('model-row-glm-5').textContent).toContain('\U0001f534')
+    expect(screen.getByTestId('model-row-glm-5').textContent).toContain('🔴')
   })
 
   it('displays correct success rate percentage', () => {
