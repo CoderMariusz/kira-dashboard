@@ -1,21 +1,25 @@
 {
   "name": "kira-dashboard Branch Protection Rules",
   "description": "Branch protection configuration for CI/CD pipeline (EPIC-11)",
+  "story": "STORY-11.5",
+  "applied": true,
+  "applied_via": "GitHub API (gh cli) — automated via STORY-11.5",
   "rules": [
     {
       "branch": "main",
       "protection": {
         "required_pull_request_reviews": {
-          "required_approving_review_count": 1,
+          "required_approving_review_count": 0,
           "dismiss_stale_reviews": true,
-          "require_code_owner_reviews": false
+          "require_code_owner_reviews": false,
+          "require_last_push_approval": false
         },
         "required_status_checks": {
           "strict": true,
           "contexts": [
             "lint",
-            "test",
             "typecheck",
+            "test",
             "e2e"
           ]
         },
@@ -23,63 +27,34 @@
         "restrictions": null,
         "allow_force_pushes": false,
         "allow_deletions": false,
-        "required_linear_history": true,
-        "required_signatures": false
+        "required_linear_history": false,
+        "required_signatures": false,
+        "required_conversation_resolution": false,
+        "block_creations": false
       }
     }
   ],
+  "acceptance_criteria": {
+    "AC-1": "main branch protected — direct push blocked (PR required)",
+    "AC-2": "Required status checks: lint, typecheck, test, e2e (strict: branches must be up to date)",
+    "AC-3": "Stale review dismissal: dismiss_stale_reviews=true (approval revoked on new push)",
+    "AC-4": "Force push disabled: allow_force_pushes=false",
+    "AC-5": "Rules documented in this file (.github/branch-protection.json)"
+  },
   "required_secrets": [
-    {
-      "name": "VERCEL_TOKEN",
-      "description": "Vercel API token for deployments",
-      "used_in": ["preview-deploy.yml", "production-deploy.yml"]
-    },
-    {
-      "name": "VERCEL_ORG_ID",
-      "description": "Vercel organization ID from .vercel/project.json",
-      "used_in": ["preview-deploy.yml", "production-deploy.yml"]
-    },
-    {
-      "name": "VERCEL_PROJECT_ID",
-      "description": "Vercel project ID from .vercel/project.json",
-      "used_in": ["preview-deploy.yml", "production-deploy.yml"]
-    },
-    {
-      "name": "NEXT_PUBLIC_SUPABASE_URL",
-      "description": "Supabase project URL",
-      "used_in": ["ci.yml", "e2e.yml"]
-    },
-    {
-      "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-      "description": "Supabase anonymous key (public)",
-      "used_in": ["ci.yml", "e2e.yml"]
-    },
-    {
-      "name": "SUPABASE_SERVICE_KEY",
-      "description": "Supabase service role key (private)",
-      "used_in": ["e2e.yml"]
-    },
-    {
-      "name": "TEST_USER_EMAIL",
-      "description": "E2E test user email (test@kira.dev)",
-      "used_in": ["e2e.yml"]
-    },
-    {
-      "name": "TEST_USER_PASSWORD",
-      "description": "E2E test user password",
-      "used_in": ["e2e.yml"]
-    }
-  ],
-  "gitignore_rules": [
-    ".env",
-    ".env.local",
-    ".env.*.local",
-    ".vercel"
+    {"name": "VERCEL_TOKEN", "description": "Vercel API token for deployments", "used_in": ["preview-deploy.yml", "production-deploy.yml"]},
+    {"name": "VERCEL_ORG_ID", "description": "Vercel organization ID", "used_in": ["preview-deploy.yml", "production-deploy.yml"]},
+    {"name": "VERCEL_PROJECT_ID", "description": "Vercel project ID", "used_in": ["preview-deploy.yml", "production-deploy.yml"]},
+    {"name": "NEXT_PUBLIC_SUPABASE_URL", "description": "Supabase project URL", "used_in": ["ci.yml", "e2e.yml"]},
+    {"name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "description": "Supabase anonymous key", "used_in": ["ci.yml", "e2e.yml"]},
+    {"name": "SUPABASE_SERVICE_KEY", "description": "Supabase service role key (private)", "used_in": ["e2e.yml"]},
+    {"name": "TEST_USER_EMAIL", "description": "E2E test user email", "used_in": ["e2e.yml"]},
+    {"name": "TEST_USER_PASSWORD", "description": "E2E test user password", "used_in": ["e2e.yml"]}
   ],
   "notes": [
-    "NEVER commit .env.local to git — it contains sensitive keys",
-    ".vercel/project.json is safe to commit (contains only IDs, no secrets)",
-    "SUPABASE_SERVICE_KEY is private — never prefix with NEXT_PUBLIC_",
-    "NEXT_PUBLIC_* variables are public and visible in browser bundle"
+    "enforce_admins=false — repo admin (Mariusz) can bypass protection for hotfixes",
+    "required_approving_review_count=0 — solo developer, no code review requirement",
+    "e2e check added from STORY-11.4; active once e2e.yml is merged to main",
+    "NEVER commit .env.local to git"
   ]
 }
