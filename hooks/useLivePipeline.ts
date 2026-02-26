@@ -1,13 +1,21 @@
 'use client'
 
 // hooks/useLivePipeline.ts
-// Hook łączący usePipeline() z live updates via useSSE() i optimistic UI.
-// Implementuje STORY-2.7 — zarządza lokalnym state stories bez refetch przy SSE eventach.
+// Hook łączący usePipeline() z live updates i optimistic UI.
+// STORY-2.7: oryginalna implementacja SSE
+// STORY-12.13: dodano Supabase Realtime via useRealtimePipeline — zastępuje useSSE
+//   gdy Realtime dostępny; SSE pozostaje jako legacy fallback (do usunięcia w EPIC-13).
+//
+// Priorytety live update:
+//   1. Supabase Realtime (WebSocket, działa na Vercelu)
+//   2. SSE /api/events (legacy, nie działa na Vercelu — EPIC-13 cleanup)
+//   3. SWR polling co 30s (gdy obydwa niedostępne)
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { mutate } from 'swr'
 import { usePipeline } from './usePipeline'
 import { useSSE } from './useSSE'
+import { useRealtimePipeline } from './useRealtimePipeline'
 import { apiFetch } from '@/lib/api'
 import type { Story, StoryStatus } from '@/types/bridge'
 import type { StoryAdvancedPayload } from '@/types/sse.types'
@@ -36,10 +44,12 @@ export interface UseLivePipelineReturn {
   loading: boolean
   /** true gdy Bridge API offline */
   offline: boolean
-  /** true gdy SSE jest połączone */
+  /** true gdy SSE jest połączone (legacy) */
   sseConnected: boolean
   /** Opis błędu SSE lub null */
   sseError: string | null
+  /** true gdy Supabase Realtime WebSocket jest aktywny (STORY-12.13) */
+  realtimeConnected: boolean
   /** Uruchamia story z optimistic update i rollback przy błędzie */
   startStory: (storyId: string) => Promise<void>
   /** true gdy dane pochodzą z Supabase (Hybrid Mode / STORY-5.9) */
@@ -49,22 +59,32 @@ export interface UseLivePipelineReturn {
 }
 
 /**
- * Hook zarządzający live pipeline z SSE updates i optimistic UI.
+ * Hook zarządzający live pipeline z Supabase Realtime + SSE fallback + optimistic UI.
  *
- * Strategia:
+ * Strategia (STORY-12.13 update):
  * 1. Pobiera dane z usePipeline() (SWR) jako bazowy stan
- * 2. Nasłuchuje SSE eventów przez useSSE() — aktualizuje lokalny state BEZ refetch
- * 3. startStory() — optimistic update natychmiastowy + rollback przy błędzie API
- * 4. Gdy SSE offline > 5s — fallback do SWR revalidate co 5s
+ * 2. Supabase Realtime (WebSocket) — live push updates na bridge_stories/bridge_runs
+ * 3. useSSE('/api/events') — legacy fallback (SSE nie działa na Vercelu, EPIC-13 cleanup)
+ * 4. startStory() — optimistic update natychmiastowy + rollback przy błędzie API
+ * 5. Gdy obydwa offline — SWR polling co 30s
  *
- * AC-6: SSE event story_advanced aktualizuje listę bez fetch do API
+ * AC-1/AC-2: Realtime INSERT/UPDATE → mutateStories/mutateRuns → SWR revalidate
+ * AC-3: Fallback na SWR polling gdy Realtime disconnected
+ * AC-4: Supabase JS client auto-reconnects (wbudowane w @supabase/supabase-js)
+ * AC-5: Cleanup w useRealtimePipeline na unmount
+ * AC-6: SSE event story_advanced aktualizuje listę bez fetch do API (legacy)
  * AC-7: Optimistic UI dla startStory z rollback
  * EC-1: Fallback na polling gdy SSE offline
- * EC-5: Nieznane story_id w SSE event — brak akcji (map nie znajduje, zwraca bez zmian)
+ * EC-5: Nieznane story_id w SSE event — brak akcji
  */
 export function useLivePipeline(): UseLivePipelineReturn {
   const { stories: baseStories, loading, offline, isOfflineMode, syncedAt } = usePipeline()
   const { events, connected: sseConnected, error: sseError } = useSSE('/api/events')
+
+  // STORY-12.13: Supabase Realtime — primary live update channel
+  // useRealtimePipeline handles its own SWR keys (/api/stories, /api/runs)
+  // We only need realtimeConnected status here (data goes to its own SWR cache).
+  const { realtimeConnected } = useRealtimePipeline()
 
   // Lokalny state stories — kopia baseStories z nałożonymi live updates
   const [localStories, setLocalStories] = useState<LiveStory[] | null>(null)
@@ -251,6 +271,7 @@ export function useLivePipeline(): UseLivePipelineReturn {
     offline,
     sseConnected,
     sseError,
+    realtimeConnected,
     startStory,
     isOfflineMode,
     syncedAt,

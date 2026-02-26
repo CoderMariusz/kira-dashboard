@@ -30,6 +30,7 @@ function PipelinePageInner() {
     offline: pipelineOffline,
     sseConnected,
     sseError,
+    realtimeConnected,
     startStory,
     isOfflineMode,
     syncedAt,
@@ -117,6 +118,7 @@ function PipelinePageInner() {
         onStartStory={handleStartStory}
         sseConnected={sseConnected}
         sseError={sseError}
+        realtimeConnected={realtimeConnected}
       />
 
       {/* Right panel: activity feed */}

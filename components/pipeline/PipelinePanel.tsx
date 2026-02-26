@@ -34,6 +34,8 @@ interface PipelinePanelProps {
   onStartStory?: (storyId: string) => Promise<void>
   sseConnected?: boolean
   sseError?: string | null
+  /** STORY-12.13: true when Supabase Realtime WebSocket is SUBSCRIBED */
+  realtimeConnected?: boolean
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -91,6 +93,7 @@ export default function PipelinePanel({
   onStartStory,
   sseConnected = true,
   sseError,
+  realtimeConnected = false,
 }: PipelinePanelProps) {
   // Filtruj stories addytywnie na podstawie aktywnych filtrów (AC-2, AC-3, AC-4)
   const filteredStories = useMemo<Story[]>(() => {
@@ -217,28 +220,40 @@ export default function PipelinePanel({
           — active + merge queue
         </span>
 
-        {/* SSE status indicator — EC-1 */}
-        {!sseConnected && (
-          <span
-            style={{
-              fontSize: '10px',
-              color: '#f87171',
-              marginLeft: 'auto',
-            }}
-            title={sseError ?? 'SSE offline'}
-          >
-            🔴 Live updates offline — odświeżanie co 5s
-          </span>
-        )}
-        {sseConnected && (
+        {/* Live update indicator — STORY-12.13 */}
+        {/* Priority: Realtime > SSE > Polling */}
+        {realtimeConnected ? (
           <span
             style={{
               fontSize: '10px',
               color: '#4ade80',
               marginLeft: 'auto',
             }}
+            title="Supabase Realtime WebSocket aktywny"
           >
-            🟢 Live
+            🟢 Live (Realtime)
+          </span>
+        ) : sseConnected ? (
+          <span
+            style={{
+              fontSize: '10px',
+              color: '#86efac',
+              marginLeft: 'auto',
+            }}
+            title="SSE połączone"
+          >
+            🟢 Live (SSE)
+          </span>
+        ) : (
+          <span
+            style={{
+              fontSize: '10px',
+              color: '#f87171',
+              marginLeft: 'auto',
+            }}
+            title={sseError ?? 'Live updates offline — polling fallback active'}
+          >
+            🔴 Polling
           </span>
         )}
       </div>
