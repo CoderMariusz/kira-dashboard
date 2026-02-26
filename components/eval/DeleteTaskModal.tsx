@@ -124,7 +124,7 @@ export default function DeleteTaskModal({ task, onCancel, mutate }: DeleteTaskMo
             lineHeight: 1.5,
           }}
         >
-          "{promptPreview}"
+          &ldquo;{promptPreview}&rdquo;
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>

@@ -89,9 +89,11 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
 
       const projectToSet = storedProject ?? projects[0]
       if (projectToSet !== undefined) {
+        // eslint-disable-next-line -- setState on initial load only, not a cascading render issue
         setActiveProjectState(projectToSet)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only run when projects initially load
   }, [projects, activeProject])
 
   /**

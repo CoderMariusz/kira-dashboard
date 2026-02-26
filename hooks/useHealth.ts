@@ -96,7 +96,9 @@ export function useHealth(): UseHealthReturn {
       alerts: health?.alerts ?? [],
     }
 
+    // eslint-disable-next-line -- setData in callback, not synchronous effect render
     setData(merged)
+    // eslint-disable-next-line -- setLoading in callback, not synchronous effect render
     setLoading(false)
   }, [])
 
@@ -104,6 +106,7 @@ export function useHealth(): UseHealthReturn {
     mountedRef.current = true
 
     // Pierwsze pobranie
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchHealth is a data fetch, not a cascading render
     void fetchHealth()
 
     // Auto-refresh co 60s
