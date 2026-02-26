@@ -31,6 +31,11 @@ ALTER TABLE bridge_stories
 -- Make file_path nullable (spec doesn't require it)
 ALTER TABLE bridge_stories ALTER COLUMN file_path DROP NOT NULL;
 
+-- Update status CHECK constraint to include TDD states
+ALTER TABLE bridge_stories DROP CONSTRAINT IF EXISTS bridge_stories_status_check;
+ALTER TABLE bridge_stories ADD CONSTRAINT bridge_stories_status_check
+  CHECK (status IN ('BACKLOG','READY','TEST_RED','IN_PROGRESS','TEST_GREEN','REVIEW','REFACTOR','APPROVED','DONE','BLOCKED','FAILED'));
+
 -- Convert depends_on from JSONB to TEXT[] if needed for consistency
 -- Note: This is a one-way migration. JSONB data will be preserved as text representation.
 DO $$
@@ -69,6 +74,11 @@ ALTER TABLE bridge_runs
   ADD COLUMN IF NOT EXISTS project_id TEXT,
   ADD COLUMN IF NOT EXISTS synced_at TIMESTAMPTZ DEFAULT NOW();
 
+-- Update status CHECK constraint to match sync script values
+ALTER TABLE bridge_runs DROP CONSTRAINT IF EXISTS bridge_runs_status_check;
+ALTER TABLE bridge_runs ADD CONSTRAINT bridge_runs_status_check
+  CHECK (status IN ('RUNNING','SUCCESS','FAILED','TIMEOUT'));
+
 -- ============================================================================
 -- 4. Row Level Security — allow authenticated SELECT (not just ADMIN)
 -- ============================================================================
@@ -83,15 +93,21 @@ ALTER TABLE bridge_stories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bridge_epics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bridge_runs ENABLE ROW LEVEL SECURITY;
 
--- Create policies for authenticated SELECT
-CREATE POLICY "authenticated_read_stories" ON bridge_stories
-  FOR SELECT TO authenticated USING (true);
+-- Create policies for authenticated SELECT (idempotent)
+DO $$ BEGIN
+  CREATE POLICY "authenticated_read_stories" ON bridge_stories FOR SELECT TO authenticated USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE POLICY "authenticated_read_epics" ON bridge_epics
-  FOR SELECT TO authenticated USING (true);
+DO $$ BEGIN
+  CREATE POLICY "authenticated_read_epics" ON bridge_epics FOR SELECT TO authenticated USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE POLICY "authenticated_read_runs" ON bridge_runs
-  FOR SELECT TO authenticated USING (true);
+DO $$ BEGIN
+  CREATE POLICY "authenticated_read_runs" ON bridge_runs FOR SELECT TO authenticated USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Note: Write access is limited to service_role which bypasses RLS by default
 
@@ -101,7 +117,7 @@ CREATE POLICY "authenticated_read_runs" ON bridge_runs
 
 -- bridge_stories indexes
 CREATE INDEX IF NOT EXISTS idx_bridge_stories_project ON bridge_stories(project_id);
-CREATE INDEX IF NOT EXISTS idx_bridge_stories_epic ON bridge_stories(epic_id);
+CREATE INDEX IF NOT EXISTS idx_bridge_stories_epic ON bridge_stories(project_id, epic_id);
 CREATE INDEX IF NOT EXISTS idx_bridge_stories_status ON bridge_stories(status);
 
 -- bridge_epics indexes

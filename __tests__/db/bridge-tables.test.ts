@@ -202,15 +202,8 @@ describe('STORY-12.1: Database integration tests', () => {
         .select('*')
         .limit(1);
 
-      // After migration: Should get an RLS error or empty result
-      // Current (pre-migration): May return data if old RLS allows
-      // Test documents expected behavior post-migration
-      if (error) {
-        expect(error).toBeTruthy();
-      } else {
-        // If no error, RLS should at least return empty array for anon
-        expect(Array.isArray(data)).toBe(true);
-      }
+      // Anon access should always fail with an RLS error
+      expect(error).not.toBeNull();
     });
 
     itIfAnonKey('anonymous client access to bridge_epics follows RLS', async () => {
