@@ -6,6 +6,7 @@
 
 import { useState, useCallback } from 'react'
 import { mutate } from 'swr'
+import { toast } from 'sonner'
 import { apiFetch } from '@/lib/api'
 import type { UseStoryActionsReturn } from '@/types/sse.types'
 import type { PipelineResponse } from '@/types/bridge'
@@ -65,11 +66,24 @@ export function useStoryActions(
 
     try {
       // KROK 2: Wyślij request do serwera
-      await apiFetch(`/api/stories/${id}/start`, {
+      const response = await apiFetch(`/api/stories/${id}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
+
+      // KROK 2a: Obsłuż tryb queued — pokaż toast gdy komenda w kolejce
+      const data = await response.json().catch(() => ({})) as Record<string, unknown>
+      if (data['mode'] === 'queued') {
+        toast(data['message'] as string ?? 'Komenda w kolejce — Bridge przetworzy w ciągu minuty', {
+          duration: 6000,
+          style: {
+            background: '#1a2a3a',
+            border: '1px solid #1e3a6e',
+            color: '#93c5fd',
+          },
+        })
+      }
 
       // KROK 3: Sukces — rewaliduj SWR żeby potwierdzić stan z serwera
       await mutate(pipelineSWRKey)
@@ -111,11 +125,24 @@ export function useStoryActions(
 
     try {
       // KROK 2: Wyślij request
-      await apiFetch(`/api/stories/${id}/advance`, {
+      const response = await apiFetch(`/api/stories/${id}/advance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       })
+
+      // KROK 2a: Obsłuż tryb queued — pokaż toast gdy komenda w kolejce
+      const data = await response.json().catch(() => ({})) as Record<string, unknown>
+      if (data['mode'] === 'queued') {
+        toast(data['message'] as string ?? 'Komenda w kolejce — Bridge przetworzy w ciągu minuty', {
+          duration: 6000,
+          style: {
+            background: '#1a2a3a',
+            border: '1px solid #1e3a6e',
+            color: '#93c5fd',
+          },
+        })
+      }
 
       // KROK 3: Potwierdź z serwera
       await mutate(pipelineSWRKey)
