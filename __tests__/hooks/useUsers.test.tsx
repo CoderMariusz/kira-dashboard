@@ -162,9 +162,11 @@ describe('useUsers()', () => {
       })
     ).rejects.toThrow('Nie masz uprawnień do tej operacji')
 
-    // role should be rolled back to original
-    const found = result.current.users?.find((u) => u.id === 'user-uuid-2')
-    expect(found?.role).toBe('HELPER')
+    // role should be rolled back to original (waitFor: rollback is async in SWR)
+    await waitFor(() => {
+      const found = result.current.users?.find((u) => u.id === 'user-uuid-2')
+      expect(found?.role).toBe('HELPER')
+    })
   })
 
   it('TC-7: deleteUser — optimistic remove, then confirmed', async () => {
@@ -196,10 +198,12 @@ describe('useUsers()', () => {
       })
     ).rejects.toThrow('Użytkownik nie istnieje')
 
-    // user should be rolled back
-    const found = result.current.users?.find((u) => u.id === 'user-uuid-2')
-    expect(found).toBeDefined()
-    expect(found?.email).toBe('helper@kira.local')
+    // user should be rolled back (waitFor: rollback is async in SWR)
+    await waitFor(() => {
+      const found = result.current.users?.find((u) => u.id === 'user-uuid-2')
+      expect(found).toBeDefined()
+      expect(found?.email).toBe('helper@kira.local')
+    })
   })
 
   it('TC-9: inviteUser — success triggers revalidation', async () => {
