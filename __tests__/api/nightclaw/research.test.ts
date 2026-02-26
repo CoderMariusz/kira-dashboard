@@ -1,7 +1,7 @@
 /**
  * __tests__/api/nightclaw/research.test.ts
- * STORY-9.4 — Integration tests for GET /api/nightclaw/research endpoint.
- * TDD: written before implementation (RED phase).
+ * STORY-12.10 — Integration tests for GET /api/nightclaw/research (Supabase migration)
+ * TDD: rewritten for Supabase-backed endpoint.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -21,383 +21,184 @@ jest.mock('next/server', () => ({
   NextResponse: MockNextResponse,
 }))
 
+// ─── Mock requireAuth ─────────────────────────────────────────────────────────
+
+const mockRequireAuth = jest.fn()
+jest.mock('@/lib/auth/requireRole', () => ({
+  requireAuth: (...args: any[]) => mockRequireAuth(...args),
+}))
+
 // ─── Mock Supabase ────────────────────────────────────────────────────────────
 
-jest.mock('@/lib/supabase/server', () => ({ createClient: jest.fn() }))
+// Chain: from → select → order [→ eq (optional status filter)]
+const mockQueryResult = jest.fn()
+const mockEq = jest.fn(() => mockQueryResult())
+const mockOrder = jest.fn(() => {
+  // Return object that can be awaited (default) or chained with .eq()
+  const chainable = mockQueryResult()
+  chainable.eq = mockEq
+  return chainable
+})
+const mockSelect = jest.fn(() => ({ order: mockOrder }))
+const mockFrom = jest.fn(() => ({ select: mockSelect }))
 
-// ─── Mock fs/promises ─────────────────────────────────────────────────────────
-
-const mockReaddir = jest.fn()
-const mockReadFile = jest.fn()
-const mockStat = jest.fn()
-
-jest.mock('fs/promises', () => ({
-  readdir: (...args: any[]) => mockReaddir(...args),
-  readFile: (...args: any[]) => mockReadFile(...args),
-  stat: (...args: any[]) => mockStat(...args),
+jest.mock('@/lib/supabase/server', () => ({
+  createClient: jest.fn(() => Promise.resolve({
+    from: mockFrom,
+  })),
 }))
 
 // ─── Imports (after mocks) ────────────────────────────────────────────────────
 
 import { GET } from '@/app/api/nightclaw/research/route'
-import {
-  mockUserSession,
-  mockNoSession,
-} from '@/__tests__/helpers/auth'
-import { mockRequest } from '@/__tests__/helpers/fetch'
 
-// ─── Test fixtures ────────────────────────────────────────────────────────────
+// ─── Sample fixture data ──────────────────────────────────────────────────────
 
-const FILE_COST_RESEARCH = `# Research: AI Coding Agents Cost Optimization
-
-## Problem
-Kimi K2.5 costs money and we need to optimize.
-
-## Solution
-Use cheaper models for simple tasks.
-`
-
-const FILE_MODEL_ROUTING = `# Research: Model Routing
-
-First non-header line.
-Second non-header line.
-Third non-header line with more text to test preview truncation.
-`
-
-const FILE_NO_TITLE = `This file has no header.
-Just some text content.
-`
+const MOCK_RESEARCH = [
+  {
+    id: 'uuid-1',
+    slug: 'cost-optimization',
+    title: 'AI Coding Agents Cost Optimization',
+    problem: 'Kimi K2.5 costs money and we need to optimize.',
+    solution: 'Use cheaper models for simple tasks.',
+    status: 'implemented',
+    created_at: '2026-02-20T10:00:00Z',
+  },
+  {
+    id: 'uuid-2',
+    slug: 'model-routing',
+    title: 'Model Routing Strategy',
+    problem: 'Need to route stories to the right model.',
+    solution: 'Difficulty-based routing with fallback chain.',
+    status: 'open',
+    created_at: '2026-02-19T10:00:00Z',
+  },
+]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function mockDirent(name: string, isFile = true) {
+function allowAuth() {
+  mockRequireAuth.mockResolvedValue({ user: { id: 'user-id' }, role: 'USER' })
+}
+
+function denyAuth() {
+  mockRequireAuth.mockResolvedValue(
+    MockNextResponse.json({ error: 'Brak autoryzacji' }, { status: 401 })
+  )
+}
+
+function mockResearchRequest(params: string = ''): any {
+  const url = new URL(`http://localhost/api/nightclaw/research${params}`)
   return {
-    name,
-    isFile: () => isFile,
-    isDirectory: () => !isFile,
+    nextUrl: url,
+    url: url.toString(),
+    method: 'GET',
   }
 }
 
-function mockStats(mtime: Date) {
-  return {
-    mtime,
-    isFile: () => true,
-    isDirectory: () => false,
-  }
-}
+beforeEach(() => {
+  jest.clearAllMocks()
+  // Default: resolve with data
+  mockQueryResult.mockReturnValue(Promise.resolve({ data: MOCK_RESEARCH, error: null }))
+})
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('GET /api/nightclaw/research', () => {
-  beforeEach(() => jest.clearAllMocks())
+  // ── AC-6: Auth required ─────────────────────────────────────────────────────
 
-  // ── AC-AUTH: 401 without session ────────────────────────────────────────────
-
-  it('returns 401 when unauthenticated (AC-AUTH)', async () => {
-    mockNoSession()
-    const res = await GET(mockRequest())
+  it('returns 401 when unauthenticated (AC-6)', async () => {
+    denyAuth()
+    const res = await GET(mockResearchRequest())
     expect(res.status).toBe(401)
     const json = await res.json()
     expect(json).toHaveProperty('error')
   })
 
-  // ── AC-1: Returns all .md files from solutions/ (except _pending-apply.md) ──
+  // ── AC-4: Returns research findings list ────────────────────────────────────
 
-  it('returns list of .md files from solutions/ (AC-1)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([
-      mockDirent('cost-optimization-research.md'),
-      mockDirent('model-routing-research.md'),
-      mockDirent('_pending-apply.md'), // should be excluded
-    ])
-    
-    mockReadFile
-      .mockResolvedValueOnce(FILE_COST_RESEARCH)
-      .mockResolvedValueOnce(FILE_MODEL_ROUTING)
-    
-    mockStat
-      .mockResolvedValueOnce(mockStats(new Date('2026-02-20T10:00:00Z')))
-      .mockResolvedValueOnce(mockStats(new Date('2026-02-19T10:00:00Z')))
+  it('returns list of research findings from Supabase (AC-4)', async () => {
+    allowAuth()
 
-    const res = await GET(mockRequest())
+    const res = await GET(mockResearchRequest())
     expect(res.status).toBe(200)
-    
+
     const json = await res.json()
-    expect(json.files).toHaveLength(2)
-    expect(json.files.map((f: any) => f.filename)).toContain('cost-optimization-research.md')
-    expect(json.files.map((f: any) => f.filename)).toContain('model-routing-research.md')
-    expect(json.files.map((f: any) => f.filename)).not.toContain('_pending-apply.md')
+    expect(json).toHaveProperty('data')
+    expect(Array.isArray(json.data)).toBe(true)
+    expect(json.data.length).toBe(2)
   })
 
-  it('excludes _pending-apply.md from results (AC-1)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([
-      mockDirent('some-research.md'),
-      mockDirent('_pending-apply.md'),
-    ])
-    
-    mockReadFile.mockResolvedValueOnce('# Some Research\n\nContent.')
-    mockStat.mockResolvedValueOnce(mockStats(new Date()))
+  it('each entry has slug, title, problem, solution, status (AC-4)', async () => {
+    allowAuth()
 
-    const res = await GET(mockRequest())
+    const res = await GET(mockResearchRequest())
     const json = await res.json()
-    
-    expect(json.files).toHaveLength(1)
-    expect(json.files[0].filename).toBe('some-research.md')
+
+    for (const entry of json.data) {
+      expect(entry).toHaveProperty('slug')
+      expect(entry).toHaveProperty('title')
+      expect(entry).toHaveProperty('problem')
+      expect(entry).toHaveProperty('solution')
+      expect(entry).toHaveProperty('status')
+    }
   })
 
-  it('excludes non-.md files (AC-1)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([
-      mockDirent('research.md'),
-      mockDirent('notes.txt'),
-      mockDirent('data.json'),
-    ])
-    
-    mockReadFile.mockResolvedValueOnce('# Research\n\nContent.')
-    mockStat.mockResolvedValueOnce(mockStats(new Date()))
+  it('queries nightclaw_research table ordered by created_at desc (AC-4)', async () => {
+    allowAuth()
 
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    expect(json.files).toHaveLength(1)
-    expect(json.files[0].filename).toBe('research.md')
+    await GET(mockResearchRequest())
+
+    expect(mockFrom).toHaveBeenCalledWith('nightclaw_research')
+    expect(mockSelect).toHaveBeenCalledWith('*')
+    expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
   })
 
-  // ── AC-2: Sorted by modified_at descending (newest first) ───────────────────
+  // ── Status filter ───────────────────────────────────────────────────────────
 
-  it('sorts files by modified_at descending (newest first) (AC-2)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([
-      mockDirent('oldest.md'),
-      mockDirent('middle.md'),
-      mockDirent('newest.md'),
-    ])
-    
-    mockReadFile
-      .mockResolvedValueOnce('# Oldest')
-      .mockResolvedValueOnce('# Middle')
-      .mockResolvedValueOnce('# Newest')
-    
-    mockStat
-      .mockResolvedValueOnce(mockStats(new Date('2026-02-10T10:00:00Z')))
-      .mockResolvedValueOnce(mockStats(new Date('2026-02-15T10:00:00Z')))
-      .mockResolvedValueOnce(mockStats(new Date('2026-02-20T10:00:00Z')))
+  it('filters by status when query param provided (AC-4)', async () => {
+    allowAuth()
+    mockEq.mockReturnValueOnce(Promise.resolve({
+      data: [MOCK_RESEARCH[1]],
+      error: null,
+    }))
 
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    expect(json.files[0].filename).toBe('newest.md')
-    expect(json.files[1].filename).toBe('middle.md')
-    expect(json.files[2].filename).toBe('oldest.md')
-  })
-
-  // ── AC-3: Empty dir → { files: [] } ─────────────────────────────────────────
-
-  it('returns { files: [] } when directory is empty (AC-3)', async () => {
-    mockUserSession()
-    mockReaddir.mockResolvedValue([])
-
-    const res = await GET(mockRequest())
+    const res = await GET(mockResearchRequest('?status=open'))
     expect(res.status).toBe(200)
-    
-    const json = await res.json()
-    expect(json.files).toEqual([])
+
+    expect(mockEq).toHaveBeenCalledWith('status', 'open')
   })
 
-  // ── AC-4: Missing dir → { files: [] } (not 500) ─────────────────────────────
+  // ── Empty state ─────────────────────────────────────────────────────────────
 
-  it('returns { files: [] } when directory does not exist (AC-4)', async () => {
-    mockUserSession()
-    const enoent = Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
-    mockReaddir.mockRejectedValueOnce(enoent)
+  it('returns empty array when no research exists (EC-1)', async () => {
+    allowAuth()
+    mockQueryResult.mockReturnValue(Promise.resolve({ data: [], error: null }))
 
-    const res = await GET(mockRequest())
+    const res = await GET(mockResearchRequest())
     expect(res.status).toBe(200)
-    
+
     const json = await res.json()
-    expect(json.files).toEqual([])
+    expect(json.data).toEqual([])
   })
 
-  // ── AC-5: Response shape ────────────────────────────────────────────────────
+  it('returns empty array when data is null', async () => {
+    allowAuth()
+    mockQueryResult.mockReturnValue(Promise.resolve({ data: null, error: null }))
 
-  it('returns correct response shape for each file (AC-5)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([mockDirent('test-research.md')])
-    mockReadFile.mockResolvedValueOnce(FILE_COST_RESEARCH)
-    mockStat.mockResolvedValueOnce(mockStats(new Date('2026-02-20T10:00:00Z')))
-
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    expect(json.files[0]).toMatchObject({
-      filename: expect.any(String),
-      title: expect.any(String),
-      preview: expect.any(String),
-      content: expect.any(String),
-      modified_at: expect.any(String),
-    })
-  })
-
-  // ── AC-6: Title extraction ──────────────────────────────────────────────────
-
-  it('extracts title from first # header (AC-6)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([mockDirent('cost-research.md')])
-    mockReadFile.mockResolvedValueOnce(FILE_COST_RESEARCH)
-    mockStat.mockResolvedValueOnce(mockStats(new Date()))
-
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    expect(json.files[0].title).toBe('Research: AI Coding Agents Cost Optimization')
-  })
-
-  it('uses filename without .md as title when no # header (AC-6)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([mockDirent('no-title.md')])
-    mockReadFile.mockResolvedValueOnce(FILE_NO_TITLE)
-    mockStat.mockResolvedValueOnce(mockStats(new Date()))
-
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    expect(json.files[0].title).toBe('no-title')
-  })
-
-  // ── AC-7: Preview (first 3 non-header lines, max 200 chars) ─────────────────
-
-  it('extracts preview from first 3 non-header lines (AC-7)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([mockDirent('routing-research.md')])
-    mockReadFile.mockResolvedValueOnce(FILE_MODEL_ROUTING)
-    mockStat.mockResolvedValueOnce(mockStats(new Date()))
-
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    // Should have first 3 non-header lines
-    expect(json.files[0].preview).toContain('First non-header line')
-    expect(json.files[0].preview).toContain('Second non-header line')
-    expect(json.files[0].preview).toContain('Third non-header line')
-  })
-
-  it('limits preview to max 200 chars (AC-7)', async () => {
-    mockUserSession()
-    
-    const longContent = `# Title\n\n${'a'.repeat(300)}`
-    
-    mockReaddir.mockResolvedValue([mockDirent('long.md')])
-    mockReadFile.mockResolvedValueOnce(longContent)
-    mockStat.mockResolvedValueOnce(mockStats(new Date()))
-
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    expect(json.files[0].preview.length).toBeLessThanOrEqual(200)
-  })
-
-  it('preview is empty when file has only headers (AC-7 edge case)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([mockDirent('headers-only.md')])
-    mockReadFile.mockResolvedValueOnce('# Header 1\n## Header 2\n### Header 3')
-    mockStat.mockResolvedValueOnce(mockStats(new Date()))
-
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    expect(json.files[0].preview).toBe('')
-  })
-
-  // ── AC-8: Content (full file content) ───────────────────────────────────────
-
-  it('returns full file content in content field (AC-8)', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([mockDirent('full-content.md')])
-    mockReadFile.mockResolvedValueOnce(FILE_COST_RESEARCH)
-    mockStat.mockResolvedValueOnce(mockStats(new Date()))
-
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    expect(json.files[0].content).toBe(FILE_COST_RESEARCH)
-  })
-
-  // ── AC-9: modified_at as ISO 8601 ───────────────────────────────────────────
-
-  it('returns modified_at as ISO 8601 string (AC-9)', async () => {
-    mockUserSession()
-    
-    const modDate = new Date('2026-02-20T10:30:45Z')
-    
-    mockReaddir.mockResolvedValue([mockDirent('dated.md')])
-    mockReadFile.mockResolvedValueOnce('# Dated')
-    mockStat.mockResolvedValueOnce(mockStats(modDate))
-
-    const res = await GET(mockRequest())
-    const json = await res.json()
-    
-    expect(json.files[0].modified_at).toBe(modDate.toISOString())
-  })
-
-  // ── Error handling ───────────────────────────────────────────────────────────
-
-  it('handles individual file read errors gracefully', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([
-      mockDirent('readable.md'),
-      mockDirent('unreadable.md'),
-    ])
-    
-    mockReadFile
-      .mockResolvedValueOnce('# Readable')
-      .mockRejectedValueOnce(new Error('Permission denied'))
-    
-    mockStat
-      .mockResolvedValueOnce(mockStats(new Date()))
-      .mockResolvedValueOnce(mockStats(new Date()))
-
-    const res = await GET(mockRequest())
+    const res = await GET(mockResearchRequest())
     expect(res.status).toBe(200)
-    
+
     const json = await res.json()
-    // Should still return the readable file
-    expect(json.files).toHaveLength(1)
-    expect(json.files[0].filename).toBe('readable.md')
+    expect(json.data).toEqual([])
   })
 
-  it('handles stat errors gracefully for individual files', async () => {
-    mockUserSession()
-    
-    mockReaddir.mockResolvedValue([
-      mockDirent('good.md'),
-      mockDirent('nostat.md'),
-    ])
-    
-    mockReadFile
-      .mockResolvedValueOnce('# Good')
-      .mockResolvedValueOnce('# No stat')
-    
-    mockStat
-      .mockResolvedValueOnce(mockStats(new Date('2026-02-20T10:00:00Z')))
-      .mockRejectedValueOnce(new Error('Stat failed'))
+  // ── Cache-Control header ────────────────────────────────────────────────────
 
-    const res = await GET(mockRequest())
-    expect(res.status).toBe(200)
-    
-    const json = await res.json()
-    // Should include file even if stat fails (using current date as fallback)
-    expect(json.files).toHaveLength(2)
+  it('includes Cache-Control: no-store header', async () => {
+    allowAuth()
+
+    const res = await GET(mockResearchRequest())
+    expect(res.headers.get('Cache-Control')).toBe('no-store')
   })
 })

@@ -16,7 +16,8 @@
     "test:e2e:headed": "npx playwright test --headed",
     "test:e2e:report": "npx playwright show-report",
     "sync:bridge": "ts-node scripts/sync-bridge-to-supabase.ts",
-    "sync:patterns": "ts-node scripts/sync-patterns-to-supabase.ts"
+    "sync:patterns": "ts-node scripts/sync-patterns-to-supabase.ts",
+    "sync:nightclaw": "ts-node scripts/sync-nightclaw-to-supabase.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
