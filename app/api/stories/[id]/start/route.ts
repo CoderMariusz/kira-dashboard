@@ -1,52 +1,90 @@
 export const runtime = 'nodejs'
 
 // POST /api/stories/[id]/start
-// Uruchamia story w Bridge CLI przez komendę start-story.
-// Wymaga: BRIDGE_DIR w zmiennych środowiskowych.
+// STORY-12.9: Dual mode — local Bridge CLI (if BRIDGE_DIR set) or Supabase command queue (Vercel).
+// Auth: ADMIN only
 
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { runBridgeCLI, STORY_ID_REGEX } from '@/lib/bridge-cli'
+import { requireAdmin } from '@/lib/auth/requireRole'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
-  // Krok 1a: Sprawdź BRIDGE_DIR
-  const bridgeDir = process.env['BRIDGE_DIR']
-  if (!bridgeDir) {
-    return Response.json(
-      {
-        ok: false,
-        error: 'Konfiguracja serwera: brak BRIDGE_DIR w zmiennych środowiskowych',
-      },
-      { status: 500 }
-    )
+  // Step 1: Auth — ADMIN only
+  const auth = await requireAdmin()
+  if (auth instanceof Response) {
+    return auth
   }
 
-  // Krok 1b: Pobierz i zwaliduj params.id
+  // Step 2: Validate story ID
   const { id } = await params
-
   if (!STORY_ID_REGEX.test(id)) {
-    return Response.json(
+    return NextResponse.json(
       {
         ok: false,
-        error:
-          'Nieprawidłowy format story ID. Oczekiwany format: STORY-N.N (np. STORY-1.1)',
+        error: 'Nieprawidłowy format story ID. Oczekiwany format: STORY-N.N (np. STORY-1.1)',
       },
-      { status: 400 }
+      {
+        status: 400,
+        headers: { 'Cache-Control': 'no-store' },
+      }
     )
   }
 
-  // Krok 2: Zbuduj komendę CLI
-  // id przeszło walidację regex — jest bezpieczne do wstawienia w komendę
-  const command = `cd "${bridgeDir}" && source .venv/bin/activate && python -m bridge.cli start-story ${id} --project kira-dashboard`
+  // Step 3: Mode selection — local Bridge CLI or Supabase queue
+  const bridgeDir = process.env['BRIDGE_DIR']
 
-  // Krok 3 & 4: Wywołaj Bridge CLI i obsłuż wynik
-  const result = await runBridgeCLI(command)
+  if (bridgeDir) {
+    // Mode 1: Local Bridge CLI (instant execution)
+    const command = `cd "${bridgeDir}" && source .venv/bin/activate && python -m bridge.cli start-story ${id} --project kira-dashboard`
+    const result = await runBridgeCLI(command)
 
-  if (!result.ok) {
-    return Response.json({ ok: false, error: result.error }, { status: result.status })
+    if (!result.ok) {
+      return NextResponse.json(
+        { ok: false, error: result.error },
+        {
+          status: result.status,
+          headers: { 'Cache-Control': 'no-store' },
+        }
+      )
+    }
+
+    return NextResponse.json(
+      { ok: true, mode: 'local', output: result.output },
+      { headers: { 'Cache-Control': 'no-store' } }
+    )
   }
 
-  return Response.json({ ok: true, output: result.output })
+  // Mode 2: Supabase command queue (Vercel — no local Bridge)
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('bridge_commands')
+    .insert({
+      story_id: id,
+      command: 'start',
+      payload: {},
+      created_by: auth.user.id,
+    })
+
+  if (error) {
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      {
+        status: 500,
+        headers: { 'Cache-Control': 'no-store' },
+      }
+    )
+  }
+
+  return NextResponse.json(
+    {
+      ok: true,
+      mode: 'queued',
+      message: 'Komenda w kolejce — Bridge przetworzy w ciągu minuty',
+    },
+    { headers: { 'Cache-Control': 'no-store' } }
+  )
 }
