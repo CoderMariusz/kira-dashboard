@@ -1,11 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { z } from 'zod'
 import { toast } from 'sonner'
 import { useUsers } from '@/hooks/useUsers'
 import { useUser } from '@/contexts/RoleContext'
 import type { UserWithRole } from '@/types/settings.types'
 import type { Role } from '@/types/auth.types'
+
+// ─── Zod email schema ─────────────────────────────────────────────────────────
+
+const emailSchema = z.string().email('Nieprawidłowy adres email')
 
 // ─── Role badge styles ────────────────────────────────────────────────────────
 
@@ -15,10 +20,21 @@ const ROLE_STYLES: Record<Role, string> = {
   HELPER: 'bg-slate-500/20 text-slate-400 border border-slate-500/40',
 }
 
+function RoleBadge({ role }: { role: Role }) {
+  return (
+    <span
+      data-testid={`role-badge-${role}`}
+      className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${ROLE_STYLES[role]}`}
+    >
+      {role}
+    </span>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function UsersSettingsPage() {
-  const { users, isLoading, error, updateRole, deleteUser, inviteUser } = useUsers()
+  const { users, isLoading, error, updateRole, deleteUser, inviteUser, refresh } = useUsers()
   const { user: currentUser } = useUser()
   const currentUserId = currentUser?.id
 
@@ -58,9 +74,10 @@ export default function UsersSettingsPage() {
     e.preventDefault()
     setInviteError('')
 
-    // Basic email validation (backup — HTML input type=email handles the rest)
-    if (!inviteEmail.includes('@') || !inviteEmail.includes('.')) {
-      setInviteError('Podaj prawidłowy adres email')
+    // Zod email validation
+    const result = emailSchema.safeParse(inviteEmail)
+    if (!result.success) {
+      setInviteError(result.error.issues[0]?.message ?? 'Nieprawidłowy adres email')
       return
     }
 
@@ -124,17 +141,25 @@ export default function UsersSettingsPage() {
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-14 bg-[#1a1730] rounded-lg animate-pulse" />
+              <div
+                key={i}
+                data-testid="user-skeleton"
+                aria-busy="true"
+                className="h-14 bg-[#1a1730] rounded-lg animate-pulse"
+              />
             ))}
           </div>
         )}
 
         {/* Error state */}
         {error && !isLoading && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
+          <div
+            role="alert"
+            className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm"
+          >
             Błąd ładowania użytkowników.{' '}
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => void refresh()}
               className="underline hover:no-underline"
             >
               Spróbuj ponownie
@@ -157,7 +182,7 @@ export default function UsersSettingsPage() {
         )}
 
         {/* Users table */}
-        {!isLoading && !error && users !== undefined && users.length > 0 && (
+        {!isLoading && !error && users !== undefined && users.length > 0 && !deleteTarget && (
           <div className="overflow-x-auto rounded-lg border border-[#1a1730]">
             <table className="w-full text-sm">
               <thead>
@@ -169,57 +194,65 @@ export default function UsersSettingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map(user => (
-                  <tr
-                    key={user.id}
-                    className="border-b border-[#1a1730] hover:bg-[#1a1730]/50 transition-colors last:border-b-0"
-                  >
-                    {/* Email */}
-                    <td className="px-4 py-3 text-[#e6edf3]">{user.email}</td>
+                {users.map(user => {
+                  const isOwnRow = currentUserId === user.id
+                  return (
+                    <tr
+                      key={user.id}
+                      data-testid={`user-row-${user.id}`}
+                      className="border-b border-[#1a1730] hover:bg-[#1a1730]/50 transition-colors last:border-b-0"
+                    >
+                      {/* Email */}
+                      <td className="px-4 py-3 text-[#e6edf3]">{user.email}</td>
 
-                    {/* Role — badge for self, dropdown for others */}
-                    <td className="px-4 py-3">
-                      {currentUserId === user.id ? (
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${ROLE_STYLES[user.role]}`}>
-                          {user.role}
-                        </span>
-                      ) : (
-                        <select
-                          value={user.role}
-                          onChange={e => handleUpdateRole(user.id, e.target.value as Role)}
-                          className="bg-[#1a1730] border border-[#3b3d7a] rounded px-2 py-1 text-xs text-[#e6edf3] hover:border-[#818cf8] focus:border-[#818cf8] outline-none cursor-pointer transition-colors"
-                        >
-                          <option value="ADMIN">ADMIN</option>
-                          <option value="HELPER_PLUS">HELPER_PLUS</option>
-                          <option value="HELPER">HELPER</option>
-                        </select>
-                      )}
-                    </td>
+                      {/* Role */}
+                      <td className="px-4 py-3">
+                        {isOwnRow ? (
+                          /* Own row: badge only, no dropdown */
+                          <RoleBadge role={user.role} />
+                        ) : (
+                          /* Other rows: badge + dropdown */
+                          <div className="flex items-center gap-2">
+                            <RoleBadge role={user.role} />
+                            <select
+                              value={user.role}
+                              onChange={e => handleUpdateRole(user.id, e.target.value as Role)}
+                              role="combobox"
+                              aria-label="Zmień rolę"
+                              className="bg-[#1a1730] border border-[#3b3d7a] rounded px-2 py-1 text-xs text-[#e6edf3] hover:border-[#818cf8] focus:border-[#818cf8] outline-none cursor-pointer transition-colors"
+                            >
+                              <option value="ADMIN">ADMIN</option>
+                              <option value="HELPER_PLUS">HELPER_PLUS</option>
+                              <option value="HELPER">HELPER</option>
+                            </select>
+                          </div>
+                        )}
+                      </td>
 
-                    {/* Joined date */}
-                    <td className="px-4 py-3 text-[#4b4569]">
-                      {new Date(user.invited_at).toLocaleDateString('pl-PL', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
+                      {/* Joined date */}
+                      <td className="px-4 py-3 text-[#4b4569]">
+                        {new Date(user.invited_at).toLocaleDateString('pl-PL', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
 
-                    {/* Actions — no delete for self */}
-                    <td className="px-4 py-3">
-                      {currentUserId !== user.id && (
-                        <button
-                          onClick={() => setDeleteTarget(user)}
-                          className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-400/10 transition-colors"
-                          title="Usuń dostęp"
-                          aria-label={`Usuń dostęp dla ${user.email}`}
-                        >
-                          🗑
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      {/* Actions — no delete for self */}
+                      <td className="px-4 py-3">
+                        {!isOwnRow && (
+                          <button
+                            onClick={() => setDeleteTarget(user)}
+                            className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-400/10 transition-colors text-xs"
+                            aria-label={`Usuń ${user.email}`}
+                          >
+                            🗑 Usuń
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -278,10 +311,9 @@ export default function UsersSettingsPage() {
                 </label>
                 <input
                   id="invite-email"
-                  type="email"
+                  type="text"
                   value={inviteEmail}
                   onChange={e => setInviteEmail(e.target.value)}
-                  required
                   placeholder="user@example.com"
                   disabled={inviteLoading}
                   className="w-full bg-[#0d0c1a] border border-[#3b3d7a] rounded-lg px-3 py-2 text-sm text-[#e6edf3] placeholder-[#4b4569] focus:border-[#818cf8] outline-none transition-colors disabled:opacity-50"
