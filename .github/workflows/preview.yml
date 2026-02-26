@@ -1,0 +1,70 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # Wait for CI to pass before deploying preview
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy-preview:
+    needs: ci
+    runs-on: ubuntu-latest
+    # Skip for fork PRs that don't have access to secrets
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy to Vercel (Preview)
+        id: deploy
+        run: |
+          DEPLOY_URL=$(npx vercel --token ${{ secrets.VERCEL_TOKEN }} --yes 2>/dev/null | grep "https://" | tail -1)
+          echo "url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+          echo "Preview URL: $DEPLOY_URL"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Comment PR with preview URL
+        if: success() && steps.deploy.outputs.url
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.deploy.outputs.url }}';
+            const branch = '${{ github.head_ref }}';
+            const timestamp = new Date().toISOString();
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Preview deploy ready!**\n\n🔗 **URL:** ${url}\n\n_Deployed from branch \`${branch}\` — ${timestamp}_`
+            });
+
+      - name: Comment PR on deploy failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = '${{ github.head_ref }}';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **Preview deploy failed!**\n\n_Build failed for branch \`${branch}\`. Check the workflow logs for details._`
+            });
