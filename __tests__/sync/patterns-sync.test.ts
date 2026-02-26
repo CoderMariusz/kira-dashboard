@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import {
   parsePatternsFile,
   parseLessonsFile,
+  deduplicateLessons,
   parseDate,
   extractTags,
   extractStoryIds,
@@ -125,10 +126,12 @@ describe('STORY-12.6: Patterns and Lessons Sync', () => {
       const result = parsePatternsFile('/test/p.md', 'PATTERN');
 
       expect(result).toHaveLength(3);
-      expect(result[0].id).toContain('cat-one');
-      expect(result[2].id).toContain('cat-two');
+      // IDs are now content-based hashes, not positional counters
       const ids = result.map((r) => r.id);
-      expect(new Set(ids).size).toBe(ids.length);
+      expect(new Set(ids).size).toBe(ids.length); // all unique
+      expect(result[0].id).toMatch(/^pat-[a-f0-9]{8}$/);
+      expect(result[1].id).toMatch(/^pat-[a-f0-9]{8}$/);
+      expect(result[2].id).toMatch(/^pat-[a-f0-9]{8}$/);
     });
 
     it('extracts related stories from text', () => {
@@ -138,6 +141,54 @@ describe('STORY-12.6: Patterns and Lessons Sync', () => {
       );
       const result = parsePatternsFile('/test/p.md', 'PATTERN');
       expect(result[0].related_stories).toEqual(['STORY-1.2', 'STORY-3.4']);
+    });
+
+    it('parses [DATE]-only entries (Format 2)', () => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.readFileSync.mockReturnValue(
+        '## TestCategory\n' + '- [2026-02-20] Entry with only date, no model/domain\n'
+      );
+      const result = parsePatternsFile('/test/p.md', 'PATTERN');
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        type: 'PATTERN',
+        category: 'TestCategory',
+        date: '2026-02-20',
+        model: null,
+        domain: null,
+        text: 'Entry with only date, no model/domain',
+      });
+    });
+
+    it('parses plain entries with no date or metadata (Format 3)', () => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.readFileSync.mockReturnValue(
+        '## General\n' + '- Just a plain text entry without any metadata\n'
+      );
+      const result = parsePatternsFile('/test/p.md', 'PATTERN');
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        type: 'PATTERN',
+        category: 'General',
+        date: null,
+        model: null,
+        domain: null,
+        text: 'Just a plain text entry without any metadata',
+      });
+    });
+
+    it('generates stable content-based IDs', () => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.readFileSync.mockReturnValue(
+        '## Category\n' + '- [2026-02-20] [M] [D] \u2014 Test entry for ID stability\n'
+      );
+      const result = parsePatternsFile('/test/p.md', 'PATTERN');
+      expect(result).toHaveLength(1);
+      // ID should be based on content hash, not positional counter
+      expect(result[0].id).toMatch(/^pat-[a-f0-9]{8}$/);
+      // Same content should always produce same ID
+      const result2 = parsePatternsFile('/test/p.md', 'PATTERN');
+      expect(result2[0].id).toBe(result[0].id);
     });
   });
 
@@ -230,6 +281,28 @@ describe('STORY-12.6: Patterns and Lessons Sync', () => {
       );
       const result = parseLessonsFile('/test/l.md');
       expect(result[0].story_id).toBe('STORY-7.1');
+    });
+
+    it('deduplicates lessons by ID (last occurrence wins)', () => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.readFileSync.mockReturnValue(
+        '### ANTI-001: First occurrence\nDescription one.\n\n' +
+        '### ANTI-002: Duplicate ID first\nFirst version.\n\n' +
+        '### ANTI-003: Another lesson\nSome text.\n\n' +
+        '### ANTI-002: Duplicate ID second (should win)\nSecond version with updated fix.\n' +
+        '**Fix:** The actual fix.\n'
+      );
+      const allLessons = parseLessonsFile('/test/l.md');
+      expect(allLessons).toHaveLength(4); // parser returns all including duplicates
+
+      const deduped = deduplicateLessons(allLessons);
+      expect(deduped).toHaveLength(3); // duplicates removed
+
+      // ANTI-002 should be the last occurrence (second version)
+      const anti002 = deduped.find((l) => l.id === 'ANTI-002');
+      expect(anti002?.title).toBe('Duplicate ID second (should win)');
+      expect(anti002?.description).toContain('Second version');
+      expect(anti002?.fix).toBe('The actual fix.');
     });
   });
 });
