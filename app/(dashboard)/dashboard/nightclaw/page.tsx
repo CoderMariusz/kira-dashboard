@@ -28,6 +28,9 @@ import { useNightClawHistory } from '@/hooks/useNightClawHistory'
 import type { DigestSummary } from '@/types/nightclaw'
 import { DigestViewer } from '@/components/nightclaw/DigestViewer'
 import RunCalendar from '@/components/nightclaw/RunCalendar'
+import SkillsDiffPanel from '@/components/nightclaw/SkillsDiffPanel'
+import ResearchAccordion from '@/components/nightclaw/ResearchAccordion'
+import ModelStatsTable from '@/components/nightclaw/ModelStatsTable'
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const COLORS = {
@@ -431,13 +434,27 @@ function NightClawPageContent() {
           </div>
         )}
         {activeTab === 'research' && (
-          <div style={{ color: COLORS.muted, padding: '24px 0', fontSize: '14px' }}>
-            Research — implementacja w STORY-9.7
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: COLORS.text, marginBottom: '16px' }}>
+                Zmiany w Skillach
+              </h2>
+              <SkillsDiffPanel />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: COLORS.text, marginBottom: '16px' }}>
+                Badania &amp; Rozwiązania
+              </h2>
+              <ResearchAccordion />
+            </div>
           </div>
         )}
         {activeTab === 'stats' && (
-          <div style={{ color: COLORS.muted, padding: '24px 0', fontSize: '14px' }}>
-            Stats — implementacja w STORY-9.8
+          <div>
+            <h2 style={{ fontSize: '18px', fontWeight: 600, color: COLORS.text, marginBottom: '16px' }}>
+              Wydajność Modeli
+            </h2>
+            <ModelStatsTable />
           </div>
         )}
       </div>
