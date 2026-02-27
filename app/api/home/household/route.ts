@@ -1,8 +1,46 @@
 // app/api/home/household/route.ts
+// GET  /api/home/household — zwraca household zalogowanego usera
 // POST /api/home/household — tworzy nowy household dla zalogowanego usera
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+
+export async function GET() {
+  try {
+    const supabase = await createServerClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: memberRow } = await supabase
+      .from('household_members')
+      .select('household_id, role')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle()
+
+    if (!memberRow) {
+      return NextResponse.json({ data: null }, { status: 200 })
+    }
+
+    const { data: household } = await supabase
+      .from('households')
+      .select('*')
+      .eq('id', memberRow.household_id)
+      .single()
+
+    const { data: members } = await supabase
+      .from('household_members')
+      .select('id, user_id, role, joined_at')
+      .eq('household_id', memberRow.household_id)
+
+    return NextResponse.json({ data: household, members: members ?? [] })
+  } catch (err) {
+    console.warn('[household GET] error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
 
 export async function POST() {
   try {

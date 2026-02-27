@@ -14,9 +14,9 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import { createClient } from '@/lib/supabase/client'
 import { useTasks } from '@/hooks/home/useTasks'
 import { useHousehold } from '@/hooks/home/useHousehold'
+import { useUser } from '@/contexts/RoleContext'
 import { Column } from './Column'
 import { TaskDragOverlay } from './TaskDragOverlay'
 import { TaskModal } from './TaskModal'
@@ -76,13 +76,10 @@ function BoardErrorState({ error }: { error: string }) {
 
 export function Board() {
   // ═══ CURRENT USER ═══
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  useEffect(() => {
-    const supabase = createClient()
-    void supabase.auth.getUser().then((result: { data: { user: { id: string } | null } }) => {
-      setCurrentUserId(result.data.user?.id ?? null)
-    })
-  }, [])
+  // NOTE: Use RoleContext instead of supabase.auth.getSession() to avoid
+  // Navigator LockManager lock contention that hangs in headless browsers (Playwright).
+  const { user: currentUser } = useUser()
+  const currentUserId = currentUser?.id ?? null
 
   // ═══ HOUSEHOLD + TASKS ═══
   const { household, members, loading: householdLoading, error: householdError } = useHousehold()
