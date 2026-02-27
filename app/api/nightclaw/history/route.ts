@@ -2,7 +2,8 @@
  * app/api/nightclaw/history/route.ts
  * STORY-12.10 — GET /api/nightclaw/history migrated to Supabase
  *
- * Returns list of digest summaries from nightclaw_digests table.
+ * Returns HistoryResponse: { entries, total_runs, total_errors }
+ * Each entry: { date: string, status: 'ok' | 'error' | 'missing' }
  * Auth: requireAuth — 401 for unauthenticated requests.
  */
 
@@ -12,6 +13,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth/requireRole'
+import type { HistoryEntry, HistoryResponse } from '@/types/nightclaw'
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
@@ -29,12 +31,21 @@ export async function GET(request?: { nextUrl?: URL; url?: string }): Promise<Re
 
   const { data } = await supabase
     .from('nightclaw_digests')
-    .select('run_date, summary, stories_done, stories_failed, models_used')
+    .select('run_date, stories_failed')
     .order('run_date', { ascending: false })
     .limit(limit)
 
-  return NextResponse.json(
-    { data: data ?? [] },
-    { headers: { 'Cache-Control': 'no-store' } }
-  )
+  const rows = data ?? []
+
+  const entries: HistoryEntry[] = rows.map(row => ({
+    date: row.run_date as string,
+    status: (row.stories_failed ?? 0) > 0 ? 'error' : 'ok',
+  }))
+
+  const total_runs = entries.length
+  const total_errors = entries.filter(e => e.status === 'error').length
+
+  const body: HistoryResponse = { entries, total_runs, total_errors }
+
+  return NextResponse.json(body, { headers: { 'Cache-Control': 'no-store' } })
 }

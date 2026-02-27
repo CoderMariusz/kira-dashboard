@@ -330,7 +330,9 @@ function NightClawPageContent() {
 
   const isLoading = digestLoading || historyLoading
 
-  const lastEntry = history?.entries[0]
+  // Defensive: guard against stale/malformed API responses that lack `entries`
+  const entries = history?.entries ?? []
+  const lastEntry = entries[0]
 
   function handleTabChange(tab: Tab) {
     const params = new URLSearchParams(searchParams.toString())

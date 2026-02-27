@@ -2,7 +2,8 @@
  * app/api/nightclaw/research/route.ts
  * STORY-12.10 — GET /api/nightclaw/research migrated to Supabase
  *
- * Returns list of research findings from nightclaw_research table.
+ * Returns ResearchResponse: { files: ResearchFile[] }
+ * Maps nightclaw_research rows to ResearchFile shape.
  * Auth: requireAuth — 401 for unauthenticated requests.
  */
 
@@ -12,6 +13,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth/requireRole'
+import type { ResearchFile, ResearchResponse } from '@/types/nightclaw'
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
@@ -28,7 +30,7 @@ export async function GET(request?: { nextUrl?: URL; url?: string }): Promise<Re
 
   let query = supabase
     .from('nightclaw_research')
-    .select('*')
+    .select('slug, title, problem, solution, updated_at')
     .order('created_at', { ascending: false })
 
   if (status) {
@@ -37,8 +39,19 @@ export async function GET(request?: { nextUrl?: URL; url?: string }): Promise<Re
 
   const { data } = await query
 
-  return NextResponse.json(
-    { data: data ?? [] },
-    { headers: { 'Cache-Control': 'no-store' } }
-  )
+  const rows = data ?? []
+
+  const files: ResearchFile[] = rows.map(row => ({
+    filename: row.slug as string,
+    title: row.title as string,
+    preview: row.problem as string,
+    content: row.solution
+      ? `## Problem\n\n${row.problem}\n\n## Solution\n\n${row.solution}`
+      : `## Problem\n\n${row.problem}`,
+    modified_at: row.updated_at as string,
+  }))
+
+  const body: ResearchResponse = { files }
+
+  return NextResponse.json(body, { headers: { 'Cache-Control': 'no-store' } })
 }
