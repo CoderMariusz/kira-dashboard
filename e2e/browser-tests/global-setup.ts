@@ -8,6 +8,21 @@ async function globalSetup(config: FullConfig) {
 
   const browser = await chromium.launch()
   const context = await browser.newContext()
+
+  // Polyfill navigator.locks — Supabase JS uses it for token refresh sync.
+  // In headless Chromium this can timeout (10s) and block auth state loading.
+  await context.addInitScript(() => {
+    if (typeof navigator !== 'undefined' && !navigator.locks) {
+      (navigator as unknown as Record<string, unknown>).locks = {
+        request: (_name: string, _options: unknown, callback: () => unknown) => {
+          const fn = typeof _options === 'function' ? _options : callback
+          return Promise.resolve(fn())
+        },
+        query: () => Promise.resolve({ held: [], pending: [] }),
+      }
+    }
+  })
+
   const page = await context.newPage()
 
   await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' })
