@@ -23,11 +23,24 @@ test.describe('/dashboard/patterns', () => {
     await expect(page.getByText('Lessons').first()).toBeVisible({ timeout: 10_000 })
   })
 
-  test('T4: przycisk "Dodaj Pattern" — widoczny', async ({ page }) => {
-    const addBtn = page.getByText(/dodaj pattern/i).first()
-    const hasBtn = await addBtn.isVisible({ timeout: 10_000 }).catch(() => false)
-    if (!hasBtn) test.skip()
-    else await expect(addBtn).toBeVisible()
+  test('T4: przycisk "Dodaj Pattern" — widoczny gdy isAdmin (RoleContext załadowany)', async ({ page }) => {
+    // Przycisk "Dodaj Pattern" jest widoczny TYLKO gdy RoleContext zwraca isAdmin=true.
+    // W headless Chromium RoleContext może nie załadować (LockManager deadlock) — wtedy skip.
+    const addBtn = page.getByText('+ Dodaj Pattern').first()
+    const isVisible = await addBtn.isVisible().catch(() => false)
+    if (!isVisible) {
+      // Sprawdź czy to problem z RoleContext (przycisk jest warunkowy: isAdmin)
+      // Jeśli nie jest widoczny po 5s — skip, nie bug w Patterns
+      await page.waitForTimeout(5_000)
+      const stillHidden = !(await addBtn.isVisible().catch(() => false))
+      if (stillHidden) {
+        test.skip(true, 'RoleContext nie załadował isAdmin w headless — przycisk warunkowy')
+        return
+      }
+    }
+    await addBtn.click()
+    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5_000 })
+    await page.keyboard.press('Escape')
   })
 
   test('T5: brak błędów 500', async ({ page }) => {

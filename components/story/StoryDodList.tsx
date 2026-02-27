@@ -9,7 +9,7 @@ interface Props {
   isDone: boolean
 }
 
-export function StoryDodList({ dod, isDone }: Props) {
+export function StoryDodList({ dod = [], isDone }: Props) {
   return (
     <div>
       <div style={{
