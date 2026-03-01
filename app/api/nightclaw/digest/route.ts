@@ -27,7 +27,7 @@ export async function GET(request: { nextUrl?: URL; url?: string }): Promise<Res
 
   const supabase = await createClient()
 
-  let query = supabase.from('nightclaw_digests').select('*')
+  const query = supabase.from('nightclaw_digests').select('*')
 
   if (date) {
     // AC-1: specific date

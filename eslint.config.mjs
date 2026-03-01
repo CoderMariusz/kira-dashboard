@@ -25,6 +25,8 @@ const eslintConfig = defineConfig([
     "archive/**",
     // Legacy home API - different coding style
     "app/api/home/**",
+    // Playwright E2E tests
+    "e2e/**",
   ]),
 ]);
 
