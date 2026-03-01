@@ -43,24 +43,9 @@ jobs:
           cache: 'npm'
       - run: npm ci
       # Run unit/component tests only.
-      # Playwright specs (e2e/, tests/) and integration tests needing live DB are excluded.
-      # Integration test cleanup tracked in EPIC-14 (Test Infrastructure).
-      - run: |
-          npm test -- --ci --passWithNoTests \
-            --testPathIgnorePatterns="<rootDir>/e2e/" \
-            --testPathIgnorePatterns="<rootDir>/tests/" \
-            --testPathIgnorePatterns="<rootDir>/node_modules/" \
-            --testPathIgnorePatterns="<rootDir>/.next/" \
-            --testPathIgnorePatterns="<rootDir>/archive/" \
-            --testPathIgnorePatterns="__tests__/db/bridge-tables" \
-            --testPathIgnorePatterns="__tests__/sync/" \
-            --testPathIgnorePatterns="__tests__/api/stories-start" \
-            --testPathIgnorePatterns="__tests__/api/stories-advance" \
-            --testPathIgnorePatterns="__tests__/api/patterns-supabase" \
-            --testPathIgnorePatterns="__tests__/api/nightclaw/research" \
-            --testPathIgnorePatterns="__tests__/api/nightclaw/history" \
-            --testPathIgnorePatterns="__tests__/middleware/settings-guard" \
-            --testPathIgnorePatterns="__tests__/app/settings/users/page"
+      # Excluded: Playwright specs (e2e/, tests/), DB integration tests (need live Supabase),
+      # sync scripts, and API tests needing live Bridge/DB. Tracked in EPIC-14.
+      - run: npm test -- --ci --passWithNoTests --testPathIgnorePatterns="<rootDir>/e2e/" --testPathIgnorePatterns="<rootDir>/tests/" --testPathIgnorePatterns="__tests__/db/" --testPathIgnorePatterns="__tests__/sync/" --testPathIgnorePatterns="__tests__/api/stories-start" --testPathIgnorePatterns="__tests__/api/stories-advance" --testPathIgnorePatterns="__tests__/api/patterns-supabase" --testPathIgnorePatterns="__tests__/api/nightclaw/research" --testPathIgnorePatterns="__tests__/api/nightclaw/history" --testPathIgnorePatterns="__tests__/middleware/settings-guard" --testPathIgnorePatterns="__tests__/app/settings/users/page"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
