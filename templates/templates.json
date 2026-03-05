@@ -1,0 +1,217 @@
+[
+  {
+    "id": "full-screen-focus-on-openclaw-systems",
+    "name": "Full screen focus on OpenClaw systems",
+    "description": "A full screen template that focuses on the Openclaw system log, activity and cron jobs",
+    "author": "curbob",
+    "tags": [
+      "OpenClaw",
+      "KiraBoard"
+    ],
+    "canvasSize": "1920x1080",
+    "widgetCount": 23,
+    "widgetTypes": [
+      {
+        "type": "weather",
+        "name": "Local Weather",
+        "icon": "🌡️",
+        "count": 1
+      },
+      {
+        "type": "clock",
+        "name": "Clock",
+        "icon": "🕐",
+        "count": 1
+      },
+      {
+        "type": "text-header",
+        "name": "Header / Text",
+        "icon": "🔤",
+        "count": 3
+      },
+      {
+        "type": "horizontal-line",
+        "name": "Horizontal Line",
+        "icon": "➖",
+        "count": 2
+      },
+      {
+        "type": "auth-status",
+        "name": "Auth Status",
+        "icon": "🔐",
+        "count": 1
+      },
+      {
+        "type": "openclaw-release",
+        "name": "OpenClaw Release",
+        "icon": "🦊",
+        "count": 1
+      },
+      {
+        "type": "rss-ticker",
+        "name": "RSS Ticker",
+        "icon": "📡",
+        "count": 1
+      },
+      {
+        "type": "kiraboard-release",
+        "name": "KiraBoard Release",
+        "icon": "🦊",
+        "count": 1
+      },
+      {
+        "type": "cron-jobs",
+        "name": "Cron Jobs",
+        "icon": "⏰",
+        "count": 1
+      },
+      {
+        "type": "system-log",
+        "name": "System Log",
+        "icon": "🔧",
+        "count": 1
+      },
+      {
+        "type": "activity-list",
+        "name": "Activity List",
+        "icon": "📋",
+        "count": 1
+      },
+      {
+        "type": "cpu-memory",
+        "name": "CPU / Memory",
+        "icon": "💻",
+        "count": 1
+      },
+      {
+        "type": "disk-usage",
+        "name": "Disk Usage",
+        "icon": "💾",
+        "count": 1
+      },
+      {
+        "type": "network-speed",
+        "name": "Network Speed",
+        "icon": "🌐",
+        "count": 1
+      },
+      {
+        "type": "uptime-monitor",
+        "name": "Uptime Monitor",
+        "icon": "📡",
+        "count": 1
+      },
+      {
+        "type": "calendar",
+        "name": "Calendar",
+        "icon": "📅",
+        "count": 1
+      },
+      {
+        "type": "todo-list",
+        "name": "Todo List",
+        "icon": "✅",
+        "count": 1
+      },
+      {
+        "type": "github-stats",
+        "name": "GitHub Stats",
+        "icon": "🐙",
+        "count": 1
+      },
+      {
+        "type": "quote-of-day",
+        "name": "Quote of Day",
+        "icon": "💭",
+        "count": 1
+      },
+      {
+        "type": "stock-ticker",
+        "name": "Stock Ticker",
+        "icon": "📈",
+        "count": 1
+      }
+    ],
+    "requiresSetup": [],
+    "preview": "preview.png"
+  },
+  {
+    "id": "minimal-layout-for-10-inch-screen",
+    "name": "minimal layout for 10 inch screen",
+    "description": "For a small static screen where thereisn't much space for many widgets",
+    "author": "Curbob",
+    "tags": [],
+    "canvasSize": "1280x800",
+    "widgetCount": 14,
+    "widgetTypes": [
+      {
+        "type": "weather",
+        "name": "Local Weather",
+        "icon": "🌡️",
+        "count": 1
+      },
+      {
+        "type": "clock",
+        "name": "Clock",
+        "icon": "🕐",
+        "count": 1
+      },
+      {
+        "type": "text-header",
+        "name": "Header / Text",
+        "icon": "🔤",
+        "count": 3
+      },
+      {
+        "type": "horizontal-line",
+        "name": "Horizontal Line",
+        "icon": "➖",
+        "count": 2
+      },
+      {
+        "type": "auth-status",
+        "name": "Auth Status",
+        "icon": "🔐",
+        "count": 1
+      },
+      {
+        "type": "openclaw-release",
+        "name": "OpenClaw Release",
+        "icon": "🦊",
+        "count": 1
+      },
+      {
+        "type": "rss-ticker",
+        "name": "RSS Ticker",
+        "icon": "📡",
+        "count": 1
+      },
+      {
+        "type": "kiraboard-release",
+        "name": "KiraBoard Release",
+        "icon": "🦊",
+        "count": 1
+      },
+      {
+        "type": "cron-jobs",
+        "name": "Cron Jobs",
+        "icon": "⏰",
+        "count": 1
+      },
+      {
+        "type": "system-log",
+        "name": "System Log",
+        "icon": "🔧",
+        "count": 1
+      },
+      {
+        "type": "activity-list",
+        "name": "Activity List",
+        "icon": "📋",
+        "count": 1
+      }
+    ],
+    "requiresSetup": [],
+    "preview": "preview.png"
+  }
+]
