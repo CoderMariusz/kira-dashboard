@@ -3123,7 +3123,7 @@ process.on('SIGINT', () => server.close(() => process.exit(0)));
 
 server.listen(PORT, HOST, () => {
   console.log(\`
-🦞 LobsterBoard Dashboard Server
+🦊 KiraBoard Dashboard Server
 
    Dashboard: http://\${HOST}:\${PORT}
    
@@ -3157,9 +3157,9 @@ function generateReadme() {
     }
   });
 
-  return `# LobsterBoard Dashboard
+  return `# KiraBoard Dashboard
 
-This dashboard was generated with LobsterBoard Dashboard Builder.
+This dashboard was generated with KiraBoard Dashboard Builder.
 
 ## ⚠️ Security Notice
 

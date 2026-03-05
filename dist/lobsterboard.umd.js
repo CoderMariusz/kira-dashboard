@@ -1,20 +1,20 @@
 /*!
- * LobsterBoard v0.3.1
+ * KiraBoard v1.0.0
  * Dashboard builder with customizable widgets
- * https://github.com/curbob/LobsterBoard
+ * https://github.com/CoderMariusz/kira-dashboard
  * @license MIT
  */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.LobsterBoard = {}));
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.KiraBoard = {}));
 })(this, (function (exports) { 'use strict';
 
   /**
-   * LobsterBoard - Widget Definitions
+   * KiraBoard - Widget Definitions
    * Each widget defines its default size, properties, and generated code
    * 
-   * @module lobsterboard/widgets
+   * @module kiraboard/widgets
    */
 
   const WIDGETS = {
@@ -390,7 +390,7 @@
       name: 'Pages Menu',
       icon: '📑',
       category: 'small',
-      description: 'Navigation links to all discovered LobsterBoard pages. Supports vertical or horizontal layout.',
+      description: 'Navigation links to all discovered KiraBoard pages. Supports vertical or horizontal layout.',
       defaultWidth: 220,
       defaultHeight: 200,
       hasApiKey: false,
@@ -508,10 +508,10 @@
   }
 
   /**
-   * LobsterBoard - Dashboard Builder Core
+   * KiraBoard - Dashboard Builder Core
    * Provides utilities for generating dashboard HTML, CSS, and JS
    * 
-   * @module lobsterboard/builder
+   * @module kiraboard/builder
    */
 
 
@@ -565,7 +565,7 @@
    * @returns {string} CSS styles
    */
   function generateDashboardCss() {
-    return `/* LobsterBoard Dashboard - Generated Styles */
+    return `/* KiraBoard Dashboard - Generated Styles */
 
 :root {
   --bg-primary: #0d1117;
@@ -929,7 +929,7 @@ body {
 // ─────────────────────────────────────────────
 
 (function() {
-  const STORAGE_KEY = 'lobsterboard-layout';
+  const STORAGE_KEY = 'kiraboard-layout';
   const GRID_SIZE = 20;
   const MIN_WIDTH = 100;
   const MIN_HEIGHT = 60;
@@ -1121,7 +1121,7 @@ body {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My LobsterBoard Dashboard</title>
+  <title>My KiraBoard Dashboard</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -1143,7 +1143,7 @@ body {
     const editJs = generateEditJs();
 
     return `/**
- * LobsterBoard Dashboard - Generated JavaScript
+ * KiraBoard Dashboard - Generated JavaScript
  * Replace YOUR_*_API_KEY placeholders with your actual API keys
  */
 
@@ -1177,9 +1177,9 @@ ${editJs}
       }
     });
 
-    return `# LobsterBoard Dashboard
+    return `# KiraBoard Dashboard
 
-This dashboard was generated with LobsterBoard Dashboard Builder.
+This dashboard was generated with KiraBoard Dashboard Builder.
 
 ## Quick Start
 
@@ -1214,7 +1214,7 @@ ${apiKeys.map(key => `- \`YOUR_${key}\``).join('\n')}
 
 ---
 
-Generated with LobsterBoard - https://github.com/curbob/LobsterBoard
+Generated with KiraBoard - https://github.com/curbob/KiraBoard
 `;
   }
 
@@ -1231,22 +1231,22 @@ Generated with LobsterBoard - https://github.com/curbob/LobsterBoard
   };
 
   /**
-   * LobsterBoard - Dashboard Builder Library
+   * KiraBoard - Dashboard Builder Library
    * 
    * A library for building and generating dashboard configurations
    * with customizable widgets.
    * 
-   * @module lobsterboard
+   * @module kiraboard
    * @example
    * // ESM
-   * import { WIDGETS, generateDashboardHtml, generateDashboardCss } from 'lobsterboard';
+   * import { WIDGETS, generateDashboardHtml, generateDashboardCss } from 'kiraboard';
    * 
    * // CommonJS
-   * const { WIDGETS, generateDashboardHtml } = require('lobsterboard');
+   * const { WIDGETS, generateDashboardHtml } = require('kiraboard');
    * 
    * // Browser (UMD)
-   * <script src="https://unpkg.com/lobsterboard"></script>
-   * const { WIDGETS } = LobsterBoard;
+   * <script src="https://unpkg.com/kiraboard"></script>
+   * const { WIDGETS } = KiraBoard;
    */
 
 
