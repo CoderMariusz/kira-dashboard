@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KiraBoard — Full Mockup v5 (All Pages + Gates + Projects + Skills)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:#0d0c1a;color:#e2e8f0;display:flex;height:100vh;overflow:hidden}
+
+/* ─── VARIABLES ─── */
+:root{
+  --bg:#0d0c1a;--bg2:#13111c;--card:#1a1730;--border:#2a2540;--border-h:#3b3d7a;
+  --accent:#818cf8;--accent2:#7c3aed;--grad:linear-gradient(135deg,#7c3aed,#3b82f6);
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#6b7280;--text4:#4b4569;--text5:#3d3757;
+  --ok:#4ade80;--warn:#fbbf24;--err:#f87171;--info:#38bdf8;
+  --r:10px;--mono:'JetBrains Mono',monospace;
+}
+
+/* ─── ICON RAIL ─── */
+.rail{width:56px;min-width:56px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px}
+.ri{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--text3);transition:.15s;position:relative}
+.ri:hover{background:var(--border);color:var(--text)}
+.ri.on{background:var(--grad);color:#fff;box-shadow:0 2px 14px rgba(124,58,237,.45)}
+.ri .badge{position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--err);border-radius:50%;border:2px solid var(--card)}
+.rail-sep{flex:1}
+.rail-av{width:32px;height:32px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer}
+
+/* ─── SIDEBAR ─── */
+.side{width:200px;min-width:200px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.side-hdr{padding:14px 12px 10px;border-bottom:1px solid var(--border)}
+.ps{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;cursor:pointer;transition:.15s;margin-bottom:10px}
+.ps:hover{border-color:var(--accent2)}
+.ps-ic{width:26px;height:26px;background:var(--grad);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.ps-nm{font-size:13px;font-weight:700;flex:1}
+.ps-ar{font-size:10px;color:var(--text3)}
+.ver{display:flex;align-items:center;gap:6px}
+.ver-dot{width:6px;height:6px;background:var(--ok);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ver-t{font-size:11px;color:var(--text3)}
+.ver-b{font-size:10px;color:var(--accent);background:#2d1b4a;padding:1px 6px;border-radius:4px;font-weight:600;margin-left:auto}
+
+.side-items{flex:1;padding:6px;overflow-y:auto}
+.nl{font-size:9px;font-weight:700;color:var(--text5);text-transform:uppercase;letter-spacing:.1em;padding:10px 8px 3px}
+.ni{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--text3);transition:.15s;margin-bottom:1px}
+.ni:hover{background:var(--border);color:var(--text)}
+.ni.on{background:#1e1b4b;color:var(--accent);font-weight:600}
+.ni-i{font-size:13px;width:16px;text-align:center}
+.ni-b{margin-left:auto;font-size:10px;font-weight:600;background:var(--border);color:var(--accent);padding:1px 6px;border-radius:8px}
+.ni-b.w{background:#3a2a00;color:#e3b341}
+.ni-b.g{background:#1a3a1a;color:var(--ok)}
+
+.side-ft{padding:10px;border-top:1px solid var(--border)}
+.bp{display:flex;align-items:center;gap:7px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
+.bp-d{width:6px;height:6px;background:var(--ok);border-radius:50%;animation:pulse 2s infinite}
+.bp-l{font-size:11px;color:var(--text3);flex:1}
+.bp-v{font-size:11px;color:var(--ok);font-weight:600}
+
+/* ─── MAIN ─── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:50px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:10px;background:var(--card)}
+.topbar h1{font-size:16px;font-weight:700;flex:1}
+.tb-search{display:flex;align-items:center;gap:7px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text4);font-size:12px;width:240px}
+.tb-acts{display:flex;gap:7px}
+.ib{width:32px;height:32px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:12px;position:relative}
+.ib .dot{position:absolute;top:5px;right:5px;width:6px;height:6px;background:var(--err);border-radius:50%}
+.btn-pri{padding:6px 14px;background:var(--grad);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;box-shadow:0 2px 10px rgba(124,58,237,.35)}
+.btn-sec{padding:6px 14px;background:var(--border);color:var(--text3);border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s}
+.btn-sec:hover{background:var(--border-h);color:var(--text)}
+
+/* ─── CONTENT AREA ─── */
+.content{flex:1;overflow-y:auto;padding:18px 20px}
+.page{display:none}.page.active{display:block}
+
+/* ─── SHARED COMPONENTS ─── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;transition:.15s}
+.sc:hover{border-color:var(--border-h)}
+.sc-l{font-size:10px;color:var(--text4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.sc-v{font-size:25px;font-weight:800;line-height:1}
+.sc-s{font-size:10px;color:var(--text4);margin-top:4px}
+.sc-t{font-size:10px;margin-top:3px}
+.sc-t.up{color:var(--ok)}.sc-t.dn{color:var(--err)}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:15px}
+.ch{display:flex;align-items:center;margin-bottom:12px}
+.ch h3{font-size:13px;font-weight:700;flex:1}
+.ch .sub{font-size:11px;color:var(--text4);margin-left:6px}
+.sa{font-size:11px;color:var(--accent);cursor:pointer;margin-left:auto}
+.sl{font-size:10px;font-weight:700;color:var(--text5);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
+
+/* Pipeline rows */
+.pr{display:flex;align-items:center;gap:9px;background:var(--bg2);border-radius:7px;padding:8px 11px;margin-bottom:5px;cursor:pointer;transition:.15s;border:1px solid transparent}
+.pr:hover{border-color:var(--border)}
+.pr-id{font-size:11px;font-weight:700;color:var(--accent);width:88px;flex-shrink:0}
+.pr-t{font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-m{font-size:10px;color:var(--text3);width:55px;flex-shrink:0}
+.pr-s{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;flex-shrink:0}
+.s-ip{background:#1a3a5c;color:#60a5fa}.s-rv{background:#2d1b4a;color:#a78bfa}
+.s-dn{background:#1a3a1a;color:var(--ok)}.s-rf{background:#3a2a00;color:var(--warn)}
+.s-rdy{background:#1a2a3a;color:var(--info)}.s-blk{background:#3a1a1a;color:var(--err)}
+.s-mrg{background:#1a2a1a;color:#34d399;border:1px solid #2a5a2a}
+
+/* Model cards */
+.mc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px;transition:.15s;cursor:pointer}
+.mc:hover{border-color:var(--border-h);transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.mc-h{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.mc-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.mc-n{font-size:13px;font-weight:700}.mc-r{font-size:10px;color:var(--text4)}
+.mc-st{margin-left:auto;font-size:10px;display:flex;align-items:center;gap:4px}
+.dot-on{width:6px;height:6px;background:var(--ok);border-radius:50%}
+.dot-off{width:6px;height:6px;background:var(--warn);border-radius:50%}
+.mc-met{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:9px}
+.mm .mv{font-size:16px;font-weight:800}.mm .ml{font-size:9px;color:var(--text3)}
+.mc-ch{height:40px;margin-bottom:9px}
+
+/* Activity */
+.ai{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #1f1c2e}
+.ai:last-child{border-bottom:none}
+.ai-tl{display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding-top:3px}
+.ai-d{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ai-ln{width:1px;background:var(--border);flex:1;margin-top:3px}
+.ai:last-child .ai-ln{display:none}
+.ai-b{flex:1}.ai-e{font-size:12px}.ai-e span{color:var(--accent);font-weight:600}
+.ai-tm{font-size:10px;color:var(--text4);margin-top:1px}
+
+/* Eval bars */
+.ev-bar{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.ev-nm{font-size:10px;color:var(--text3);width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-bg{flex:1;background:var(--border);border-radius:3px;height:5px}
+.ev-fl{background:linear-gradient(90deg,var(--ok),#34d399);height:5px;border-radius:3px}
+.ev-pc{font-size:10px;color:var(--ok);width:30px;text-align:right}
+
+/* Lessons/Patterns */
+.lr{padding:8px 10px;background:var(--bg2);border-radius:7px;border-left:2px solid var(--accent2);margin-bottom:5px}
+.lr-m{font-size:10px;color:var(--accent);font-weight:600;margin-bottom:2px}
+.lr-t{font-size:11px;color:var(--text3);line-height:1.4}
+.ptr{display:flex;align-items:center;gap:7px;background:var(--bg2);border-radius:6px;padding:6px 9px;margin-bottom:5px}
+.pt{font-size:9px;padding:2px 6px;border-radius:6px;font-weight:700;flex-shrink:0}
+.pt.freq{background:#1a3a5c;color:#60a5fa}.pt.temp{background:#2d1b4a;color:#a78bfa}
+.pt.cooc{background:#1a3a1a;color:var(--ok)}
+.pt-topic{font-size:12px;flex:1}.pt-cnt{font-size:10px;color:var(--text4)}
+
+/* Shopping items */
+.shop-item{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:6px;transition:.15s}
+.shop-item:hover{background:var(--border)}
+.shop-cb{width:22px;height:22px;border:2px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:.15s;font-size:12px}
+.shop-cb.done{background:var(--ok);border-color:var(--ok);color:#000}
+.shop-nm{font-size:13px;flex:1}.shop-nm.done{text-decoration:line-through;color:var(--text4)}
+.shop-cat{font-size:10px;color:var(--text4);background:var(--border);padding:2px 8px;border-radius:10px}
+.shop-qty{font-size:11px;color:var(--text3);width:30px;text-align:center}
+
+/* Kanban */
+.kb{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.kb-col{background:var(--bg2);border-radius:var(--r);padding:10px;min-height:200px}
+.kb-col-h{font-size:11px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.kb-col-h .cnt{background:var(--border);padding:1px 6px;border-radius:8px;font-size:10px;color:var(--accent)}
+.kb-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:grab;transition:.15s}
+.kb-card:hover{border-color:var(--border-h);transform:translateY(-1px)}
+.kb-card-t{font-size:12px;font-weight:600;margin-bottom:4px}
+.kb-card-m{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text4)}
+.kb-card-p{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* Chat */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 120px)}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px 0;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:80%;padding:12px 16px;border-radius:14px;font-size:13px;line-height:1.6}
+.msg.user{align-self:flex-end;background:var(--accent2);color:#fff;border-bottom-right-radius:4px}
+.msg.ai{align-self:flex-start;background:var(--bg2);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg-who{font-size:10px;color:var(--text4);margin-bottom:4px;font-weight:600}
+.chat-input{display:flex;gap:8px;padding:12px 0;border-top:1px solid var(--border)}
+.chat-in{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:none;height:44px}
+.chat-in:focus{border-color:var(--accent)}
+
+/* NightClaw digest */
+.digest{background:var(--bg2);border-radius:var(--r);padding:16px;font-size:13px;line-height:1.7;color:var(--text2)}
+.digest h3{font-size:15px;font-weight:700;color:var(--text);margin:12px 0 6px}
+.digest code{background:var(--border);padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--accent)}
+.digest ul{margin-left:18px;margin-bottom:8px}
+
+/* Calendar heatmap */
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.hm-cell{aspect-ratio:1;border-radius:3px;font-size:8px;display:flex;align-items:center;justify-content:center}
+.hm-ok{background:#1a3a1a;color:var(--ok)}.hm-err{background:#3a1a1a;color:var(--err)}
+.hm-skip{background:var(--bg2);color:var(--text5)}.hm-empty{background:transparent}
+
+/* Settings */
+.set-row{display:flex;align-items:center;gap:12px;background:var(--bg2);border-radius:8px;padding:12px 14px;margin-bottom:8px}
+.set-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.set-nm{font-size:13px;font-weight:600;flex:1}
+.set-role{font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600}
+.set-role.admin{background:#2d1b4a;color:var(--accent)}
+.set-role.hp{background:#1a3a5c;color:#60a5fa}
+.set-role.h{background:#1a3a1a;color:var(--ok)}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0}
+.tab{padding:8px 14px;font-size:12px;color:var(--text3);cursor:pointer;border-radius:7px 7px 0 0;transition:.15s;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--text)}.tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;background:var(--bg2)}
+
+/* Health check */
+.hc-row{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:8px;padding:10px 14px;margin-bottom:6px}
+.hc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.hc-dot.up{background:var(--ok)}.hc-dot.down{background:var(--err)}.hc-dot.slow{background:var(--warn)}
+.hc-nm{font-size:13px;font-weight:600;flex:1}
+.hc-lat{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.hc-st{font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600}
+
+/* Morning briefing widget */
+.brief{background:linear-gradient(135deg,#1e1b4b,#1a2744);border:1px solid var(--border-h);border-radius:12px;padding:16px;margin-bottom:18px}
+.brief-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.brief-ic{width:40px;height:40px;background:var(--grad);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 12px rgba(124,58,237,.4)}
+.brief-title{font-size:15px;font-weight:700}
+.brief-sub{font-size:11px;color:var(--text3)}
+.brief-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.brief-item{background:rgba(13,12,26,.5);border-radius:8px;padding:10px;text-align:center}
+.brief-item .bv{font-size:18px;font-weight:700;margin-bottom:2px}
+.brief-item .bl{font-size:9px;color:var(--text4);text-transform:uppercase}
+
+/* Wizard steps */
+.wiz{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.wiz-steps{display:flex;gap:0;margin-bottom:20px}
+.wiz-step{flex:1;text-align:center;padding:8px;font-size:11px;color:var(--text4);position:relative}
+.wiz-step.done{color:var(--ok)}.wiz-step.current{color:var(--accent);font-weight:600}
+.wiz-step::after{content:'';position:absolute;bottom:0;left:10%;width:80%;height:2px;background:var(--border);border-radius:2px}
+.wiz-step.done::after{background:var(--ok)}.wiz-step.current::after{background:var(--accent)}
+
+/* Checkbox */
+.chk{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer}
+.chk-box{width:16px;height:16px;border:2px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.chk-box.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Inline tags */
+.tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.tag-ok{background:#1a3a1a;border:1px solid #2a5a2a;color:var(--ok)}
+.tag-new{background:#2d1b4a;border:1px solid #5b21b6;color:#c4b5fd}
+.tag-warn{background:#3a2a00;color:var(--warn)}
+.tag-err{background:#3a1a1a;color:var(--err)}
+
+/* Mobile preview frame */
+.mobile-frame{width:375px;height:667px;background:var(--bg);border:2px solid var(--border);border-radius:24px;overflow:hidden;margin:0 auto;display:flex;flex-direction:column}
+.mobile-header{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.mobile-body{flex:1;overflow-y:auto;padding:12px}
+.mobile-nav{display:flex;background:var(--card);border-top:1px solid var(--border);padding:8px 0}
+.mobile-nav-item{flex:1;text-align:center;font-size:10px;color:var(--text4);cursor:pointer;padding:4px}
+.mobile-nav-item.on{color:var(--accent)}
+.mobile-nav-item .mni{font-size:18px;display:block;margin-bottom:2px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* Gate system */
+.gate-row{display:flex;align-items:center;gap:0;margin-top:6px}
+.gate{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;border:1px solid var(--border);position:relative;cursor:default}
+.gate.pass{background:#1a3a1a;border-color:#2a5a2a;color:var(--ok)}
+.gate.fail{background:#3a1a1a;border-color:#5a2a2a;color:var(--err)}
+.gate.skip{background:#3a2a00;border-color:#5a4a00;color:var(--warn)}
+.gate.pending{background:var(--bg2);color:var(--text5)}
+.gate.active{background:#1a2a4a;border-color:#3a4a6a;color:var(--info);animation:gatePulse 1.5s infinite}
+@keyframes gatePulse{0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,.3)}50%{box-shadow:0 0 0 4px rgba(56,189,248,0)}}
+.gate-line{width:12px;height:1px;background:var(--border)}
+.gate-labels{display:flex;gap:0;margin-top:2px}
+.gate-lbl{width:24px;font-size:7px;color:var(--text5);text-align:center;letter-spacing:-.02em}
+.gate-lbl-sp{width:12px}
+.gate-summary{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg2)}
+
+/* Project cards */
+.proj-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;transition:.15s;cursor:pointer}
+.proj-card:hover{border-color:var(--border-h);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.proj-card.current{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.proj-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.proj-ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.proj-nm{font-size:15px;font-weight:700}
+.proj-desc{font-size:11px;color:var(--text4)}
+.proj-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.proj-stat{text-align:center}
+.proj-stat .pv{font-size:16px;font-weight:800}
+.proj-stat .pl{font-size:9px;color:var(--text4)}
+.prog-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.prog-fill{height:100%;border-radius:3px;transition:width .3s}
+
+/* Skill cards */
+.skill-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;transition:.15s}
+.skill-card:hover{border-color:var(--border-h)}
+.skill-card.installed{border-left:3px solid var(--ok)}
+.skill-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.skill-ic{width:36px;height:36px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.skill-nm{font-size:13px;font-weight:700}
+.skill-ver{font-size:10px;color:var(--text4)}
+.skill-desc{font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:10px}
+.skill-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.skill-tag{font-size:9px;padding:2px 6px;border-radius:8px;background:var(--border);color:var(--text3)}
+</style>
+</head>
+<body>
+
+<!-- ICON RAIL -->
+<div class="rail">
+  <div class="ri" title="KiraBoard" style="font-size:20px;margin-bottom:8px">🦊</div>
+  <div class="ri on" data-page="dashboard" onclick="go('dashboard')">📊</div>
+  <div class="ri" data-page="pipeline" onclick="go('pipeline')">⚙️</div>
+  <div class="ri" data-page="projects" onclick="go('projects')">📁</div>
+  <div class="ri" data-page="models" onclick="go('models')">🤖</div>
+  <div class="ri" data-page="eval" onclick="go('eval')">🧪</div>
+  <div class="ri" data-page="nightclaw" onclick="go('nightclaw')">🌙</div>
+  <div class="ri" data-page="patterns" onclick="go('patterns')">🧠</div>
+  <div class="ri" data-page="skills" onclick="go('skills')">⚡</div>
+  <div class="ri" data-page="chat" onclick="go('chat')">💬</div>
+  <div class="ri" data-page="home" onclick="go('home')">🏠<div class="badge"></div></div>
+  <div class="rail-sep"></div>
+  <div class="ri" data-page="settings" onclick="go('settings')">⚙️</div>
+  <div class="rail-av" onclick="go('login')">M</div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="side" id="sidebar">
+  <div class="side-hdr">
+    <div class="ps"><div class="ps-ic">🦊</div><div class="ps-nm">kira</div><div class="ps-ar">⌄</div></div>
+    <div class="ver"><div class="ver-dot"></div><div class="ver-t">Bridge connected</div><div class="ver-b">v1.0</div></div>
+  </div>
+  <div class="side-items" id="sideItems">
+    <!-- populated by JS -->
+  </div>
+  <div class="side-ft"><div class="bp"><div class="bp-d"></div><div class="bp-l">Bridge :8199</div><div class="bp-v">online</div></div></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <h1 id="pageTitle">Dashboard</h1>
+    <div class="tb-search">🔍 <span style="opacity:.5">Search... (press /)</span></div>
+    <div class="tb-acts">
+      <div class="ib">🔔<div class="dot"></div></div>
+      <div class="ib" onclick="go('settings')">⚙️</div>
+      <button class="btn-pri" id="topAction">+ Start Story</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: DASHBOARD -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page active" id="pg-dashboard">
+
+  <!-- Morning Briefing -->
+  <div class="brief">
+    <div class="brief-h">
+      <div class="brief-ic">☀️</div>
+      <div><div class="brief-title">Dzień dobry, Mariusz</div><div class="brief-sub">Środa, 5 marca 2026 · Bridgwater, 8°C zachmurzenie</div></div>
+    </div>
+    <div class="brief-grid">
+      <div class="brief-item"><div class="bv" style="color:var(--accent)">🌙 3</div><div class="bl">NightClaw zmiany</div></div>
+      <div class="brief-item"><div class="bv" style="color:var(--warn)">5</div><div class="bl">Tasks na dziś</div></div>
+      <div class="brief-item"><div class="bv" style="color:var(--ok)">12</div><div class="bl">Zakupy</div></div>
+      <div class="brief-item"><div class="bv" style="color:var(--ok)">✅</div><div class="bl">Bridge OK</div></div>
+      <div class="brief-item"><div class="bv" style="color:var(--ok)">✅</div><div class="bl">OpenClaw OK</div></div>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="sc"><div class="sc-l">Stories Done</div><div class="sc-v">158</div><div class="sc-s">across 15 epics</div><div class="sc-t up">↑ +10 this session</div></div>
+    <div class="sc"><div class="sc-l">Total Runs</div><div class="sc-v">49</div><div class="sc-s">auto-tracked today</div><div class="sc-t up">↑ hooks live ✅</div></div>
+    <div class="sc"><div class="sc-l">Success Rate</div><div class="sc-v">93.9%</div><div class="sc-s">kimi 100% · glm 85.7%</div><div class="sc-t up">↑ 7-day stable</div></div>
+    <div class="sc"><div class="sc-l">Est. Token Cost</div><div class="sc-v">~$4.2</div><div class="sc-s">today · all models</div><div class="sc-t dn">kimi $1.8 · sonnet $2.1</div></div>
+  </div>
+
+  <!-- Model Agents -->
+  <div class="ch"><h3>Model Agents</h3><span class="sub">performance last 7 days</span><span class="sa">All runs →</span></div>
+  <div class="g4">
+    <div class="mc"><div class="mc-h"><div class="mc-ic" style="background:#1a3a5c">🌙</div><div><div class="mc-n">Kimi K2.5</div><div class="mc-r">Easy · Short · Impl</div></div><div class="mc-st"><div class="dot-on"></div><span style="color:var(--ok);font-size:10px">Active</span></div></div><div class="mc-met"><div class="mm"><div class="mv">22</div><div class="ml">Runs</div></div><div class="mm"><div class="mv">100%</div><div class="ml">Success</div></div><div class="mm"><div class="mv">3.5m</div><div class="ml">Avg</div></div></div><div class="mc-ch"><canvas id="ck"></canvas></div></div>
+    <div class="mc"><div class="mc-h"><div class="mc-ic" style="background:#1a3a1a">⚡</div><div><div class="mc-n">GLM-5</div><div class="mc-r">Frontend · Heartbeat</div></div><div class="mc-st"><div class="dot-on"></div><span style="color:var(--ok);font-size:10px">Active</span></div></div><div class="mc-met"><div class="mm"><div class="mv">14</div><div class="ml">Runs</div></div><div class="mm"><div class="mv">85.7%</div><div class="ml">Success</div></div><div class="mm"><div class="mv">3.8m</div><div class="ml">Avg</div></div></div><div class="mc-ch"><canvas id="cg"></canvas></div></div>
+    <div class="mc"><div class="mc-h"><div class="mc-ic" style="background:#2d1b4a">🎵</div><div><div class="mc-n">Sonnet 4.6</div><div class="mc-r">Medium · Review</div></div><div class="mc-st"><div class="dot-on"></div><span style="color:var(--ok);font-size:10px">Active</span></div></div><div class="mc-met"><div class="mm"><div class="mv">8</div><div class="ml">Runs</div></div><div class="mm"><div class="mv">87.5%</div><div class="ml">Success</div></div><div class="mm"><div class="mv">4.4m</div><div class="ml">Avg</div></div></div><div class="mc-ch"><canvas id="cs"></canvas></div></div>
+    <div class="mc"><div class="mc-h"><div class="mc-ic" style="background:#3a1a1a">🔴</div><div><div class="mc-n">Codex 5.3</div><div class="mc-r">Hard · Infra</div></div><div class="mc-st"><div class="dot-off"></div><span style="color:var(--warn);font-size:10px">Idle</span></div></div><div class="mc-met"><div class="mm"><div class="mv">5</div><div class="ml">Runs</div></div><div class="mm"><div class="mv">100%</div><div class="ml">Success</div></div><div class="mm"><div class="mv">4.9m</div><div class="ml">Avg</div></div></div><div class="mc-ch"><canvas id="cc"></canvas></div></div>
+  </div>
+
+  <!-- Velocity + Pipeline -->
+  <div class="g2">
+    <div class="card"><div class="ch"><h3>Story Velocity</h3><span class="sub">last 14 days</span></div><div style="height:120px"><canvas id="cv"></canvas></div></div>
+    <div class="card">
+      <div class="ch"><h3>Pipeline</h3><span class="sub">active + merge</span><span class="sa">+ Start Story</span></div>
+      <div style="background:var(--bg2);border-radius:8px;padding:10px;text-align:center;color:var(--text5);font-size:12px;margin-bottom:10px">🎉 Pipeline idle — all stories done</div>
+      <div class="sl">MERGE QUEUE</div>
+      <div class="pr"><div class="pr-id">STORY-12.10</div><div class="pr-t">bridge eval run CLI</div><div class="pr-m">sonnet</div><div class="pr-s s-mrg">MERGE</div></div>
+      <div class="pr"><div class="pr-id">STORY-13.8</div><div class="pr-t">Auto log-run hook</div><div class="pr-m">sonnet</div><div class="pr-s s-mrg">MERGE</div></div>
+    </div>
+  </div>
+
+  <!-- Activity + Service Health -->
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><h3>Activity Feed</h3><span class="sub">live events</span></div>
+      <div class="ai"><div class="ai-tl"><div class="ai-d" style="background:var(--ok)"></div><div class="ai-ln"></div></div><div class="ai-b"><div class="ai-e"><span>STORY-12.10</span> → DONE · review approved</div><div class="ai-tm">11:46 · Sonnet 4.6</div></div></div>
+      <div class="ai"><div class="ai-tl"><div class="ai-d" style="background:var(--err)"></div><div class="ai-ln"></div></div><div class="ai-b"><div class="ai-e"><span>STORY-13.10</span> → REFACTOR · bug found</div><div class="ai-tm">11:11 · Opus 4.6</div></div></div>
+      <div class="ai"><div class="ai-tl"><div class="ai-d" style="background:var(--ok)"></div><div class="ai-ln"></div></div><div class="ai-b"><div class="ai-e"><span>STORY-13.9</span> → DONE · Opus approved</div><div class="ai-tm">11:11 · Opus 4.6</div></div></div>
+      <div class="ai"><div class="ai-tl"><div class="ai-d" style="background:var(--accent)"></div></div><div class="ai-b"><div class="ai-e">System audit · <span>5 issues found</span></div><div class="ai-tm">10:59 · auto-run gap</div></div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Service Health</h3><span class="sub">live status</span></div>
+      <div class="hc-row"><div class="hc-dot up"></div><div class="hc-nm">Bridge API</div><div class="hc-lat">12ms</div><div class="hc-st tag-ok">UP</div></div>
+      <div class="hc-row"><div class="hc-dot up"></div><div class="hc-nm">OpenClaw Gateway</div><div class="hc-lat">8ms</div><div class="hc-st tag-ok">UP</div></div>
+      <div class="hc-row"><div class="hc-dot up"></div><div class="hc-nm">Supabase</div><div class="hc-lat">145ms</div><div class="hc-st tag-ok">UP</div></div>
+      <div class="hc-row"><div class="hc-dot slow"></div><div class="hc-nm">NightClaw Cron</div><div class="hc-lat">—</div><div class="hc-st tag-warn">IDLE</div></div>
+      <div style="margin-top:12px;font-size:10px;color:var(--text4)">Last check: 30s ago · Next: 30s</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: PIPELINE -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-pipeline">
+  <!-- Gate Overview Banner -->
+  <div style="background:linear-gradient(135deg,#1e1b4b,#1a2744);border:1px solid var(--border-h);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:16px">
+    <div style="font-size:13px;font-weight:700">Gate Compliance</div>
+    <div class="gate-summary"><span style="color:var(--ok)">✅ 34</span> passed all</div>
+    <div class="gate-summary"><span style="color:var(--warn)">⚠️ 8</span> skipped gates</div>
+    <div class="gate-summary"><span style="color:var(--err)">❌ 2</span> failed gates</div>
+    <div class="gate-summary"><span style="color:var(--info)">⏳ 6</span> in progress</div>
+    <div style="margin-left:auto;font-size:11px;color:var(--text4)">Gate enforcement: <span style="color:var(--ok);font-weight:600">ON</span></div>
+  </div>
+
+  <div class="g2" style="margin-bottom:14px">
+    <div>
+      <div class="tabs"><div class="tab on">All Stories</div><div class="tab">In Progress</div><div class="tab">⚠️ Skipped Gates</div><div class="tab">Done Today</div></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input placeholder="Search stories..." style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none">
+        <select style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text3);font-size:11px;font-family:inherit;outline:none"><option>All Models</option><option>Kimi</option><option>Sonnet</option><option>GLM</option></select>
+        <select style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text3);font-size:11px;font-family:inherit;outline:none"><option>All Gates</option><option>✅ All Passed</option><option>⚠️ Skipped</option><option>❌ Failed</option></select>
+      </div>
+
+      <!-- Gate legend -->
+      <div style="display:flex;gap:12px;margin-bottom:12px;padding:8px 12px;background:var(--bg2);border-radius:8px;font-size:10px;color:var(--text4)">
+        <span>Gates:</span>
+        <span><span style="color:var(--ok)">●</span> IMPL</span>
+        <span><span style="color:var(--info)">●</span> LINT</span>
+        <span><span style="color:var(--accent)">●</span> TEST</span>
+        <span><span style="color:#c4b5fd">●</span> REVIEW</span>
+        <span><span style="color:var(--ok)">●</span> MERGE</span>
+        <span style="margin-left:auto">✅ pass · ⚠️ skip · ❌ fail · ⏳ pending · 🔵 active</span>
+      </div>
+
+      <div class="sl">IN PROGRESS (2)</div>
+      <!-- Story with gates: active at REVIEW -->
+      <div class="pr" style="flex-wrap:wrap;padding-bottom:4px">
+        <div style="width:20px"><input type="checkbox" style="accent-color:var(--accent)"></div>
+        <div class="pr-id">STORY-0.1</div>
+        <div class="pr-t">Fork LobsterBoard + rebrand KiraBoard</div>
+        <div class="pr-m">kimi</div>
+        <div class="pr-s s-ip">IN_PROGRESS</div>
+        <div style="width:100%;padding-left:32px;display:flex;align-items:center;gap:0;margin-top:4px">
+          <div class="gate pass" title="IMPLEMENT: passed">✓</div><div class="gate-line"></div>
+          <div class="gate pass" title="LINT: passed">✓</div><div class="gate-line"></div>
+          <div class="gate pass" title="TEST: passed">✓</div><div class="gate-line"></div>
+          <div class="gate active" title="REVIEW: in progress">⏳</div><div class="gate-line"></div>
+          <div class="gate pending" title="MERGE: pending">·</div>
+          <span style="font-size:9px;color:var(--text4);margin-left:8px">3/5 gates ✓</span>
+        </div>
+      </div>
+      <!-- Story with gates: active at TEST -->
+      <div class="pr" style="flex-wrap:wrap;padding-bottom:4px">
+        <div style="width:20px"><input type="checkbox" style="accent-color:var(--accent)"></div>
+        <div class="pr-id">STORY-0.2</div>
+        <div class="pr-t">Bridge API proxy w server.cjs</div>
+        <div class="pr-m">kimi</div>
+        <div class="pr-s s-ip">IN_PROGRESS</div>
+        <div style="width:100%;padding-left:32px;display:flex;align-items:center;gap:0;margin-top:4px">
+          <div class="gate pass" title="IMPLEMENT: passed">✓</div><div class="gate-line"></div>
+          <div class="gate pass" title="LINT: passed">✓</div><div class="gate-line"></div>
+          <div class="gate active" title="TEST: running">⏳</div><div class="gate-line"></div>
+          <div class="gate pending" title="REVIEW: pending">·</div><div class="gate-line"></div>
+          <div class="gate pending" title="MERGE: pending">·</div>
+          <span style="font-size:9px;color:var(--text4);margin-left:8px">2/5 gates ✓</span>
+        </div>
+      </div>
+
+      <div class="sl" style="margin-top:10px">⚠️ SKIPPED GATES (attention needed)</div>
+      <!-- Story that skipped LINT -->
+      <div class="pr" style="flex-wrap:wrap;padding-bottom:4px;border-left:2px solid var(--warn)">
+        <div style="width:20px"><input type="checkbox" style="accent-color:var(--accent)"></div>
+        <div class="pr-id">STORY-13.5</div>
+        <div class="pr-t">WhatsApp channel reconnect logic</div>
+        <div class="pr-m">glm</div>
+        <div class="pr-s s-dn">DONE</div>
+        <div style="width:100%;padding-left:32px;display:flex;align-items:center;gap:0;margin-top:4px">
+          <div class="gate pass">✓</div><div class="gate-line"></div>
+          <div class="gate skip" title="LINT: skipped!">⚠</div><div class="gate-line"></div>
+          <div class="gate pass">✓</div><div class="gate-line"></div>
+          <div class="gate skip" title="REVIEW: skipped!">⚠</div><div class="gate-line"></div>
+          <div class="gate pass">✓</div>
+          <span style="font-size:9px;color:var(--warn);margin-left:8px;font-weight:600">⚠ 2 gates skipped</span>
+        </div>
+      </div>
+      <!-- Story that failed TEST -->
+      <div class="pr" style="flex-wrap:wrap;padding-bottom:4px;border-left:2px solid var(--err)">
+        <div style="width:20px"><input type="checkbox" style="accent-color:var(--accent)"></div>
+        <div class="pr-id">STORY-13.7</div>
+        <div class="pr-t">Telegram notification formatting</div>
+        <div class="pr-m">glm</div>
+        <div class="pr-s s-rf">REFACTOR</div>
+        <div style="width:100%;padding-left:32px;display:flex;align-items:center;gap:0;margin-top:4px">
+          <div class="gate pass">✓</div><div class="gate-line"></div>
+          <div class="gate pass">✓</div><div class="gate-line"></div>
+          <div class="gate fail" title="TEST: failed!">✗</div><div class="gate-line"></div>
+          <div class="gate pending">·</div><div class="gate-line"></div>
+          <div class="gate pending">·</div>
+          <span style="font-size:9px;color:var(--err);margin-left:8px;font-weight:600">❌ TEST gate failed</span>
+        </div>
+      </div>
+
+      <div class="sl" style="margin-top:10px">READY (4)</div>
+      <div class="pr"><div style="width:20px"><input type="checkbox" style="accent-color:var(--accent)"></div><div class="pr-id">STORY-0.3</div><div class="pr-t">Local SQLite setup — better-sqlite3</div><div class="pr-m">kimi</div><div class="pr-s s-rdy">READY</div></div>
+      <div class="pr"><div style="width:20px"><input type="checkbox" style="accent-color:var(--accent)"></div><div class="pr-id">STORY-0.4</div><div class="pr-t">Auth — users.json + PIN + JWT</div><div class="pr-m">kimi</div><div class="pr-s s-rdy">READY</div></div>
+      <div class="pr"><div style="width:20px"><input type="checkbox" style="accent-color:var(--accent)"></div><div class="pr-id">STORY-0.5</div><div class="pr-t">Supabase projekt setup + tabele</div><div class="pr-m">kimi</div><div class="pr-s s-rdy">READY</div></div>
+      <div class="pr"><div style="width:20px"><input type="checkbox" style="accent-color:var(--accent)"></div><div class="pr-id">STORY-0.6</div><div class="pr-t">Sync script skeleton — node-cron</div><div class="pr-m">kimi</div><div class="pr-s s-rdy">READY</div></div>
+
+      <div class="sl" style="margin-top:10px">DONE — ALL GATES ✅ (3)</div>
+      <div class="pr" style="opacity:.6;flex-wrap:wrap;padding-bottom:4px">
+        <div style="width:20px"></div><div class="pr-id">STORY-12.10</div><div class="pr-t">bridge eval run CLI</div><div class="pr-m">sonnet</div><div class="pr-s s-dn">DONE</div>
+        <div style="width:100%;padding-left:32px;display:flex;align-items:center;gap:0;margin-top:4px">
+          <div class="gate pass">✓</div><div class="gate-line"></div><div class="gate pass">✓</div><div class="gate-line"></div><div class="gate pass">✓</div><div class="gate-line"></div><div class="gate pass">✓</div><div class="gate-line"></div><div class="gate pass">✓</div>
+          <span style="font-size:9px;color:var(--ok);margin-left:8px">5/5 ✅</span>
+        </div>
+      </div>
+
+      <!-- Bulk action bar -->
+      <div style="margin-top:14px;padding:10px;background:var(--border);border-radius:8px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:var(--text3)">2 selected</span>
+        <button class="btn-pri" style="font-size:11px;padding:5px 12px">Advance (2)</button>
+        <button class="btn-sec" style="font-size:11px;padding:5px 12px">Assign Model</button>
+        <button class="btn-sec" style="font-size:11px;padding:5px 12px">Re-run Gate</button>
+      </div>
+    </div>
+
+    <!-- PRD Wizard -->
+    <div>
+      <div class="ch"><h3>New Project Wizard</h3><span class="sub">PRD → AI → Bridge</span></div>
+      <div class="wiz">
+        <div class="wiz-steps">
+          <div class="wiz-step done">✅ 1. Paste PRD</div>
+          <div class="wiz-step current">📝 2. AI Questions</div>
+          <div class="wiz-step">3. Review & Register</div>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Kira przeanalizowała PRD i ma kilka pytań:</div>
+        <div style="margin-bottom:10px"><div style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:4px">1. Kto jest głównym użytkownikiem?</div><input style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none" value="Mariusz (developer) i rodzina"></div>
+        <div style="margin-bottom:10px"><div style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:4px">2. Jakie integracje zewnętrzne?</div><input style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none" value="Bridge API, OpenClaw, Supabase"></div>
+        <div style="margin-bottom:10px"><div style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:4px">3. Zakres MVP — co jest must-have?</div><input style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none" value="Dashboard widgety + Home shopping/tasks + Auth PIN"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn-sec">← Wstecz</button><button class="btn-pri">Generuj projekt →</button></div>
+      </div>
+
+      <!-- Gate config panel -->
+      <div class="card" style="margin-top:14px">
+        <div class="ch"><h3>⛩️ Gate Configuration</h3><span class="sub">per project</span></div>
+        <div style="font-size:11px;color:var(--text4);margin-bottom:10px">Każda story przechodzi przez te etapy. Skipped gates są raportowane.</div>
+        <div class="hc-row"><div style="font-size:14px;width:24px;text-align:center">1</div><div class="hc-nm">IMPLEMENT</div><div style="font-size:10px;color:var(--ok)">required</div><div style="font-size:10px;color:var(--text4)">auto: story branch created</div></div>
+        <div class="hc-row"><div style="font-size:14px;width:24px;text-align:center">2</div><div class="hc-nm">LINT</div><div style="font-size:10px;color:var(--warn)">optional</div><div style="font-size:10px;color:var(--text4)">eslint + typecheck pass</div></div>
+        <div class="hc-row"><div style="font-size:14px;width:24px;text-align:center">3</div><div class="hc-nm">TEST</div><div style="font-size:10px;color:var(--ok)">required</div><div style="font-size:10px;color:var(--text4)">vitest + playwright pass</div></div>
+        <div class="hc-row"><div style="font-size:14px;width:24px;text-align:center">4</div><div class="hc-nm">REVIEW</div><div style="font-size:10px;color:var(--ok)">required</div><div style="font-size:10px;color:var(--text4)">cross-model review approved</div></div>
+        <div class="hc-row"><div style="font-size:14px;width:24px;text-align:center">5</div><div class="hc-nm">MERGE</div><div style="font-size:10px;color:var(--ok)">required</div><div style="font-size:10px;color:var(--text4)">branch merged to main</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: MODELS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-models">
+  <div class="tabs"><div class="tab on">Registry</div><div class="tab">Cost Analysis</div><div class="tab">Performance</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="mc-ic" style="background:#1a3a5c;width:40px;height:40px;font-size:18px">🌙</div>
+        <div><div style="font-size:15px;font-weight:700">Kimi K2.5</div><div style="font-size:11px;color:var(--text4)">Moonshot AI · kimi-k2.5 · Active</div></div>
+        <div style="margin-left:auto"><label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);cursor:pointer"><span>Monitor</span><div style="width:36px;height:20px;background:var(--ok);border-radius:10px;position:relative"><div style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;right:2px"></div></div></label></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:var(--bg2);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text4)">Input cost / 1M tok</div><div style="font-size:14px;font-weight:700;color:var(--warn);cursor:pointer" title="Click to edit">$0.35</div></div>
+        <div style="background:var(--bg2);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text4)">Output cost / 1M tok</div><div style="font-size:14px;font-weight:700;color:var(--warn);cursor:pointer" title="Click to edit">$0.70</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800">22</div><div style="font-size:9px;color:var(--text4)">Total Runs</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--ok)">100%</div><div style="font-size:9px;color:var(--text4)">Success</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800">3.5m</div><div style="font-size:9px;color:var(--text4)">Avg Time</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--warn)">$1.84</div><div style="font-size:9px;color:var(--text4)">Total Cost</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="mc-ic" style="background:#2d1b4a;width:40px;height:40px;font-size:18px">🎵</div>
+        <div><div style="font-size:15px;font-weight:700">Claude Sonnet 4.6</div><div style="font-size:11px;color:var(--text4)">Anthropic · claude-sonnet-4-6 · Active</div></div>
+        <div style="margin-left:auto"><label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);cursor:pointer"><span>Monitor</span><div style="width:36px;height:20px;background:var(--ok);border-radius:10px;position:relative"><div style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;right:2px"></div></div></label></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:var(--bg2);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text4)">Input cost / 1M tok</div><div style="font-size:14px;font-weight:700;color:var(--warn)">$3.00</div></div>
+        <div style="background:var(--bg2);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text4)">Output cost / 1M tok</div><div style="font-size:14px;font-weight:700;color:var(--warn)">$15.00</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800">8</div><div style="font-size:9px;color:var(--text4)">Total Runs</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--warn)">87.5%</div><div style="font-size:9px;color:var(--text4)">Success</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800">4.4m</div><div style="font-size:9px;color:var(--text4)">Avg Time</div></div>
+        <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--warn)">$2.10</div><div style="font-size:9px;color:var(--text4)">Total Cost</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card"><div class="ch"><h3>Cost & Token Usage</h3><span class="sub">last 7 days</span><span class="sa">7d | 30d</span></div><div style="height:160px"><canvas id="costChart"></canvas></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: EVAL -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-eval">
+  <div class="tabs"><div class="tab on">Overview</div><div class="tab">Golden Tasks</div><div class="tab">Run History</div></div>
+  <div class="g2">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+        <div style="text-align:center"><div style="font-size:42px;font-weight:800;color:var(--ok)">100%</div><div style="font-size:10px;color:var(--text3)">Pass Rate</div><div style="font-size:10px;color:var(--ok)">4 runs · 54 scores</div></div>
+        <div style="flex:1">
+          <div class="ev-bar"><div class="ev-nm">Code correctness</div><div class="ev-bg"><div class="ev-fl" style="width:100%"></div></div><div class="ev-pc">100%</div></div>
+          <div class="ev-bar"><div class="ev-nm">DoD compliance</div><div class="ev-bg"><div class="ev-fl" style="width:100%"></div></div><div class="ev-pc">100%</div></div>
+          <div class="ev-bar"><div class="ev-nm">Branch hygiene</div><div class="ev-bg"><div class="ev-fl" style="width:95%"></div></div><div class="ev-pc">95%</div></div>
+          <div class="ev-bar"><div class="ev-nm">Test coverage</div><div class="ev-bg"><div class="ev-fl" style="width:88%"></div></div><div class="ev-pc">88%</div></div>
+          <div class="ev-bar"><div class="ev-nm">Error handling</div><div class="ev-bg"><div class="ev-fl" style="width:92%"></div></div><div class="ev-pc">92%</div></div>
+        </div>
+      </div>
+      <button class="btn-pri" style="width:100%">🧪 Run Eval Now</button>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Golden Tasks (12)</h3><span class="sa">+ Add Task</span></div>
+      <div class="pr"><div class="pr-id" style="width:60px">GT-001</div><div class="pr-t">Create user with valid email</div><div class="pr-s s-dn">PASS</div></div>
+      <div class="pr"><div class="pr-id" style="width:60px">GT-002</div><div class="pr-t">Bridge status returns 200</div><div class="pr-s s-dn">PASS</div></div>
+      <div class="pr"><div class="pr-id" style="width:60px">GT-003</div><div class="pr-t">Story advance READY → IN_PROGRESS</div><div class="pr-s s-dn">PASS</div></div>
+      <div class="pr"><div class="pr-id" style="width:60px">GT-004</div><div class="pr-t">NightClaw digest parse valid MD</div><div class="pr-s s-dn">PASS</div></div>
+      <div class="pr"><div class="pr-id" style="width:60px">GT-005</div><div class="pr-t">Shopping item CRUD cycle</div><div class="pr-s tag-warn" style="font-size:10px;padding:2px 7px;border-radius:8px">SKIP</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: NIGHTCLAW -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-nightclaw">
+  <div class="tabs"><div class="tab on">Today's Digest</div><div class="tab">Skills Modified</div><div class="tab">Research</div><div class="tab">Run Calendar</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><h3>🌙 NightClaw Digest — 5 Mar 2026</h3></div>
+      <div class="digest">
+        <h3>Summary</h3>
+        <p>NightClaw completed 3 tasks overnight: updated <code>eval-runner</code> skill with retry logic, researched SQLite WAL mode performance, and identified 2 new patterns.</p>
+        <h3>Skills Modified</h3>
+        <ul>
+          <li><code>skills/eval-runner.md</code> — added retry on timeout (3 attempts, exponential backoff)</li>
+          <li><code>skills/bridge-proxy.md</code> — added health check endpoint documentation</li>
+        </ul>
+        <h3>Research Findings</h3>
+        <ul>
+          <li>SQLite WAL mode: 5x improvement in concurrent read performance vs default journal</li>
+          <li>better-sqlite3 vs sql.js: native bindings 10x faster for writes &gt;1000 rows</li>
+        </ul>
+        <h3>New Patterns</h3>
+        <ul>
+          <li>✅ PATTERN: Retry with exponential backoff for external API calls</li>
+          <li>⚠️ ANTI-PATTERN: Hardcoded timeouts without config override</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="ch"><h3>Run Calendar</h3><span class="sub">last 30 days</span></div>
+        <div class="heatmap">
+          <div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-err">✗</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-skip">—</div>
+          <div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-err">✗</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-skip">—</div>
+          <div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-skip">—</div>
+          <div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-err">✗</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-ok">✓</div><div class="hm-cell hm-skip">—</div>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--text4)">Success: 24/28 (85.7%) · 3 failures · Weekends off</div>
+      </div>
+      <div class="card">
+        <div class="ch"><h3>Model Stats (24h)</h3></div>
+        <div class="hc-row"><div class="hc-dot up"></div><div class="hc-nm">Kimi K2.5</div><div class="hc-lat">3 tasks</div><div style="font-size:11px;color:var(--ok);font-weight:600">100%</div></div>
+        <div class="hc-row"><div class="hc-dot up"></div><div class="hc-nm">Sonnet 4.6</div><div class="hc-lat">1 task</div><div style="font-size:11px;color:var(--ok);font-weight:600">100%</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: PATTERNS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-patterns">
+  <div class="tabs"><div class="tab on">Patterns ✅</div><div class="tab">Anti-Patterns ⚠️</div><div class="tab">Lessons 📚</div></div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <input placeholder="Search patterns..." style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none">
+    <select style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text3);font-size:11px;font-family:inherit"><option>All Tags</option><option>frontend</option><option>backend</option><option>auth</option></select>
+    <button class="btn-pri" style="font-size:11px;padding:5px 12px">+ Add Pattern</button>
+  </div>
+  <div class="g2">
+    <div>
+      <div class="sl">CONFIRMED PATTERNS (8)</div>
+      <div class="ptr"><div class="pt freq">FREQ</div><div class="pt-topic">Retry with exponential backoff for external APIs</div><div class="pt-cnt">×12</div></div>
+      <div class="ptr"><div class="pt freq">FREQ</div><div class="pt-topic">WAL mode for concurrent SQLite reads</div><div class="pt-cnt">×8</div></div>
+      <div class="ptr"><div class="pt temp">TEMP</div><div class="pt-topic">Feature flags per module for gradual rollout</div><div class="pt-cnt">×5</div></div>
+      <div class="ptr"><div class="pt cooc">COOC</div><div class="pt-topic">Bridge proxy + timeout guard + offline fallback</div><div class="pt-cnt">×4</div></div>
+      <div class="ptr"><div class="pt freq">FREQ</div><div class="pt-topic">PIN auth hash server-side, JWT for session</div><div class="pt-cnt">×3</div></div>
+    </div>
+    <div>
+      <div class="sl">RECENT LESSONS (5)</div>
+      <div class="lr" style="border-left-color:var(--err)"><div class="lr-m">BUG-042 · critical · 2026-03-04</div><div class="lr-t">Non-blocking hooks in state machine transitions. Hook failure must never block primary operation.</div></div>
+      <div class="lr" style="border-left-color:var(--warn)"><div class="lr-m">LESSON-018 · warning · 2026-03-03</div><div class="lr-t">Hardcoded API URLs break when Bridge port changes. Always use env vars with sensible defaults.</div></div>
+      <div class="lr"><div class="lr-m">LESSON-017 · info · 2026-03-02</div><div class="lr-t">Kimi K2.5 handles simple CRUD 2x faster than Sonnet — use for short tasks, reserve Sonnet for review.</div></div>
+      <div class="lr" style="border-left-color:var(--err)"><div class="lr-m">BUG-041 · critical · 2026-03-01</div><div class="lr-t">SQLite foreign_keys pragma must be set per connection, not just at DB creation.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: CHAT -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-chat">
+  <div class="chat-wrap">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <select style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:12px;font-family:inherit"><option>Channel: general</option><option>Channel: pipeline</option><option>Channel: home</option></select>
+      <select style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:12px;font-family:inherit"><option>Model: Claude Sonnet 4.6</option><option>Model: Kimi K2.5</option><option>Model: GPT-4o</option></select>
+    </div>
+    <div class="chat-msgs">
+      <div class="msg user"><div class="msg-who">Mariusz</div>Sprawdź status pipeline i powiedz co jest do zrobienia na dzisiaj</div>
+      <div class="msg ai"><div class="msg-who">Kira (Sonnet 4.6)</div>Pipeline jest w dobrym stanie. Masz <b>2 stories IN_PROGRESS</b> (STORY-0.1 i 0.2) i <b>4 READY</b> do rozpoczęcia. Merge queue ma 2 items czekające na merge.<br><br>Na dziś proponuję:<br>1. Zakończyć STORY-0.1 (fork + rebrand) — kluczowy bloker<br>2. Przejść do STORY-0.3 (SQLite) i 0.5 (Supabase) — mogą iść równolegle<br>3. Review merge queue</div>
+      <div class="msg user"><div class="msg-who">Mariusz</div>Świetnie, zacznij od STORY-0.3</div>
+      <div class="msg ai"><div class="msg-who">Kira (Sonnet 4.6)</div>Startuję STORY-0.3 — Local SQLite setup z better-sqlite3. Tworzę:<br>• <code>db/init.js</code> — initDatabase() z auto-migration<br>• 5 tabel: kb_users, kb_shopping_items, kb_tasks, kb_activity_log, kb_sync_log<br>• WAL mode + foreign keys + indeksy<br><br>Szacowany czas: ~15 min. Powiadomię gdy gotowe.</div>
+    </div>
+    <div class="chat-input">
+      <textarea class="chat-in" placeholder="Napisz do Kiry... (Ctrl+Enter wyślij)"></textarea>
+      <button class="btn-pri" style="height:44px">Wyślij</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: HOME -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-home">
+  <div class="tabs"><div class="tab on">Overview</div><div class="tab">🛒 Zakupy</div><div class="tab">✅ Zadania</div><div class="tab">📊 Aktywność</div><div class="tab">📱 Mobile Preview</div></div>
+
+  <div class="g2">
+    <!-- Shopping List -->
+    <div class="card">
+      <div class="ch"><h3>🛒 Lista Zakupów</h3><span class="sub">12 items</span><span class="sa">+ Dodaj</span></div>
+      <div style="background:var(--bg2);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--accent);background:rgba(129,140,248,.15);padding:2px 8px;border-radius:10px;cursor:pointer">Najczęściej: Mleko ×24</span>
+        <span style="font-size:10px;color:var(--accent);background:rgba(129,140,248,.15);padding:2px 8px;border-radius:10px;cursor:pointer">Chleb ×18</span>
+        <span style="font-size:10px;color:var(--accent);background:rgba(129,140,248,.15);padding:2px 8px;border-radius:10px;cursor:pointer">Masło ×15</span>
+      </div>
+      <div class="sl">🥬 WARZYWA & OWOCE</div>
+      <div class="shop-item"><div class="shop-cb">‎</div><div class="shop-nm">Pomidory</div><div class="shop-qty">1kg</div><div class="shop-cat">🥬</div></div>
+      <div class="shop-item"><div class="shop-cb">‎</div><div class="shop-nm">Ogórki</div><div class="shop-qty">3</div><div class="shop-cat">🥬</div></div>
+      <div class="shop-item"><div class="shop-cb">‎</div><div class="shop-nm">Banany</div><div class="shop-qty">1kg</div><div class="shop-cat">🥬</div></div>
+      <div class="sl" style="margin-top:8px">🥛 NABIAŁ</div>
+      <div class="shop-item"><div class="shop-cb">‎</div><div class="shop-nm">Mleko 3.2%</div><div class="shop-qty">2L</div><div class="shop-cat">🥛</div></div>
+      <div class="shop-item"><div class="shop-cb">‎</div><div class="shop-nm">Ser żółty</div><div class="shop-qty">200g</div><div class="shop-cat">🥛</div></div>
+      <div class="sl" style="margin-top:8px">🍞 PIECZYWO</div>
+      <div class="shop-item"><div class="shop-cb">‎</div><div class="shop-nm">Chleb razowy</div><div class="shop-qty">1</div><div class="shop-cat">🍞</div></div>
+      <div class="sl" style="margin-top:8px;color:var(--ok)">✅ KUPIONE (3)</div>
+      <div class="shop-item" style="opacity:.5"><div class="shop-cb done">✓</div><div class="shop-nm done">Masło</div><div class="shop-qty">250g</div><div class="shop-cat">🥛</div></div>
+      <div class="shop-item" style="opacity:.5"><div class="shop-cb done">✓</div><div class="shop-nm done">Jajka</div><div class="shop-qty">10</div><div class="shop-cat">🥛</div></div>
+    </div>
+
+    <!-- Kanban Tasks -->
+    <div class="card">
+      <div class="ch"><h3>✅ Zadania Domowe</h3><span class="sub">view:</span>
+        <span style="font-size:11px;padding:2px 8px;background:var(--accent);color:#fff;border-radius:6px;cursor:pointer;margin-left:4px">Kanban</span>
+        <span style="font-size:11px;padding:2px 8px;background:var(--border);color:var(--text3);border-radius:6px;cursor:pointer">Lista</span>
+        <span style="font-size:11px;padding:2px 8px;background:var(--border);color:var(--text3);border-radius:6px;cursor:pointer">Kalendarz</span>
+      </div>
+      <div class="kb">
+        <div class="kb-col">
+          <div class="kb-col-h">To Do <span class="cnt">3</span></div>
+          <div class="kb-card"><div class="kb-card-t">Odkurzanie salon</div><div class="kb-card-m"><div class="kb-card-p" style="background:var(--warn)"></div>Zuza · dziś · 🔄 auto</div></div>
+          <div class="kb-card"><div class="kb-card-t">Pranie ciuchów</div><div class="kb-card-m"><div class="kb-card-p" style="background:var(--err)"></div>Iza · dziś · 🔄 auto</div></div>
+          <div class="kb-card"><div class="kb-card-t">Umyć łazienkę</div><div class="kb-card-m"><div class="kb-card-p" style="background:var(--text4)"></div>Angelika · jutro</div></div>
+        </div>
+        <div class="kb-col">
+          <div class="kb-col-h">Doing <span class="cnt">1</span></div>
+          <div class="kb-card" style="border-color:var(--accent)"><div class="kb-card-t">Zakupy tygodniowe</div><div class="kb-card-m"><div class="kb-card-p" style="background:var(--ok)"></div>Angelika · in progress</div></div>
+        </div>
+        <div class="kb-col">
+          <div class="kb-col-h">Done <span class="cnt">2</span></div>
+          <div class="kb-card" style="opacity:.6"><div class="kb-card-t">Wynieś śmieci</div><div class="kb-card-m"><div class="kb-card-p" style="background:var(--ok)"></div>Zuza · 10:30</div></div>
+          <div class="kb-card" style="opacity:.6"><div class="kb-card-t">Naczynia po obiedzie</div><div class="kb-card-m"><div class="kb-card-p" style="background:var(--ok)"></div>Iza · 14:15</div></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text4)">🔄 Recurring: 2 tasks auto-created today (Odkurzanie → Zuza, Pranie → Iza)</div>
+    </div>
+  </div>
+
+  <!-- Family Activity Feed -->
+  <div class="card" style="margin-top:14px">
+    <div class="ch"><h3>👨‍👩‍👧‍👧 Family Activity Feed</h3><span class="sub">everything in one place</span></div>
+    <div class="ai"><div class="ai-tl"><div class="ai-d" style="background:var(--ok)"></div><div class="ai-ln"></div></div><div class="ai-b"><div class="ai-e">🌸 Angelika dodała <span>Pomidory, Ogórki, Banany</span> do zakupów</div><div class="ai-tm">15:30 · shopping</div></div></div>
+    <div class="ai"><div class="ai-tl"><div class="ai-d" style="background:var(--ok)"></div><div class="ai-ln"></div></div><div class="ai-b"><div class="ai-e">⭐ Zuza oznaczyła <span>Wynieś śmieci</span> jako Done</div><div class="ai-tm">10:30 · task</div></div></div>
+    <div class="ai"><div class="ai-tl"><div class="ai-d" style="background:var(--accent)"></div><div class="ai-ln"></div></div><div class="ai-b"><div class="ai-e">🔄 System auto-created <span>Odkurzanie → Zuza</span> (weekly recurring)</div><div class="ai-tm">08:00 · recurring</div></div></div>
+    <div class="ai"><div class="ai-tl"><div class="ai-d" style="background:#c4b5fd"></div><div class="ai-ln"></div></div><div class="ai-b"><div class="ai-e">🦊 Kira zakończyła <span>STORY-12.10</span> — bridge eval run CLI</div><div class="ai-tm">07:46 · pipeline</div></div></div>
+    <div class="ai"><div class="ai-tl"><div class="ai-d" style="background:#818cf8"></div></div><div class="ai-b"><div class="ai-e">🌙 NightClaw znalazł <span>2 nowe patterns</span> i zaktualizował 2 skille</div><div class="ai-tm">04:30 · nightclaw</div></div></div>
+  </div>
+
+  <!-- Mobile Preview -->
+  <div style="margin-top:18px;text-align:center;margin-bottom:10px;font-size:13px;font-weight:600;color:var(--text3)">📱 Mobile Preview — widok Angeliki na telefonie</div>
+  <div class="mobile-frame">
+    <div class="mobile-header">
+      <span style="font-size:18px">🦊</span>
+      <div style="flex:1"><div style="font-size:14px;font-weight:700">Cześć, Angelika! 🌸</div><div style="font-size:10px;color:var(--text4)">Środa, 5 marca</div></div>
+      <div class="ib" style="width:28px;height:28px;font-size:10px">🔔</div>
+    </div>
+    <div class="mobile-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer"><div style="font-size:24px;margin-bottom:4px">🛒</div><div style="font-size:20px;font-weight:800;color:var(--warn)">12</div><div style="font-size:10px;color:var(--text4)">Zakupy</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer"><div style="font-size:24px;margin-bottom:4px">✅</div><div style="font-size:20px;font-weight:800;color:var(--accent)">3</div><div style="font-size:10px;color:var(--text4)">Zadania</div></div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer"><div style="font-size:11px;font-weight:600;margin-bottom:6px">🔄 Nadchodzące</div><div style="font-size:11px;color:var(--text3)">Odkurzanie → Zuza (dziś)</div><div style="font-size:11px;color:var(--text3)">Pranie → Iza (dziś)</div><div style="font-size:11px;color:var(--text4);margin-top:4px">Mycie okien → Angelika (za 3 dni)</div></div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px"><div style="font-size:11px;font-weight:600;margin-bottom:6px">📊 Ostatnia aktywność</div><div style="font-size:10px;color:var(--text3)">🌸 Dodałaś 3 items do zakupów · 15:30</div><div style="font-size:10px;color:var(--text3)">⭐ Zuza: Wynieś śmieci ✅ · 10:30</div><div style="font-size:10px;color:var(--text3)">🌙 Iza: Naczynia ✅ · 14:15</div></div>
+      <!-- FAB -->
+      <div style="position:absolute;bottom:60px;right:20px;width:48px;height:48px;background:var(--grad);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:0 4px 20px rgba(124,58,237,.5)">＋</div>
+    </div>
+    <div class="mobile-nav">
+      <div class="mobile-nav-item on"><div class="mni">🏠</div>Home</div>
+      <div class="mobile-nav-item"><div class="mni">🛒</div>Zakupy</div>
+      <div class="mobile-nav-item"><div class="mni">✅</div>Zadania</div>
+      <div class="mobile-nav-item"><div class="mni">👤</div>Profil</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: PROJECTS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-projects">
+  <div class="tabs"><div class="tab on">All Projects</div><div class="tab">Active</div><div class="tab">Archived</div></div>
+  
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <input placeholder="Search projects..." style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none">
+    <button class="btn-pri">+ New Project (PRD Wizard)</button>
+  </div>
+
+  <div class="g3">
+    <!-- Project: kira (current) -->
+    <div class="proj-card current">
+      <div class="proj-head">
+        <div class="proj-ic" style="background:var(--grad)">🤖</div>
+        <div><div class="proj-nm">kira</div><div class="proj-desc">AI Pipeline Orchestrator</div></div>
+        <div class="tag-ok" style="font-size:10px;padding:3px 8px;border-radius:6px;margin-left:auto">CURRENT</div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:78%;background:linear-gradient(90deg,var(--ok),#34d399)"></div></div>
+      <div class="proj-stats">
+        <div class="proj-stat"><div class="pv">158</div><div class="pl">Done</div></div>
+        <div class="proj-stat"><div class="pv" style="color:var(--info)">6</div><div class="pl">In Progress</div></div>
+        <div class="proj-stat"><div class="pv" style="color:var(--warn)">8</div><div class="pl">Ready</div></div>
+        <div class="proj-stat"><div class="pv" style="color:var(--err)">2</div><div class="pl">Blocked</div></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="tag tag-ok">15 epics</span>
+        <span class="tag tag-new">EPIC-0 active</span>
+        <span class="tag" style="background:var(--border);color:var(--text3)">Bridge connected</span>
+      </div>
+      <div style="display:flex;gap:6px;font-size:10px;color:var(--text4)">
+        <span>Gate compliance: <b style="color:var(--ok)">89%</b></span>
+        <span>·</span>
+        <span>⚠️ 8 stories skipped gates</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-pri" style="flex:1;font-size:11px;padding:6px">Open Pipeline</button>
+        <button class="btn-sec" style="font-size:11px;padding:6px">Settings</button>
+      </div>
+    </div>
+
+    <!-- Project: kira-board -->
+    <div class="proj-card">
+      <div class="proj-head">
+        <div class="proj-ic" style="background:linear-gradient(135deg,#f59e0b,#f97316)">🦊</div>
+        <div><div class="proj-nm">kira-board</div><div class="proj-desc">KiraBoard Dashboard</div></div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:12%;background:linear-gradient(90deg,var(--info),#60a5fa)"></div></div>
+      <div class="proj-stats">
+        <div class="proj-stat"><div class="pv">2</div><div class="pl">Done</div></div>
+        <div class="proj-stat"><div class="pv" style="color:var(--info)">2</div><div class="pl">In Progress</div></div>
+        <div class="proj-stat"><div class="pv" style="color:var(--warn)">10</div><div class="pl">Ready</div></div>
+        <div class="proj-stat"><div class="pv" style="color:var(--text4)">0</div><div class="pl">Blocked</div></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="tag tag-new">1 epic (EPIC-0)</span>
+        <span class="tag" style="background:var(--border);color:var(--text3)">14 stories</span>
+      </div>
+      <div style="display:flex;gap:6px;font-size:10px;color:var(--text4)">
+        <span>Gate compliance: <b style="color:var(--ok)">100%</b></span>
+        <span>·</span>
+        <span>Created: 5 Mar 2026</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-sec" style="flex:1;font-size:11px;padding:6px">Switch to Project</button>
+        <button class="btn-sec" style="font-size:11px;padding:6px">Settings</button>
+      </div>
+    </div>
+
+    <!-- Project: gym-tracker -->
+    <div class="proj-card" style="opacity:.7">
+      <div class="proj-head">
+        <div class="proj-ic" style="background:linear-gradient(135deg,#10b981,#34d399)">🏋️</div>
+        <div><div class="proj-nm">gym-tracker</div><div class="proj-desc">Workout & Progress Tracker</div></div>
+        <div class="tag" style="background:var(--border);color:var(--text4);font-size:10px;padding:3px 8px;border-radius:6px;margin-left:auto">PLANNED</div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:0%"></div></div>
+      <div class="proj-stats">
+        <div class="proj-stat"><div class="pv" style="color:var(--text5)">0</div><div class="pl">Done</div></div>
+        <div class="proj-stat"><div class="pv" style="color:var(--text5)">0</div><div class="pl">In Progress</div></div>
+        <div class="proj-stat"><div class="pv" style="color:var(--text5)">0</div><div class="pl">Ready</div></div>
+        <div class="proj-stat"><div class="pv" style="color:var(--text5)">0</div><div class="pl">Blocked</div></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="tag" style="background:var(--border);color:var(--text4)">No epics yet</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-pri" style="flex:1;font-size:11px;padding:6px">Generate from PRD</button>
+        <button class="btn-sec" style="font-size:11px;padding:6px;color:var(--err)">Archive</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projects comparison -->
+  <div class="card" style="margin-top:14px">
+    <div class="ch"><h3>Project Comparison</h3><span class="sub">all active projects</span></div>
+    <div style="display:grid;grid-template-columns:200px 1fr 80px 80px 80px;gap:8px;font-size:11px;padding:8px 0;border-bottom:1px solid var(--border);color:var(--text4);font-weight:600">
+      <div>Project</div><div>Progress</div><div style="text-align:center">Stories</div><div style="text-align:center">Gate %</div><div style="text-align:center">Cost</div>
+    </div>
+    <div style="display:grid;grid-template-columns:200px 1fr 80px 80px 80px;gap:8px;font-size:12px;padding:10px 0;border-bottom:1px solid var(--bg2);align-items:center">
+      <div style="font-weight:600">🤖 kira</div>
+      <div><div class="prog-bar" style="margin:0"><div class="prog-fill" style="width:78%;background:var(--ok)"></div></div></div>
+      <div style="text-align:center">174</div><div style="text-align:center;color:var(--ok)">89%</div><div style="text-align:center;color:var(--warn)">$42.30</div>
+    </div>
+    <div style="display:grid;grid-template-columns:200px 1fr 80px 80px 80px;gap:8px;font-size:12px;padding:10px 0;border-bottom:1px solid var(--bg2);align-items:center">
+      <div style="font-weight:600">🦊 kira-board</div>
+      <div><div class="prog-bar" style="margin:0"><div class="prog-fill" style="width:12%;background:var(--info)"></div></div></div>
+      <div style="text-align:center">14</div><div style="text-align:center;color:var(--ok)">100%</div><div style="text-align:center;color:var(--warn)">$1.20</div>
+    </div>
+    <div style="display:grid;grid-template-columns:200px 1fr 80px 80px 80px;gap:8px;font-size:12px;padding:10px 0;align-items:center;opacity:.5">
+      <div style="font-weight:600">🏋️ gym-tracker</div>
+      <div><div class="prog-bar" style="margin:0"><div class="prog-fill" style="width:0%"></div></div></div>
+      <div style="text-align:center">0</div><div style="text-align:center;color:var(--text4)">—</div><div style="text-align:center;color:var(--text4)">$0</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: SKILLS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-skills">
+  <div class="tabs"><div class="tab on">Installed (12)</div><div class="tab">Available</div><div class="tab">Community</div></div>
+  
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <input placeholder="Search skills..." style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none">
+    <select style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text3);font-size:11px;font-family:inherit"><option>All Categories</option><option>Pipeline</option><option>Code</option><option>Research</option><option>System</option></select>
+    <button class="btn-sec">↻ Refresh Registry</button>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    <div class="sc"><div class="sc-l">Installed</div><div class="sc-v">12</div><div class="sc-s">active skills</div></div>
+    <div class="sc"><div class="sc-l">Available</div><div class="sc-v">47</div><div class="sc-s">in registry</div></div>
+    <div class="sc"><div class="sc-l">Last Updated</div><div class="sc-v" style="font-size:16px">2h ago</div><div class="sc-s">auto-check daily</div></div>
+    <div class="sc"><div class="sc-l">Custom</div><div class="sc-v">3</div><div class="sc-s">user-created</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+    <!-- Skill: eval-runner -->
+    <div class="skill-card installed">
+      <div class="skill-head">
+        <div class="skill-ic">🧪</div>
+        <div><div class="skill-nm">eval-runner</div><div class="skill-ver">v2.1.0 · updated 2h ago by NightClaw</div></div>
+      </div>
+      <div class="skill-desc">Runs eval framework golden tasks against pipeline output. Supports retry with exponential backoff.</div>
+      <div class="skill-tags"><span class="skill-tag">pipeline</span><span class="skill-tag">testing</span><span class="skill-tag">eval</span></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="tag-ok" style="font-size:10px;padding:2px 8px;border-radius:6px">Installed</span>
+        <span style="font-size:10px;color:var(--text4);margin-left:auto">Used 34× this week</span>
+      </div>
+    </div>
+
+    <!-- Skill: bridge-proxy -->
+    <div class="skill-card installed">
+      <div class="skill-head">
+        <div class="skill-ic">🔗</div>
+        <div><div class="skill-nm">bridge-proxy</div><div class="skill-ver">v1.3.0 · stable</div></div>
+      </div>
+      <div class="skill-desc">Proxies requests to Bridge API with timeout guard, offline detection, and health check monitoring.</div>
+      <div class="skill-tags"><span class="skill-tag">system</span><span class="skill-tag">bridge</span><span class="skill-tag">proxy</span></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="tag-ok" style="font-size:10px;padding:2px 8px;border-radius:6px">Installed</span>
+        <span style="font-size:10px;color:var(--text4);margin-left:auto">Used 128× this week</span>
+      </div>
+    </div>
+
+    <!-- Skill: code-review -->
+    <div class="skill-card installed">
+      <div class="skill-head">
+        <div class="skill-ic">👁️</div>
+        <div><div class="skill-nm">code-review</div><div class="skill-ver">v3.0.1 · stable</div></div>
+      </div>
+      <div class="skill-desc">Cross-model code review. Checks code correctness, patterns compliance, DoD adherence, and test coverage.</div>
+      <div class="skill-tags"><span class="skill-tag">pipeline</span><span class="skill-tag">review</span><span class="skill-tag">quality</span></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="tag-ok" style="font-size:10px;padding:2px 8px;border-radius:6px">Installed</span>
+        <span style="font-size:10px;color:var(--text4);margin-left:auto">Used 42× this week</span>
+      </div>
+    </div>
+
+    <!-- Skill: nightclaw-digest -->
+    <div class="skill-card installed">
+      <div class="skill-head">
+        <div class="skill-ic">🌙</div>
+        <div><div class="skill-nm">nightclaw-digest</div><div class="skill-ver">v1.5.0 · stable</div></div>
+      </div>
+      <div class="skill-desc">Generates nightly digest: skill updates, research findings, pattern detection, model performance stats.</div>
+      <div class="skill-tags"><span class="skill-tag">nightclaw</span><span class="skill-tag">digest</span><span class="skill-tag">research</span></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="tag-ok" style="font-size:10px;padding:2px 8px;border-radius:6px">Installed</span>
+        <span style="font-size:10px;color:var(--text4);margin-left:auto">Runs nightly at 04:00</span>
+      </div>
+    </div>
+
+    <!-- Skill: web-research (available, not installed) -->
+    <div class="skill-card">
+      <div class="skill-head">
+        <div class="skill-ic">🔍</div>
+        <div><div class="skill-nm">web-research</div><div class="skill-ver">v2.0.0 · community</div></div>
+      </div>
+      <div class="skill-desc">Deep web research with source verification. Searches, reads pages, extracts structured findings.</div>
+      <div class="skill-tags"><span class="skill-tag">research</span><span class="skill-tag">web</span><span class="skill-tag">community</span></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn-pri" style="font-size:10px;padding:4px 12px">Install</button>
+        <span style="font-size:10px;color:var(--text4);margin-left:auto">⭐ 234 installs</span>
+      </div>
+    </div>
+
+    <!-- Skill: deploy-vercel (available) -->
+    <div class="skill-card">
+      <div class="skill-head">
+        <div class="skill-ic">🚀</div>
+        <div><div class="skill-nm">deploy-vercel</div><div class="skill-ver">v1.2.0 · official</div></div>
+      </div>
+      <div class="skill-desc">Deploy Next.js and static sites to Vercel. Handles env vars, preview deployments, and domain config.</div>
+      <div class="skill-tags"><span class="skill-tag">deploy</span><span class="skill-tag">vercel</span><span class="skill-tag">ci-cd</span></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn-pri" style="font-size:10px;padding:4px 12px">Install</button>
+        <span style="font-size:10px;color:var(--text4);margin-left:auto">⭐ 891 installs</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: SETTINGS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-settings">
+  <div class="tabs"><div class="tab on">👥 Users</div><div class="tab">🖥️ System</div><div class="tab">🔄 Recurring Tasks</div><div class="tab">⚡ Feature Flags</div></div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><h3>Users</h3><span class="sub">4 users configured</span><span class="sa">+ Invite User</span></div>
+      <div class="set-row"><div class="set-av" style="background:var(--grad)">🦊</div><div class="set-nm">Mariusz<div style="font-size:10px;color:var(--text4);font-weight:400">PIN: ••••</div></div><div class="set-role admin">ADMIN</div></div>
+      <div class="set-row"><div class="set-av" style="background:linear-gradient(135deg,#ec4899,#f472b6)">🌸</div><div class="set-nm">Angelika<div style="font-size:10px;color:var(--text4);font-weight:400">PIN: ••••</div></div><div class="set-role hp">HOME+</div></div>
+      <div class="set-row"><div class="set-av" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)">⭐</div><div class="set-nm">Zuza<div style="font-size:10px;color:var(--text4);font-weight:400">PIN: ••••</div></div><div class="set-role h">HOME</div></div>
+      <div class="set-row"><div class="set-av" style="background:linear-gradient(135deg,#6366f1,#818cf8)">🌙</div><div class="set-nm">Iza<div style="font-size:10px;color:var(--text4);font-weight:400">PIN: ••••</div></div><div class="set-role h">HOME</div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>System Health</h3><span class="sub">live</span></div>
+      <div class="hc-row"><div class="hc-dot up"></div><div class="hc-nm">Bridge API :8199</div><div class="hc-lat">12ms</div><div class="hc-st tag-ok">UP</div></div>
+      <div class="hc-row"><div class="hc-dot up"></div><div class="hc-nm">OpenClaw Gateway</div><div class="hc-lat">8ms</div><div class="hc-st tag-ok">UP</div></div>
+      <div class="hc-row"><div class="hc-dot up"></div><div class="hc-nm">Supabase Remote</div><div class="hc-lat">145ms</div><div class="hc-st tag-ok">UP</div></div>
+      <div class="hc-row"><div class="hc-dot up"></div><div class="hc-nm">SQLite kiraboard.db</div><div class="hc-lat">1ms</div><div class="hc-st tag-ok">2.4MB</div></div>
+      <div style="margin-top:12px">
+        <div class="sl">API Keys</div>
+        <div style="background:var(--bg2);border-radius:7px;padding:8px 11px;margin-bottom:5px;display:flex;align-items:center;font-size:12px"><span style="flex:1">ANTHROPIC_API_KEY</span><span style="color:var(--text4);font-family:var(--mono)">sk-ant-••••••••7f3a</span><span class="tag-ok" style="font-size:10px;padding:2px 6px;border-radius:4px;margin-left:8px">Active</span></div>
+        <div style="background:var(--bg2);border-radius:7px;padding:8px 11px;margin-bottom:5px;display:flex;align-items:center;font-size:12px"><span style="flex:1">SUPABASE_KEY</span><span style="color:var(--text4);font-family:var(--mono)">eyJhbG••••••••QssA</span><span class="tag-ok" style="font-size:10px;padding:2px 6px;border-radius:4px;margin-left:8px">Active</span></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn-sec" style="flex:1">📋 View Cron Jobs</button>
+        <button class="btn-pri" style="background:var(--err);box-shadow:0 2px 10px rgba(248,113,113,.35)">🔄 Restart Bridge</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="ch"><h3>🔄 Recurring Tasks</h3><span class="sub">auto-create rules</span><span class="sa">+ Add Rule</span></div>
+    <div class="pr"><div style="font-size:12px;font-weight:600;flex:1">Odkurzanie salon</div><div style="font-size:10px;color:var(--text3);width:80px">weekly · Pon</div><div style="font-size:10px;color:var(--accent);width:100px">rotate: Zuza↔Iza</div><div style="font-size:10px;color:var(--ok)">✅ active</div></div>
+    <div class="pr"><div style="font-size:12px;font-weight:600;flex:1">Pranie ciuchów</div><div style="font-size:10px;color:var(--text3);width:80px">weekly · Śr</div><div style="font-size:10px;color:var(--accent);width:100px">rotate: Iza↔Zuza</div><div style="font-size:10px;color:var(--ok)">✅ active</div></div>
+    <div class="pr"><div style="font-size:12px;font-weight:600;flex:1">Mycie okien</div><div style="font-size:10px;color:var(--text3);width:80px">monthly · 15th</div><div style="font-size:10px;color:var(--accent);width:100px">Angelika</div><div style="font-size:10px;color:var(--ok)">✅ active</div></div>
+    <div class="pr"><div style="font-size:12px;font-weight:600;flex:1;opacity:.5">Podlewanie kwiatów</div><div style="font-size:10px;color:var(--text3);width:80px;opacity:.5">daily</div><div style="font-size:10px;color:var(--text4);width:100px;opacity:.5">Zuza</div><div style="font-size:10px;color:var(--text4)">⏸ paused</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- PAGE: LOGIN -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page" id="pg-login">
+  <div style="display:flex;align-items:center;justify-content:center;height:calc(100vh - 120px)">
+    <div style="text-align:center;width:320px">
+      <div style="font-size:64px;margin-bottom:16px">🦊</div>
+      <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#c4b5fd,#93c5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px">KiraBoard</div>
+      <div style="font-size:12px;color:var(--text4);margin-bottom:24px">Enter your PIN to continue</div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-bottom:20px">
+        <div style="width:48px;height:56px;background:var(--card);border:2px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--accent)">•</div>
+        <div style="width:48px;height:56px;background:var(--card);border:2px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--accent)">•</div>
+        <div style="width:48px;height:56px;background:var(--card);border:2px solid var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--accent)">_</div>
+        <div style="width:48px;height:56px;background:var(--card);border:2px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--text4)">‎</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:200px;margin:0 auto">
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">1</div>
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">2</div>
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">3</div>
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">4</div>
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">5</div>
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">6</div>
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">7</div>
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">8</div>
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">9</div>
+        <div></div>
+        <div class="ib" style="width:56px;height:56px;font-size:18px;font-weight:600;border-radius:12px;margin:0 auto">0</div>
+        <div class="ib" style="width:56px;height:56px;font-size:14px;border-radius:12px;margin:0 auto">⌫</div>
+      </div>
+      <div style="margin-top:20px;display:flex;justify-content:center;gap:16px">
+        <div style="text-align:center;cursor:pointer"><div style="font-size:24px">🦊</div><div style="font-size:9px;color:var(--text4)">Mariusz</div></div>
+        <div style="text-align:center;cursor:pointer"><div style="font-size:24px">🌸</div><div style="font-size:9px;color:var(--text4)">Angelika</div></div>
+        <div style="text-align:center;cursor:pointer"><div style="font-size:24px">⭐</div><div style="font-size:9px;color:var(--text4)">Zuza</div></div>
+        <div style="text-align:center;cursor:pointer"><div style="font-size:24px">🌙</div><div style="font-size:9px;color:var(--text4)">Iza</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ─── Navigation ───
+const pages = {
+  dashboard: { title:'Dashboard', icon:'📊', action:'+ Start Story', nav:[
+    {l:'Pipeline',items:[{n:'📊 Overview',p:'dashboard',on:true},{n:'⚙️ Pipeline',p:'pipeline'},{n:'📁 Projects',p:'projects'},{n:'🤖 Models',p:'models'}]},
+    {l:'Intelligence',items:[{n:'🧪 Eval',p:'eval'},{n:'🧠 Patterns',p:'patterns'},{n:'🌙 NightClaw',p:'nightclaw'}]},
+    {l:'Tools',items:[{n:'⚡ Skills',p:'skills'},{n:'💬 Chat',p:'chat'}]},
+    {l:'Home',items:[{n:'🏠 Home Dashboard',p:'home'}]},
+    {l:'System',items:[{n:'⚙️ Settings',p:'settings'}]}
+  ]},
+  pipeline: { title:'Pipeline — Gate View', icon:'⚙️', action:'+ New Project' },
+  projects: { title:'Projects', icon:'📁', action:'+ New Project' },
+  models: { title:'Models', icon:'🤖', action:'Edit Costs' },
+  eval: { title:'Eval Framework', icon:'🧪', action:'🧪 Run Eval' },
+  nightclaw: { title:'NightClaw', icon:'🌙', action:'View Full Report' },
+  patterns: { title:'Patterns & Lessons', icon:'🧠', action:'+ Add Pattern' },
+  skills: { title:'Skills', icon:'⚡', action:'↻ Refresh' },
+  chat: { title:'Chat with Kira', icon:'💬', action:'New Conversation' },
+  home: { title:'Home Dashboard', icon:'🏠', action:'+ Quick Add' },
+  settings: { title:'Settings', icon:'⚙️', action:'Save Changes' },
+  login: { title:'Login', icon:'🔒', action:'' },
+};
+
+function go(p) {
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('pg-'+p)?.classList.add('active');
+  document.querySelectorAll('.ri[data-page]').forEach(el=>{el.classList.toggle('on',el.dataset.page===p)});
+  const pg = pages[p]||pages.dashboard;
+  document.getElementById('pageTitle').textContent = pg.title;
+  document.getElementById('topAction').textContent = pg.action;
+  if(p==='login'){document.getElementById('sidebar').style.display='none'}else{document.getElementById('sidebar').style.display=''}
+  // Build sidebar nav
+  const nav = pg.nav || pages.dashboard.nav;
+  let html='';
+  nav.forEach(s=>{
+    html+=`<div class="nl">${s.l}</div>`;
+    s.items.forEach(i=>{
+      html+=`<div class="ni${i.p===p?' on':''}" onclick="go('${i.p}')"><span class="ni-i">${i.n.split(' ')[0]}</span>${i.n.split(' ').slice(1).join(' ')}</div>`;
+    });
+  });
+  document.getElementById('sideItems').innerHTML=html;
+  initCharts(p);
+}
+
+// ─── Charts ───
+const chartInstances = {};
+function initCharts(p) {
+  if(p==='dashboard') {
+    setTimeout(()=>{
+      ['ck','cg','cs','cc'].forEach((id,i)=>{
+        const el=document.getElementById(id);if(!el)return;
+        if(chartInstances[id]){chartInstances[id].destroy()}
+        const colors=['#60a5fa','#4ade80','#a78bfa','#f87171'];
+        chartInstances[id]=new Chart(el,{type:'line',data:{labels:['M','T','W','T','F','S','S'],datasets:[{data:[[3,4,5,3,4,2,3],[2,1,3,2,1,2,2],[1,2,1,1,2,1,1],[1,1,0,1,0,1,1]][i],borderColor:colors[i],backgroundColor:colors[i]+'20',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},responsive:true,maintainAspectRatio:false}});
+      });
+      const cvEl=document.getElementById('cv');
+      if(cvEl){
+        if(chartInstances.cv)chartInstances.cv.destroy();
+        chartInstances.cv=new Chart(cvEl,{type:'bar',data:{labels:['Feb 20','21','22','23','24','25','26','27','28','Mar 1','2','3','4','5'],datasets:[{data:[8,12,15,10,24,18,14,8,12,10,16,14,11,7],backgroundColor:'rgba(129,140,248,.6)',borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4b4569',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#4b4569',font:{size:9}},grid:{color:'#2a254020'}}},responsive:true,maintainAspectRatio:false}});
+      }
+    },100);
+  }
+  if(p==='models'){
+    setTimeout(()=>{
+      const el=document.getElementById('costChart');if(!el)return;
+      if(chartInstances.cost)chartInstances.cost.destroy();
+      chartInstances.cost=new Chart(el,{type:'line',data:{labels:['Mar 1','2','3','4','5','6','7'],datasets:[
+        {label:'Kimi K2.5',data:[0.8,1.2,0.9,1.1,1.8,0.7,0.5],borderColor:'#60a5fa',tension:.3,pointRadius:3},
+        {label:'Sonnet 4.6',data:[1.5,2.0,1.8,1.2,2.1,1.9,0.8],borderColor:'#a78bfa',tension:.3,pointRadius:3},
+        {label:'GLM-5',data:[0.3,0.5,0.4,0.6,0.3,0.4,0.2],borderColor:'#4ade80',tension:.3,pointRadius:3}
+      ]},options:{plugins:{legend:{labels:{color:'#94a3b8',font:{size:10}}}},scales:{x:{ticks:{color:'#4b4569',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#4b4569',font:{size:9},callback:v=>'$'+v},grid:{color:'#2a254020'}}},responsive:true,maintainAspectRatio:false}});
+    },100);
+  }
+}
+
+// Init
+go('dashboard');
+</script>
+</body>
+</html>
