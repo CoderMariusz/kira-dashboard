@@ -2796,7 +2796,7 @@ ${editJs}
 
 function generateServerJs() {
   return `/**
- * LobsterBoard Dashboard Server
+ * KiraBoard Dashboard Server
  * 
  * A server that:
  * - Serves your dashboard static files
@@ -3271,7 +3271,7 @@ Edit CSS variables in \`style.css\`:
 
 ## Links
 
-- LobsterBoard Builder: https://github.com/curbob/LobsterBoard
+- KiraBoard: https://github.com/CoderMariusz/kira-dashboard
 - OpenClaw: https://github.com/openclaw/openclaw
 
 ---
