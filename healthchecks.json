@@ -1,0 +1,8 @@
+{
+  "checks": [
+    { "name": "Bridge API", "url": "http://localhost:8199/api/health", "interval": 30, "timeout": 5000 },
+    { "name": "OpenClaw", "url": "http://localhost:3578/health", "interval": 30, "timeout": 5000 },
+    { "name": "Supabase", "url": "$SUPABASE_URL/rest/v1/", "interval": 60, "timeout": 8000,
+      "headers": { "apikey": "$SUPABASE_KEY" } }
+  ]
+}

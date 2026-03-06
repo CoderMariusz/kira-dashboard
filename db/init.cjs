@@ -94,12 +94,41 @@ function initDatabase() {
       synced_at TEXT DEFAULT (datetime('now'))
     );
 
+    -- Recurring tasks table (for auto-generated tasks via cron)
+    CREATE TABLE IF NOT EXISTS kb_recurring_tasks (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      title TEXT NOT NULL,
+      description TEXT,
+      recurrence TEXT NOT NULL CHECK (recurrence IN ('daily','weekly','biweekly','monthly')),
+      day_of_week INTEGER,              -- 0-6 dla weekly (0=poniedziałek)
+      day_of_month INTEGER,             -- 1-31 dla monthly
+      assigned_to TEXT,                  -- user_id lub 'rotate'
+      rotation_index INTEGER DEFAULT 0, -- który user w kolejce (dla rotate)
+      rotation_users TEXT,               -- JSON array user_ids np. '["zuza","iza"]'
+      priority TEXT DEFAULT 'medium' CHECK (priority IN ('low','medium','high')),
+      active INTEGER DEFAULT 1,
+      last_created_at TEXT,             -- kiedy ostatnio auto-stworzono task (YYYY-MM-DD)
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- Shopping history table (for smart suggestions)
+    CREATE TABLE IF NOT EXISTS kb_shopping_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_name TEXT NOT NULL,
+      category TEXT DEFAULT 'Inne',
+      buy_count INTEGER DEFAULT 1,
+      last_bought_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(item_name, category)
+    );
+
     -- Indexes for performance
     CREATE INDEX IF NOT EXISTS idx_shopping_bought ON kb_shopping_items(bought);
     CREATE INDEX IF NOT EXISTS idx_shopping_category ON kb_shopping_items(category);
     CREATE INDEX IF NOT EXISTS idx_tasks_column ON kb_tasks(column_id);
     CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON kb_tasks(assigned_to);
     CREATE INDEX IF NOT EXISTS idx_activity_created ON kb_activity_log(created_at);
+    CREATE INDEX IF NOT EXISTS idx_recurring_active ON kb_recurring_tasks(active);
+    CREATE INDEX IF NOT EXISTS idx_shopping_hist_count ON kb_shopping_history(buy_count DESC);
   `);
 
   return db;
