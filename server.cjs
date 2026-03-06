@@ -11,7 +11,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const si = require('systeminformation');
-const { authenticate, verifyToken } = require('./auth/middleware');
+const { authenticate, verifyToken, requireRole } = require('./auth/middleware');
+const { initDatabase, getDatabase, initGatesForStory } = require('./db/init');
 
 // ─────────────────────────────────────────────
 // Supabase Sync Integration
