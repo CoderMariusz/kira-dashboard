@@ -19,6 +19,91 @@ const BRIDGE_URL = process.env.BRIDGE_URL || 'http://127.0.0.1:8199';
 const BRIDGE_TIMEOUT = 5000; // 5s timeout
 
 // ─────────────────────────────────────────────
+// Health Check — background pinging with cache
+// ─────────────────────────────────────────────
+let healthchecksConfig = { checks: [] };
+let healthResults = [];
+
+// Load healthchecks.json with graceful fallback
+try {
+  healthchecksConfig = JSON.parse(
+    fs.readFileSync(path.join(__dirname, 'healthchecks.json'), 'utf8')
+  );
+  // Initialize cache
+  healthResults = healthchecksConfig.checks.map(c => ({
+    name: c.name,
+    status: 'unknown',
+    latency_ms: null,
+    last_check: null,
+    error: null
+  }));
+  console.log(`🏥 Health checks loaded: ${healthchecksConfig.checks.length} service(s)`);
+} catch (err) {
+  console.log('⚠️  healthchecks.json not found or invalid — health checks disabled');
+  healthchecksConfig = { checks: [] };
+  healthResults = [];
+}
+
+async function pingService(check, index) {
+  // Replace env variables in URL
+  const url = check.url
+    .replace('$SUPABASE_URL', process.env.SUPABASE_URL || '')
+    .replace('$SUPABASE_KEY', process.env.SUPABASE_KEY || '');
+
+  // Skip if URL is empty after replacement (not configured)
+  if (!url) {
+    healthResults[index] = {
+      name: check.name,
+      status: 'down',
+      latency_ms: null,
+      last_check: new Date().toISOString(),
+      error: 'Not configured'
+    };
+    return;
+  }
+
+  const start = Date.now();
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), check.timeout || 5000);
+
+    const headers = {};
+    if (check.headers) {
+      Object.entries(check.headers).forEach(([k, v]) => {
+        headers[k] = v.replace('$SUPABASE_KEY', process.env.SUPABASE_KEY || '');
+      });
+    }
+
+    await fetch(url, { signal: controller.signal, headers });
+    clearTimeout(timeout);
+
+    healthResults[index] = {
+      name: check.name,
+      status: 'up',
+      latency_ms: Date.now() - start,
+      last_check: new Date().toISOString(),
+      error: null
+    };
+  } catch (err) {
+    healthResults[index] = {
+      name: check.name,
+      status: 'down',
+      latency_ms: null,
+      last_check: new Date().toISOString(),
+      error: err.name === 'AbortError' ? 'timeout' : err.message
+    };
+  }
+}
+
+// Start background ping jobs if health checks are configured
+if (healthchecksConfig.checks.length > 0) {
+  healthchecksConfig.checks.forEach((check, index) => {
+    pingService(check, index); // initial ping
+    setInterval(() => pingService(check, index), (check.interval || 30) * 1000);
+  });
+}
+
+// ─────────────────────────────────────────────
 // Pages System — auto-discovery and mounting
 // ─────────────────────────────────────────────
 const PAGES_DIR = path.join(__dirname, 'pages');
@@ -598,6 +683,20 @@ const server = http.createServer(async (req, res) => {
       'Access-Control-Allow-Headers': 'Content-Type'
     });
     res.end();
+    return;
+  }
+
+  // ── Health Check Endpoint ──
+  if (req.method === 'GET' && pathname === '/api/health-check') {
+    sendJson(res, 200, {
+      checks: healthResults,
+      overall: healthResults.length === 0
+        ? 'healthy'
+        : healthResults.every(c => c.status === 'up')
+          ? 'healthy'
+          : 'degraded',
+      generated_at: new Date().toISOString()
+    });
     return;
   }
 
