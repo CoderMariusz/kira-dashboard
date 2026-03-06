@@ -13,6 +13,13 @@ const os = require('os');
 const si = require('systeminformation');
 const { authenticate, verifyToken } = require('./auth/middleware');
 
+// ─────────────────────────────────────────────
+// Supabase Sync Integration
+// ─────────────────────────────────────────────
+if (process.env.SUPABASE_URL) {
+  require('./sync_to_supabase');
+}
+
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '127.0.0.1';
 const BRIDGE_URL = process.env.BRIDGE_URL || 'http://127.0.0.1:8199';

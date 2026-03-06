@@ -76,7 +76,9 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
     "better-sqlite3": "^12.6.2",
+    "dotenv": "^17.3.1",
     "jsonwebtoken": "^9.0.3",
+    "node-cron": "^4.2.1",
     "systeminformation": "^5.30.7"
   }
 }

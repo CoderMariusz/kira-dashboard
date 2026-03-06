@@ -121,6 +121,21 @@ function initDatabase() {
       UNIQUE(item_name, category)
     );
 
+    -- Story gates table (pipeline quality gates)
+    CREATE TABLE IF NOT EXISTS kb_story_gates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      story_id TEXT NOT NULL,
+      project_key TEXT NOT NULL,
+      gate_name TEXT NOT NULL CHECK (gate_name IN ('implement','lint','test','review','merge')),
+      status TEXT NOT NULL DEFAULT 'pending' 
+        CHECK (status IN ('pending','active','pass','fail','skip')),
+      started_at TEXT,
+      finished_at TEXT,
+      details TEXT,  -- JSON: { error_message, reviewer_model, test_count, etc. }
+      created_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(story_id, project_key, gate_name)
+    );
+
     -- Indexes for performance
     CREATE INDEX IF NOT EXISTS idx_shopping_bought ON kb_shopping_items(bought);
     CREATE INDEX IF NOT EXISTS idx_shopping_category ON kb_shopping_items(category);
@@ -129,6 +144,11 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_activity_created ON kb_activity_log(created_at);
     CREATE INDEX IF NOT EXISTS idx_recurring_active ON kb_recurring_tasks(active);
     CREATE INDEX IF NOT EXISTS idx_shopping_hist_count ON kb_shopping_history(buy_count DESC);
+
+    -- Indexes for story gates
+    CREATE INDEX IF NOT EXISTS idx_gates_story ON kb_story_gates(story_id, project_key);
+    CREATE INDEX IF NOT EXISTS idx_gates_status ON kb_story_gates(status);
+    CREATE INDEX IF NOT EXISTS idx_gates_project ON kb_story_gates(project_key);
   `);
 
   return db;
@@ -147,4 +167,20 @@ function getDatabase() {
   return dbInstance;
 }
 
-module.exports = { initDatabase, getDatabase, DB_PATH };
+/**
+ * Initialize gates for a story based on gate_config.json
+ * Creates pending gate records for all configured gates
+ * @param {Database} db - Better-sqlite3 database instance
+ * @param {string} storyId - Story ID (e.g., 'STORY-0.15')
+ * @param {string} projectKey - Project key (e.g., 'kira-board')
+ */
+function initGatesForStory(db, storyId, projectKey) {
+  const config = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'gate_config.json'), 'utf8'));
+  const stmt = db.prepare(
+    'INSERT OR IGNORE INTO kb_story_gates (story_id, project_key, gate_name, status) VALUES (?, ?, ?, ?)'
+  );
+  config.gates.forEach(g => stmt.run(storyId, projectKey, g.name, 'pending'));
+  console.log(`🔲 Gates initialized for ${storyId} (${projectKey}): 5 gates pending`);
+}
+
+module.exports = { initDatabase, getDatabase, DB_PATH, initGatesForStory };

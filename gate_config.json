@@ -1,0 +1,42 @@
+{
+  "gates": [
+    { 
+      "name": "implement", 
+      "label": "IMPLEMENT", 
+      "order": 1, 
+      "required": true,
+      "description": "Story branch created, code written and committed" 
+    },
+    { 
+      "name": "lint", 
+      "label": "LINT", 
+      "order": 2, 
+      "required": false,
+      "description": "ESLint + TypeCheck pass (skippable for config changes)" 
+    },
+    { 
+      "name": "test", 
+      "label": "TEST", 
+      "order": 3, 
+      "required": true,
+      "description": "Vitest unit tests + Playwright e2e pass" 
+    },
+    { 
+      "name": "review", 
+      "label": "REVIEW", 
+      "order": 4, 
+      "required": true,
+      "description": "Cross-model code review approved (Sonnet reviews Codex/Kimi output)" 
+    },
+    { 
+      "name": "merge", 
+      "label": "MERGE", 
+      "order": 5, 
+      "required": true,
+      "description": "Branch merged to main via PR or direct merge" 
+    }
+  ],
+  "enforcement": "report",
+  "skip_allowed_for": ["lint"],
+  "version": "1.0"
+}
