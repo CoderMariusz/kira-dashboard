@@ -12,8 +12,23 @@ const path = require('path');
 const os = require('os');
 const si = require('systeminformation');
 
+// ─────────────────────────────────────────────
+// Database initialization
+// ─────────────────────────────────────────────
+const { initDatabase, DB_PATH } = require('./db/init.cjs');
+let db;
+try {
+  db = initDatabase();
+  console.log(`📦 KiraBoard DB initialized: ${DB_PATH}`);
+} catch (err) {
+  console.error('❌ Failed to initialize database:', err.message);
+  process.exit(1);
+}
+
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '127.0.0.1';
+const BRIDGE_URL = process.env.BRIDGE_URL || 'http://127.0.0.1:8199';
+const BRIDGE_TIMEOUT = 5000; // 5s timeout
 
 // ─────────────────────────────────────────────
 // Pages System — auto-discovery and mounting
@@ -409,6 +424,45 @@ function sendError(res, message, statusCode = 500) {
   sendJson(res, statusCode, { status: 'error', message });
 }
 
+// Proxy request to Bridge API with timeout and error handling
+async function proxyToBridge(req, res, url, body) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BRIDGE_TIMEOUT);
+
+    const fetchOptions = {
+      method: req.method,
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal
+    };
+
+    if (body && ['POST', 'PATCH', 'PUT'].includes(req.method)) {
+      fetchOptions.body = body;
+    }
+
+    const response = await fetch(url, fetchOptions);
+    clearTimeout(timeout);
+
+    // Try to parse JSON, fallback to text if not JSON
+    let data;
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      data = { raw: text };
+    }
+
+    sendJson(res, response.status, data);
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      sendJson(res, 504, { error: 'Bridge API timeout', bridge_url: BRIDGE_URL });
+    } else {
+      sendJson(res, 503, { error: 'Bridge API offline', bridge_url: BRIDGE_URL, detail: err.message });
+    }
+  }
+}
+
 // Parse iCal (.ics) text into sorted upcoming events
 function parseIcal(text, maxEvents) {
   const now = new Date();
@@ -557,6 +611,32 @@ const server = http.createServer(async (req, res) => {
     });
     res.end();
     return;
+  }
+
+  // ── Bridge API Proxy ──
+  if (pathname.startsWith('/api/bridge/')) {
+    const bridgePath = pathname.slice('/api/bridge/'.length);
+    const url = `${BRIDGE_URL}/api/${bridgePath}`;
+
+    // Parse body for POST/PATCH/PUT
+    let body = '';
+    if (['POST', 'PATCH', 'PUT'].includes(req.method)) {
+      const MAX_BODY = 1024 * 1024;
+      let overflow = false;
+      req.on('data', chunk => {
+        body += chunk.toString();
+        if (body.length > MAX_BODY) { overflow = true; req.destroy(); }
+      });
+      req.on('end', async () => {
+        if (overflow) { sendError(res, 'Request body too large', 413); return; }
+        await proxyToBridge(req, res, url, body);
+      });
+      return;
+    } else {
+      // GET, DELETE, etc. — no body
+      await proxyToBridge(req, res, url, null);
+      return;
+    }
   }
 
   // ── Security: PIN auth endpoints ──
