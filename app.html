@@ -28,6 +28,7 @@
           <option value="feminine-dark">💜 Feminine Dark</option>
           <option value="terminal">💻 Terminal</option>
           <option value="paper">📜 Paper</option>
+          <option value="kiraboard">🦊 KiraBoard</option>
         </select>
       </div>
       <label>Font Scale:</label>
@@ -728,7 +729,7 @@
       // Apply theme to body
       function applyTheme(theme) {
         // Remove all theme classes
-        document.body.classList.remove('theme-feminine', 'theme-feminine-dark', 'theme-terminal', 'theme-paper');
+        document.body.classList.remove('theme-feminine', 'theme-feminine-dark', 'theme-terminal', 'theme-paper', 'theme-kiraboard');
         
         // Apply new theme class if not default
         if (theme && theme !== 'default') {

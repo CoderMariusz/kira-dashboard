@@ -1367,3 +1367,28 @@ body[data-mode="edit"] .page-link,
 body[data-mode="edit"] .page-separator {
   display: none !important;
 }
+
+/* KiraBoard Theme */
+[data-theme="kiraboard"] {
+  --bg-primary: #0d0c1a;
+  --bg-secondary: #1a1730;
+  --bg-card: #1a1730;
+  --bg-input: #151326;
+  --bg-hover: #252040;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+  --accent-dim: rgba(129, 140, 248, 0.15);
+  --border: #2a2540;
+  --border-hover: #3b3d7a;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #38bdf8;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --radius: 12px;
+  --sidebar-bg: #0a0918;
+  --header-bg: #0d0c1a;
+}
