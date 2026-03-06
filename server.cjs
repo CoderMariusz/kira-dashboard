@@ -6,6 +6,9 @@
  * - Handle loading and saving of config.json for the builder
  */
 
+// Load environment variables first
+require('dotenv').config();
+
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -25,6 +28,10 @@ const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '127.0.0.1';
 const BRIDGE_URL = process.env.BRIDGE_URL || 'http://127.0.0.1:8199';
 const BRIDGE_TIMEOUT = 5000; // 5s timeout
+
+// Data source configuration
+const DATA_SOURCE = process.env.SUPABASE_URL ? 'supabase' : 'local';
+console.log(`📊 Data source: ${DATA_SOURCE}`);
 
 // ─────────────────────────────────────────────
 // Health Check — background pinging with cache
@@ -229,10 +236,22 @@ function matchPageRoute(pages, method, pathname, parsedUrl) {
     const page = pages.find(p => p.id === pageId);
     if (page) {
       const subPath = pagesMatch[2] || '/';
-      if (subPath === '/' || subPath === '') {
-        return { type: 'static', filePath: path.join(PAGES_DIR, pageId, 'index.html') };
+      const distDir = path.join(PAGES_DIR, pageId, 'dist');
+      const hasDist = fs.existsSync(distDir);
+      
+      if (hasDist) {
+        // Serve from dist/ directory (built React app)
+        if (subPath === '/' || subPath === '') {
+          return { type: 'static', filePath: path.join(distDir, 'index.html') };
+        }
+        return { type: 'static', filePath: path.join(distDir, subPath.slice(1)) };
+      } else {
+        // Serve directly from page directory
+        if (subPath === '/' || subPath === '') {
+          return { type: 'static', filePath: path.join(PAGES_DIR, pageId, 'index.html') };
+        }
+        return { type: 'static', filePath: path.join(PAGES_DIR, pageId, subPath.slice(1)) };
       }
-      return { type: 'static', filePath: path.join(PAGES_DIR, pageId, subPath.slice(1)) };
     }
   }
 
@@ -276,6 +295,19 @@ function matchPageRoute(pages, method, pathname, parsedUrl) {
 // Initialize pages
 loadedPages = loadPages();
 console.log(`📄 Loaded ${loadedPages.length} page(s): ${loadedPages.map(p => p.icon + ' ' + p.title).join(', ') || 'none'}`);
+
+// Log page details (dist/ and API)
+for (const page of loadedPages) {
+  const distPath = path.join(PAGES_DIR, page.id, 'dist');
+  const hasDist = fs.existsSync(distPath);
+  const hasApi = Object.keys(page.routes).length > 0;
+  const parts = [];
+  if (hasDist) parts.push('dist');
+  if (hasApi) parts.push('api');
+  if (parts.length > 0) {
+    console.log(`   └─ ${page.id}: ${parts.join('+')}`);
+  }
+}
 
 // ─────────────────────────────────────────────
 // System Stats Collection (cached, tiered intervals)
@@ -630,13 +662,14 @@ const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
   const pathname = parsedUrl.pathname;
 
-  // CORS preflight for /config
-  if (req.method === 'OPTIONS' && pathname === '/config') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    });
+  // Global CORS headers for all responses
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+
+  // Handle OPTIONS preflight globally
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
     res.end();
     return;
   }
@@ -688,17 +721,6 @@ const server = http.createServer(async (req, res) => {
         sendError(res, `Invalid JSON in request body: ${parseErr.message}`, 400);
       }
     });
-    return;
-  }
-
-  // CORS preflight for /api/*
-  if (req.method === 'OPTIONS' && (pathname.startsWith('/api/') || pathname === '/api/pages')) {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    });
-    res.end();
     return;
   }
 
