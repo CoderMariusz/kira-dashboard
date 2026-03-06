@@ -1,0 +1,10 @@
+{
+  "shortcuts": [
+    { "key": "/", "action": "focusSearch", "label": "Focus search" },
+    { "key": "Escape", "action": "closeModal", "label": "Close modal/overlay" },
+    { "key": "Ctrl+1", "action": "navigatePage", "target": "dashboard", "label": "Go to Dashboard" },
+    { "key": "Ctrl+2", "action": "navigatePage", "target": "pipeline", "label": "Go to Pipeline" },
+    { "key": "Ctrl+3", "action": "navigatePage", "target": "home", "label": "Go to Home" },
+    { "key": "?", "action": "showShortcuts", "label": "Show shortcuts help" }
+  ]
+}
