@@ -74,7 +74,9 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.98.0",
     "better-sqlite3": "^12.6.2",
+    "jsonwebtoken": "^9.0.3",
     "systeminformation": "^5.30.7"
   }
 }

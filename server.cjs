@@ -12,19 +12,6 @@ const path = require('path');
 const os = require('os');
 const si = require('systeminformation');
 
-// ─────────────────────────────────────────────
-// Database initialization
-// ─────────────────────────────────────────────
-const { initDatabase, DB_PATH } = require('./db/init.cjs');
-let db;
-try {
-  db = initDatabase();
-  console.log(`📦 KiraBoard DB initialized: ${DB_PATH}`);
-} catch (err) {
-  console.error('❌ Failed to initialize database:', err.message);
-  process.exit(1);
-}
-
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '127.0.0.1';
 const BRIDGE_URL = process.env.BRIDGE_URL || 'http://127.0.0.1:8199';
