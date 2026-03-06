@@ -389,6 +389,14 @@ const MIME_TYPES = {
   '.map': 'application/json' // For sourcemaps
 };
 
+// ─────────────────────────────────────────────
+// Gate tracking constants
+// ─────────────────────────────────────────────
+const GATE_ORDER = { implement: 1, lint: 2, test: 3, review: 4, merge: 5 };
+
+// Initialize database on startup
+const db = getDatabase();
+
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 const AUTH_FILE = path.join(__dirname, 'auth.json');
 const SECRETS_FILE = path.join(__dirname, 'secrets.json');
@@ -817,6 +825,160 @@ const server = http.createServer(async (req, res) => {
     const user = verifyToken(req);
     if (!user) { sendJson(res, 401, { error: 'Not authenticated' }); return; }
     sendJson(res, 200, { user });
+    return;
+  }
+
+  // ── Gate Tracking API ──
+  // POST /api/gates/update - Update gate status (admin only)
+  if (req.method === 'POST' && pathname === '/api/gates/update') {
+    const user = verifyToken(req);
+    if (!user) { sendJson(res, 401, { error: 'Not authenticated' }); return; }
+    if (!['admin'].includes(user.role)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+
+    const MAX_BODY = 1024 * 1024;
+    let body = '';
+    let overflow = false;
+    req.on('data', chunk => { body += chunk.toString(); if (body.length > MAX_BODY) { overflow = true; req.destroy(); } });
+    req.on('end', () => {
+      if (overflow) { sendError(res, 'Request body too large', 413); return; }
+      try {
+        const { story_id, project_key, gate_name, status, details } = JSON.parse(body);
+        
+        if (!story_id || !project_key || !gate_name || !status) {
+          return sendJson(res, 400, { error: 'story_id, project_key, gate_name, status required' });
+        }
+        
+        const validStatuses = ['pending','active','pass','fail','skip'];
+        if (!validStatuses.includes(status)) {
+          return sendJson(res, 400, { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+        }
+        
+        const now = new Date().toISOString();
+        const startedAt = status === 'active' ? now : null;
+        const finishedAt = ['pass','fail','skip'].includes(status) ? now : null;
+        
+        const result = db.prepare(`
+          UPDATE kb_story_gates 
+          SET status = ?,
+              started_at = CASE WHEN ? IS NOT NULL THEN ? ELSE started_at END,
+              finished_at = CASE WHEN ? IS NOT NULL THEN ? ELSE finished_at END,
+              details = COALESCE(?, details)
+          WHERE story_id = ? AND project_key = ? AND gate_name = ?
+        `).run(
+          status,
+          startedAt, startedAt,
+          finishedAt, finishedAt,
+          details ? JSON.stringify(details) : null,
+          story_id, project_key, gate_name
+        );
+        
+        if (result.changes === 0) {
+          return sendJson(res, 404, { error: 'Gate not found. Initialize gates first.' });
+        }
+        
+        sendJson(res, 200, { success: true, story_id, gate_name, status });
+      } catch (e) { sendError(res, e.message, 400); }
+    });
+    return;
+  }
+
+  // GET /api/gates/story/:projectKey/:storyId - Get gates for a story
+  if (req.method === 'GET' && pathname.match(/^\/api\/gates\/story\/[^/]+\/[^/]+$/)) {
+    const parts = pathname.split('/');
+    const projectKey = decodeURIComponent(parts[4]);
+    const storyId = decodeURIComponent(parts[5]);
+    
+    try {
+      const gates = db.prepare(`
+        SELECT * FROM kb_story_gates 
+        WHERE story_id = ? AND project_key = ?
+      `).all(storyId, projectKey);
+      
+      const sorted = gates.sort((a, b) => (GATE_ORDER[a.gate_name] || 99) - (GATE_ORDER[b.gate_name] || 99));
+      
+      sendJson(res, 200, { 
+        story_id: storyId,
+        project_key: projectKey,
+        gates: sorted,
+        summary: {
+          total: gates.length,
+          passed: gates.filter(g => g.status === 'pass').length,
+          failed: gates.filter(g => g.status === 'fail').length,
+          pending: gates.filter(g => g.status === 'pending').length,
+        }
+      });
+    } catch (e) { sendError(res, e.message); }
+    return;
+  }
+
+  // GET /api/gates/compliance - Get compliance percentage
+  if (req.method === 'GET' && pathname === '/api/gates/compliance') {
+    const projectKey = parsedUrl.searchParams.get('project');
+    const whereClause = projectKey ? 'WHERE project_key = ?' : '';
+    const params = projectKey ? [projectKey] : [];
+    
+    try {
+      // Total unique stories
+      const totalRow = db.prepare(
+        `SELECT COUNT(DISTINCT story_id || '|' || project_key) as cnt FROM kb_story_gates ${whereClause}`
+      ).get(...params);
+      const total = totalRow?.cnt || 0;
+      
+      if (total === 0) {
+        return sendJson(res, 200, { total: 0, all_passed: 0, skipped: 0, failed: 0, compliance_pct: 100, project_key: projectKey || 'all' });
+      }
+      
+      // Stories with any fail
+      const failedRow = db.prepare(
+        `SELECT COUNT(DISTINCT story_id || '|' || project_key) as cnt FROM kb_story_gates 
+         ${whereClause ? whereClause + ' AND' : 'WHERE'} status = 'fail'`
+      ).get(...params);
+      const failed = failedRow?.cnt || 0;
+      
+      // Stories with any skip
+      const skippedRow = db.prepare(
+        `SELECT COUNT(DISTINCT story_id || '|' || project_key) as cnt FROM kb_story_gates 
+         ${whereClause ? whereClause + ' AND' : 'WHERE'} status = 'skip'`
+      ).get(...params);
+      const skipped = skippedRow?.cnt || 0;
+      
+      // Stories with ALL required gates passed (no fails, no pending for required)
+      const allPassed = total - failed - Math.max(0, skipped - failed);
+      
+      sendJson(res, 200, {
+        total,
+        all_passed: Math.max(0, allPassed),
+        skipped,
+        failed,
+        compliance_pct: Math.round(Math.max(0, allPassed) / total * 100),
+        project_key: projectKey || 'all'
+      });
+    } catch (e) { sendError(res, e.message); }
+    return;
+  }
+
+  // POST /api/gates/init-story - Initialize gates for a story (admin only)
+  if (req.method === 'POST' && pathname === '/api/gates/init-story') {
+    const user = verifyToken(req);
+    if (!user) { sendJson(res, 401, { error: 'Not authenticated' }); return; }
+    if (!['admin'].includes(user.role)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
+
+    const MAX_BODY = 1024 * 1024;
+    let body = '';
+    let overflow = false;
+    req.on('data', chunk => { body += chunk.toString(); if (body.length > MAX_BODY) { overflow = true; req.destroy(); } });
+    req.on('end', () => {
+      if (overflow) { sendError(res, 'Request body too large', 413); return; }
+      try {
+        const { story_id, project_key } = JSON.parse(body);
+        if (!story_id || !project_key) {
+          return sendJson(res, 400, { error: 'story_id, project_key required' });
+        }
+        
+        initGatesForStory(db, story_id, project_key);
+        sendJson(res, 200, { success: true, story_id, project_key, gates_initialized: 5 });
+      } catch (e) { sendError(res, e.message, 400); }
+    });
     return;
   }
 
