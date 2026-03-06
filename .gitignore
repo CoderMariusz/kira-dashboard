@@ -9,6 +9,7 @@ node_modules/
 # Security - never commit
 auth.json
 secrets.json
+users.json
 
 # OS and IDE files
 .DS_Store

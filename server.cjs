@@ -11,6 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const si = require('systeminformation');
+const { authenticate, verifyToken } = require('./auth/middleware');
 
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -685,6 +686,30 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 200, { status: 'ok' });
       } catch (e) { sendError(res, e.message, 400); }
     });
+    return;
+  }
+
+  // ── JWT Auth: Login endpoint ──
+  if (req.method === 'POST' && pathname === '/api/auth/login') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { pin } = JSON.parse(body);
+        if (!pin) { sendJson(res, 400, { error: 'PIN required' }); return; }
+        const result = authenticate(pin);
+        if (!result) { sendJson(res, 401, { error: 'Invalid PIN' }); return; }
+        sendJson(res, 200, result);
+      } catch (e) { sendError(res, e.message, 400); }
+    });
+    return;
+  }
+
+  // ── JWT Auth: Get current user ──
+  if (req.method === 'GET' && pathname === '/api/auth/me') {
+    const user = verifyToken(req);
+    if (!user) { sendJson(res, 401, { error: 'Not authenticated' }); return; }
+    sendJson(res, 200, { user });
     return;
   }
 
